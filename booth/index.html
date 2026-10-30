@@ -103,6 +103,7 @@
 <!-- RESULT -->
 <section class="wrap result" id="result" hidden>
   <img id="shot" alt="Your Galindo photo">
+  <div class="note" id="holdhint" hidden><b style="color:var(--fg)">To save to Photos:</b> press and hold the photo above, then tap <b style="color:var(--fg)">Save to Photos</b>.</div>
   <div class="actions">
     <button class="btn" id="share">Save to my phone</button>
     <button class="btn ghost" id="send" hidden>Send to the Galindo album</button>
@@ -131,6 +132,8 @@ let landmarker = null, faces = [], lastTs = -1, smooth = [];
 let props = { hat: true, stache: true, shades: false };
 let timer = true, busy = false, lastBlob = null;
 const logo = new Image(); logo.src = '/galindo-logo.png';
+const IOS = /iP(hone|ad|od)/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+if(IOS){ document.getElementById('holdhint').hidden = false; document.getElementById('share').textContent = 'Save to Photos'; }
 
 /* ---------- face tracking ---------- */
 async function loadLandmarker(){
@@ -289,7 +292,7 @@ async function shareShot(){
   if(!lastBlob) return;
   const file = new File([lastBlob], `galindo-${stamp()}.jpg`, { type:'image/jpeg' });
   if(navigator.canShare && navigator.canShare({ files:[file] })){
-    try{ await navigator.share({ files:[file], title:'Galindo Launch Night' }); return; }catch(e){ if(e.name === 'AbortError') return; }
+    try{ await navigator.share({ files:[file] }); return; }catch(e){ if(e.name === 'AbortError') return; }
   }
   const a = document.createElement('a'); a.href = URL.createObjectURL(lastBlob); a.download = file.name; document.body.appendChild(a); a.click(); a.remove();
   $('sendnote').textContent = 'Saved — or press and hold the photo to save it.';
