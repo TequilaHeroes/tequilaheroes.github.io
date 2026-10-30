@@ -286,78 +286,81 @@ function drawPour(g, t){
   });
 }
 
-// "Tequila Heroes" crew mode: full lucha libre mask that follows the face outline.
-// Drawn on its own layer so the eye/mouth holes show the real face, not a hole in the photo.
-const FACE_OVAL = [10,338,297,332,284,251,389,356,454,323,361,288,397,365,379,378,400,377,152,148,176,149,150,136,172,58,132,93,234,127,162,21,54,103,67,109];
+// "Tequila Heroes" crew mode: lucha libre mask. Drawn in a fixed design space (eyes at x=±1, y=0;
+// mouth at y=2.1) and mapped onto each face with an affine transform from the eyes + mouth, so it
+// stretches and tilts with the face. Drawn on its own layer so the holes show the real face.
 const layer = document.createElement('canvas'); layer.width = CW; layer.height = CH;
 const lx = layer.getContext('2d');
+const RIM = '#5A1A16', RED = '#C8392D', CREAM = '#F3E3BE', INK = '#2A0E0B', GOLD = '#E7C877';
+function dots(c, pts, n, r){                                   // dotted stitching along a quadratic curve
+  const [a, b, q] = pts;
+  for(let i = 1; i < n; i++){ const t = i / n, u = 1 - t;
+    c.beginPath(); c.arc(u*u*a[0] + 2*u*t*q[0] + t*t*b[0], u*u*a[1] + 2*u*t*q[1] + t*t*b[1], r, 0, Math.PI*2); c.fill(); }
+}
+function luchaDesign(c, open){
+  // outer rim + red face
+  c.beginPath(); c.ellipse(0, 0.6, 2.2, 3.15, 0, 0, Math.PI*2); c.fillStyle = RIM; c.fill();
+  c.beginPath(); c.ellipse(0, 0.55, 1.92, 2.9, 0, 0, Math.PI*2); c.fillStyle = RED; c.fill();
+  // cream cheek panels (sweep down each side)
+  [-1, 1].forEach((sd) => {
+    c.beginPath(); c.moveTo(sd*1.45, 0.25);
+    c.quadraticCurveTo(sd*2.05, 1.4, sd*1.35, 3.0); c.quadraticCurveTo(sd*1.6, 1.6, sd*1.15, 0.6); c.closePath();
+    c.fillStyle = CREAM; c.fill();
+    c.beginPath(); c.moveTo(sd*1.9, -0.6); c.quadraticCurveTo(sd*2.15, 0.2, sd*1.95, 0.9); c.quadraticCurveTo(sd*1.85, 0.2, sd*1.6, -0.3); c.closePath();
+    c.fillStyle = GOLD; c.fill();
+  });
+  // forehead flame emblem
+  c.save(); c.translate(0, -1.35);
+  c.beginPath();
+  c.moveTo(0, -1.05); c.bezierCurveTo(0.2, -0.7, 0.55, -0.6, 0.42, -0.1);
+  c.bezierCurveTo(0.55, -0.35, 0.72, -0.3, 0.7, 0.05); c.bezierCurveTo(0.7, 0.45, 0.35, 0.62, 0, 0.62);
+  c.bezierCurveTo(-0.35, 0.62, -0.7, 0.45, -0.7, 0.05); c.bezierCurveTo(-0.72, -0.3, -0.55, -0.35, -0.42, -0.1);
+  c.bezierCurveTo(-0.55, -0.6, -0.2, -0.7, 0, -1.05); c.closePath();
+  c.fillStyle = CREAM; c.fill(); c.lineWidth = 0.06; c.strokeStyle = GOLD; c.stroke();
+  c.beginPath(); c.moveTo(0, -0.35); c.bezierCurveTo(0.28, 0.0, 0.3, 0.42, 0, 0.42); c.bezierCurveTo(-0.3, 0.42, -0.28, 0.0, 0, -0.35); c.closePath();
+  c.fillStyle = RED; c.fill();
+  c.restore();
+  // dotted stitching: forehead to eyes, and down the cheeks
+  c.fillStyle = CREAM;
+  [-1, 1].forEach((sd) => {
+    dots(c, [[0, -2.25], [sd*1.75, -0.2], [sd*1.3, -1.9]], 13, 0.05);
+    dots(c, [[sd*1.65, 0.45], [sd*0.55, 0.85], [sd*1.1, 0.95]], 7, 0.045);
+  });
+  // eye surrounds: winged cream shape with dark outline
+  [-1, 1].forEach((sd) => {
+    c.save(); c.translate(sd*1, 0); c.scale(sd, 1);
+    c.beginPath(); c.moveTo(-0.75, 0.18); c.quadraticCurveTo(-0.7, -0.45, 0.1, -0.42);
+    c.quadraticCurveTo(0.75, -0.42, 1.05, -0.62); c.quadraticCurveTo(1.0, 0.2, 0.55, 0.35);
+    c.quadraticCurveTo(-0.15, 0.55, -0.75, 0.18); c.closePath();
+    c.fillStyle = CREAM; c.fill(); c.lineWidth = 0.09; c.strokeStyle = INK; c.stroke();
+    c.restore();
+  });
+  // nose surround + mouth band
+  c.beginPath(); c.moveTo(0, 0.25); c.lineTo(0.42, 1.25); c.lineTo(-0.42, 1.25); c.closePath();
+  c.fillStyle = CREAM; c.fill();
+  c.beginPath(); c.ellipse(0, 2.1, 0.95, 0.42 + open*1.1, 0, 0, Math.PI*2); c.fillStyle = CREAM; c.fill();
+  c.lineWidth = 0.06; c.strokeStyle = INK; c.stroke();
+  // holes: eyes, nose, mouth (opens with the real mouth)
+  c.globalCompositeOperation = 'destination-out';
+  [-1, 1].forEach((sd) => { c.save(); c.translate(sd*1, 0); c.rotate(sd * -0.12);
+    c.beginPath(); c.ellipse(0, 0, 0.5, 0.22, 0, 0, Math.PI*2); c.fill(); c.restore(); });
+  c.beginPath(); c.moveTo(0, 0.6); c.lineTo(0.24, 1.15); c.lineTo(-0.24, 1.15); c.closePath(); c.fill();
+  c.beginPath(); c.ellipse(0, 2.1, 0.62, 0.14 + open*1.0, 0, 0, Math.PI*2); c.fill();
+  c.globalCompositeOperation = 'source-over';
+}
 function drawLuchador(lm, M, g){
   const P = (k) => M.pt(lm[k]);
-  const oval = FACE_OVAL.map(P);
-  const cx = oval.reduce((a, p) => a + p.x, 0) / oval.length, cy = oval.reduce((a, p) => a + p.y, 0) / oval.length;
-  const eyeY = (g.eyes[0].y + g.eyes[1].y) / 2;
-  const up = { x: Math.sin(g.ang), y: -Math.cos(g.ang) };     // "up" for the tilted head
-  const pts = oval.map((p) => {
-    let x = cx + (p.x - cx) * 1.1, y = cy + (p.y - cy) * 1.1;
-    if(p.y < eyeY){ const k = 0.16 * g.W * Math.min(1, (eyeY - p.y) / (0.5 * g.W)); x += up.x * k; y += up.y * k; }
-    return { x, y };
-  });
-  lx.clearRect(0, 0, CW, CH);
-  lx.save();
-  // base hood
-  lx.beginPath(); pts.forEach((p, i) => i ? lx.lineTo(p.x, p.y) : lx.moveTo(p.x, p.y)); lx.closePath();
-  const base = lx.createLinearGradient(cx, cy - g.W, cx, cy + g.W); base.addColorStop(0, '#C73A2F'); base.addColorStop(1, '#8E241D');
-  lx.fillStyle = base; lx.fill(); lx.lineWidth = 0.025 * g.W; lx.strokeStyle = '#E7C877'; lx.stroke();
-  lx.save(); lx.clip();                                       // all decoration stays inside the hood
-  // centre stripe up the forehead
-  const brow = P(9);
-  lx.save(); lx.translate(brow.x, brow.y); lx.rotate(g.ang);
-  lx.beginPath(); lx.moveTo(-0.07 * g.W, 0); lx.lineTo(-0.12 * g.W, -0.9 * g.W); lx.lineTo(0.12 * g.W, -0.9 * g.W); lx.lineTo(0.07 * g.W, 0); lx.closePath();
-  lx.fillStyle = '#E7C877'; lx.fill();
-  lx.beginPath(); for(let i = 0; i <= 6; i++){ const y = -0.12 * g.W - i * 0.1 * g.W, x = (i % 2 ? 0.05 : -0.05) * g.W; i ? lx.lineTo(x, y) : lx.moveTo(x, y); }
-  lx.strokeStyle = '#3E7A3A'; lx.lineWidth = 0.025 * g.W; lx.stroke();
-  lx.restore();
-  // flame eye surrounds
-  g.eyes.forEach((e, idx) => {
-    const side = (idx === 0 ? -1 : 1);
-    lx.save(); lx.translate(e.x, e.y); lx.rotate(g.ang); lx.scale(g.W, g.W);
-    lx.beginPath();
-    lx.ellipse(0, 0, 0.2, 0.13, 0, 0, Math.PI * 2);
-    lx.moveTo(side * 0.17, -0.06); lx.quadraticCurveTo(side * 0.36, -0.2, side * 0.42, -0.02); lx.quadraticCurveTo(side * 0.3, 0.02, side * 0.17, 0.06);
-    lx.fillStyle = '#FBF3E2'; lx.fill(); lx.strokeStyle = '#E7C877'; lx.lineWidth = 0.02; lx.stroke();
-    lx.restore();
-  });
-  // mouth surround
-  const ml = P(61), mr = P(291), mu = P(13), mb = P(14), mc = mid(mu, mb);
-  const mw = Math.hypot(mr.x - ml.x, mr.y - ml.y) / 2, mo = Math.hypot(mb.x - mu.x, mb.y - mu.y) / 2;
-  lx.save(); lx.translate(mc.x, mc.y); lx.rotate(g.ang);
-  lx.beginPath(); lx.ellipse(0, 0, mw * 1.55, mo + 0.12 * g.W, 0, 0, Math.PI * 2);
-  lx.fillStyle = '#FBF3E2'; lx.fill(); lx.strokeStyle = '#E7C877'; lx.lineWidth = 0.02 * g.W; lx.stroke();
-  // punch the mouth hole on the layer only
-  lx.globalCompositeOperation = 'destination-out';
-  lx.beginPath(); lx.ellipse(0, 0, mw * 1.15, mo + 0.05 * g.W, 0, 0, Math.PI * 2); lx.fill();
-  lx.globalCompositeOperation = 'source-over';
-  lx.restore();
-  lx.restore();                                              // end hood clip
-  lx.globalCompositeOperation = 'destination-out';
-  g.eyes.forEach((e) => { lx.save(); lx.translate(e.x, e.y); lx.rotate(g.ang); lx.beginPath(); lx.ellipse(0, 0, 0.11 * g.W, 0.06 * g.W, 0, 0, Math.PI * 2); lx.fill(); lx.restore(); });
-  lx.globalCompositeOperation = 'source-over';
-  lx.restore();
+  const [eL, eR] = g.eyes, o = mid(eL, eR);
+  const mouth = mid(P(13), P(14));
+  const ex = { x: (eR.x - eL.x) / 2, y: (eR.y - eL.y) / 2 };
+  const ey = { x: (mouth.x - o.x) / 2.1, y: (mouth.y - o.y) / 2.1 };
+  const eyeDist = Math.hypot(eR.x - eL.x, eR.y - eL.y);
+  lx.setTransform(1, 0, 0, 1, 0, 0); lx.clearRect(0, 0, CW, CH);
+  lx.setTransform(ex.x, ex.y, ey.x, ey.y, o.x, o.y);
+  luchaDesign(lx, Math.max(0, g.open * g.W / eyeDist - 0.03));
+  lx.setTransform(1, 0, 0, 1, 0, 0);
   ctx.drawImage(layer, 0, 0);
 }
-function drawHeroBadge(){
-  const x = 70, y = 64, w = 132, h = 156;
-  ctx.save(); ctx.translate(x, y);
-  ctx.beginPath(); ctx.moveTo(0, 0); ctx.lineTo(w, 0); ctx.lineTo(w, h * 0.55);
-  ctx.quadraticCurveTo(w, h * 0.85, w / 2, h); ctx.quadraticCurveTo(0, h * 0.85, 0, h * 0.55); ctx.closePath();
-  const gold = ctx.createLinearGradient(0, 0, 0, h); gold.addColorStop(0, '#F0D79B'); gold.addColorStop(1, '#A9842F');
-  ctx.fillStyle = gold; ctx.fill(); ctx.lineWidth = 6; ctx.strokeStyle = '#B2342B'; ctx.stroke();
-  ctx.fillStyle = '#1A1208'; ctx.textAlign = 'center';
-  ctx.font = '600 104px "Cormorant Garamond", Georgia, serif'; ctx.fillText('4', w / 2, 98);
-  ctx.font = '700 15px Archivo, system-ui, sans-serif'; ctx.fillText('TEQUILA', w / 2, 120); ctx.fillText('HEROES', w / 2, 137);
-  ctx.restore();
-}
-
 function drawFrame(){
   const band = ctx.createLinearGradient(0, CH - 330, 0, CH);
   band.addColorStop(0, 'rgba(13,12,10,0)'); band.addColorStop(.55, 'rgba(13,12,10,.82)'); band.addColorStop(1, 'rgba(13,12,10,.96)');
@@ -369,7 +372,6 @@ function drawFrame(){
   ctx.fillText(props.hero ? 'THE 4 TEQUILA HEROES' : 'LAUNCH NIGHT  ·  30 OCT 2026  ·  CAPE TOWN', CW / 2, CH - 70);
   ctx.fillStyle = 'rgba(244,236,220,.6)'; ctx.font = '500 24px Archivo, system-ui, sans-serif';
   ctx.fillText(props.hero ? 'Where Galindo began  ·  Launch Night 30.10.26' : 'tequilaheroes.com', CW / 2, CH - 36);
-  if(props.hero) drawHeroBadge();
 }
 
 function render(){
