@@ -56,8 +56,15 @@
   .divider span{width:8px;height:8px;background:var(--gold);transform:rotate(45deg);flex:none}
 
   /* ---- hero ---- */
-  .hero{position:relative;text-align:center;padding:clamp(70px,13vh,130px) 0 56px;
-    background:radial-gradient(130% 85% at 50% 0%, #1c1409 0%, var(--bg) 62%);overflow:hidden}
+  .hero{position:relative;text-align:center;padding:clamp(86px,16vh,150px) 0 64px;
+    display:flex;align-items:center;min-height:min(820px,92vh);
+    background:#0D0C0A url('site-media/galindo-hero-poster.jpg') center/cover no-repeat;overflow:hidden}
+  .hero-video{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;z-index:0;pointer-events:none}
+  .hero-scrim{position:absolute;inset:0;z-index:1;pointer-events:none;
+    background:linear-gradient(180deg,rgba(9,8,7,.70),rgba(9,8,7,.32) 32%,rgba(9,8,7,.50) 64%,rgba(9,8,7,.94)),
+               radial-gradient(130% 80% at 50% 0%,rgba(30,21,9,.55),transparent 66%)}
+  .hero .wrap{position:relative;z-index:2;width:100%}
+  @media(prefers-reduced-motion:reduce){.hero-video{display:none}}
   .hero .agave{width:74px;height:74px;margin:0 auto 22px;display:block}
   .hero .eyebrow{margin-bottom:20px}
   .hero .mark{font-family:var(--serif);font-weight:600;letter-spacing:.14em;font-size:clamp(58px,13vw,118px);line-height:.9;color:var(--gold);
@@ -96,6 +103,12 @@
   .bottle .award svg{width:17px;height:17px;flex:none;stroke:var(--gold-bright);fill:none;stroke-width:1.6}
   .bottle.hero-bottle{border-color:var(--line-2)}
   .bottle .reserva{margin-top:20px;padding-top:16px;border-top:1px solid var(--line);font-family:var(--sans);font-size:11px;letter-spacing:.2em;text-transform:uppercase;color:var(--marigold);font-weight:600}
+  .bottle .shot{height:340px;margin:-2px 0 24px;border-radius:12px;background:#fbf9f5;
+    display:flex;align-items:center;justify-content:center;padding:16px;overflow:hidden;
+    box-shadow:inset 0 0 0 1px rgba(216,180,94,.18)}
+  .bottle .shot img{max-width:100%;max-height:100%;width:auto;height:auto;object-fit:contain;display:block;
+    filter:drop-shadow(0 16px 26px rgba(0,0,0,.22))}
+  @media(max-width:760px){.bottle .shot{height:430px}}
 
   /* ---- event ---- */
   .event{text-align:center;background:radial-gradient(120% 80% at 50% 100%, #1c1409 0%, var(--bg) 60%);border-top:1px solid var(--line)}
@@ -147,6 +160,10 @@
 
 <!-- HERO -->
 <header class="hero">
+  <video class="hero-video" autoplay muted loop playsinline preload="auto" poster="site-media/galindo-hero-poster.jpg">
+    <source src="site-media/galindo-hero.mp4" type="video/mp4">
+  </video>
+  <div class="hero-scrim" aria-hidden="true"></div>
   <div class="wrap">
     <svg class="agave" viewBox="0 0 100 100" aria-hidden="true">
       <g fill="none" stroke="#D8B45E" stroke-width="2.4" stroke-linecap="round">
@@ -191,6 +208,7 @@
     <p class="intro">From a bright, nine-month Reposado to a five-year Reserva Privada, each rested in oak in the highlands of Jalisco.</p>
     <div class="bottles">
       <div class="bottle" id="reposado">
+        <div class="shot"><img src="site-media/bottle-reposado.jpg" alt="Galindo Reposado 750ml bottle" loading="lazy"></div>
         <div class="kind">Reposado</div>
         <h3>Reposado</h3>
         <div class="spec">Aged 9 months · 100% blue agave · 40%</div>
@@ -198,6 +216,7 @@
         <div class="award"><svg viewBox="0 0 24 24"><circle cx="12" cy="9" r="6"/><path d="M8.5 14 L7 22l5-3 5 3-1.5-8"/></svg>Double Gold · Best in Class Reposado · 2026 Latin American World Spirits Competition</div>
       </div>
       <div class="bottle" id="anejo">
+        <div class="shot"><img src="site-media/bottle-anejo.jpg" alt="Galindo Añejo 750ml bottle" loading="lazy"></div>
         <div class="kind">Añejo</div>
         <h3>Añejo</h3>
         <div class="spec">Aged 24 months · Double distilled · 40%</div>
@@ -205,6 +224,7 @@
         <div class="reserva">Double distilled · 100% blue agave</div>
       </div>
       <div class="bottle hero-bottle" id="extra">
+        <div class="shot"><img src="site-media/bottle-extra.jpg" alt="Galindo Extra Añejo 'V' bottle with gift box" loading="lazy"></div>
         <div class="kind">Reserva Privada</div>
         <h3>Extra Añejo ‘V’</h3>
         <div class="spec">3–5 years · Ex-bourbon oak · Gift boxed</div>
