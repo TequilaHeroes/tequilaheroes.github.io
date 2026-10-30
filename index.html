@@ -530,7 +530,23 @@
 
 <script>
   function hideGate(){ var g=document.getElementById('gate'); if(g) g.hidden=true; setTimeout(gotoHash, 350); }
-  function gotoHash(){ var h=(location.hash||'').replace('#',''); if(!h) return; var el=document.getElementById(h); if(el) el.scrollIntoView({behavior:'smooth', block:'start'}); }
+  function gotoHash(){
+    var h=(location.hash||'').replace('#',''); if(!h) return;
+    var el=document.getElementById(h); if(!el) return;
+    var stopped=false, tries=0, root=document.documentElement;
+    function jump(){
+      var prev=root.style.scrollBehavior; root.style.scrollBehavior='auto';
+      var y=el.getBoundingClientRect().top + window.pageYOffset - 80;
+      window.scrollTo(0, y>0?y:0);
+      root.style.scrollBehavior=prev;
+    }
+    function stop(){ stopped=true; }
+    ['wheel','touchstart','keydown'].forEach(function(ev){ window.addEventListener(ev, stop, {passive:true, once:true}); });
+    jump();
+    // Re-correct as late images/video shift the layout, until stable or the guest scrolls.
+    var iv=setInterval(function(){ tries++; if(stopped || tries>25){ clearInterval(iv); return; } jump(); }, 180);
+    window.addEventListener('load', function(){ if(!stopped) jump(); });
+  }
   function passGate(){ try{ localStorage.setItem('galindo_age_ok','1'); }catch(e){} hideGate(); }
   function denyGate(){
     document.getElementById('gate-q').textContent = 'No worries —';
