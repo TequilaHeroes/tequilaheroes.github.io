@@ -93,7 +93,8 @@
     <button class="chip" type="button" data-p="stache" aria-pressed="true">Moustache</button>
     <button class="chip" type="button" data-p="shades" aria-pressed="false">Shades</button>
     <button class="chip" type="button" data-p="pour" aria-pressed="false">Tequila pour</button>
-    <button class="chip" type="button" data-p="hero" aria-pressed="false">Lucha · Tequila Heroes</button>
+    <button class="chip" type="button" data-p="lucha" aria-pressed="false">Lucha libre</button>
+    <button class="chip" type="button" data-p="hero" aria-pressed="false">4 Tequila Heroes</button>
   </div>
   <div class="controls">
     <button class="small" type="button" id="flip">Flip camera</button>
@@ -131,7 +132,7 @@ const DEMO = params.get('demo');                          // ?demo=<image url> :
 
 let video = null, source = null, stream = null, facing = 'user';
 let landmarker = null, faces = [], lastTs = -1, smooth = [];
-let props = { hat: true, stache: true, shades: false, pour: false, hero: false };
+let props = { hat: true, stache: true, shades: false, pour: false, lucha: false, hero: false };
 let timer = true, busy = false, lastBlob = null;
 const logo = new Image(); logo.src = '/galindo-logo.png';
 const IOS = /iP(hone|ad|od)/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
@@ -371,7 +372,7 @@ function drawFrame(){
   ctx.font = '600 30px Archivo, system-ui, sans-serif';
   ctx.fillText(props.hero ? 'THE 4 TEQUILA HEROES' : 'LAUNCH NIGHT  ·  30 OCT 2026  ·  CAPE TOWN', CW / 2, CH - 70);
   ctx.fillStyle = 'rgba(244,236,220,.6)'; ctx.font = '500 24px Archivo, system-ui, sans-serif';
-  ctx.fillText(props.hero ? 'Where Galindo began  ·  Launch Night 30.10.26' : 'tequilaheroes.com', CW / 2, CH - 36);
+  ctx.fillText(props.hero ? 'Blue Steel edition  ·  Where Galindo began  ·  30.10.26' : 'tequilaheroes.com', CW / 2, CH - 36);
 }
 
 function render(){
@@ -385,7 +386,7 @@ function render(){
     drawSource(M);
     faces.forEach((lm, i) => {
       const g = faceGeom(lm, M, i);
-      if(props.hero) drawLuchador(lm, M, g);
+      if(props.lucha) drawLuchador(lm, M, g);
       if(props.hat) drawHat(g);
       if(props.stache) drawStache(g);
       if(props.shades) drawShades(g);
@@ -395,7 +396,8 @@ function render(){
     drawFrame();
     const h = $('hint');
     if(landmarker) h.textContent = !faces.length ? 'Get your face in the frame'
-      : (props.pour && !smooth.some(g => g && g.open > 0.045)) ? 'Open wide! 😮' : '';
+      : (props.pour && !smooth.some(g => g && g.open > 0.045)) ? 'Open wide! 😮'
+      : props.hero ? 'Tequila Heroes — give us your Blue Steel 😗' : '';
   }
   requestAnimationFrame(render);
 }
@@ -405,6 +407,7 @@ function stamp(){ const d = new Date(), p = (n) => String(n).padStart(2, '0'); r
 async function snap(){
   if(busy) return; busy = true;
   if(timer){ for(const n of [3, 2, 1]){ $('count').textContent = n; await new Promise(r => setTimeout(r, 900)); } }
+  if(props.hero){ $('count').innerHTML = '<span style="font-size:.32em;letter-spacing:.06em">BLUE STEEL</span>'; await new Promise(r => setTimeout(r, 700)); }
   $('count').textContent = '';
   const f = $('flash'); f.classList.add('on'); setTimeout(() => f.classList.remove('on'), 60);
   lastBlob = await new Promise(r => view.toBlob(r, 'image/jpeg', 0.9));
