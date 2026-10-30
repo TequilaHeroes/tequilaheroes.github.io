@@ -177,6 +177,11 @@
   footer .fmark{font-family:var(--serif);letter-spacing:.2em;color:var(--gold);font-size:19px}
   footer .meta{font-family:var(--sans);font-size:11px;letter-spacing:.07em;color:var(--faint);line-height:1.9;margin-top:12px}
   footer .legal{font-family:var(--sans);font-size:10px;letter-spacing:.16em;text-transform:uppercase;color:var(--faint);margin-top:14px}
+
+  /* guest-list gate */
+  .lock{margin-top:6px;text-align:left}
+  .lock .lock-hint{font-family:var(--sans);font-size:13px;color:var(--muted);margin:2px 2px 0;line-height:1.45}
+  .lock .note{color:var(--marigold)}
 </style>
 
 </head>
@@ -215,6 +220,19 @@
   <div class="capture rise d4">
     <div class="ctitle">Check in, get your licence</div>
     <div class="csub">Ten seconds now — no queue or clipboard at the door, and your Galindo licence to sip is ready.</div>
+
+    <div class="lock" id="lock" hidden>
+      <div class="qlabel" style="margin-top:20px">Guest list check</div>
+      <div class="field"><label for="f-surname">Your surname</label>
+        <input id="f-surname" placeholder="e.g. Smith" autocomplete="family-name" autocapitalize="words" spellcheck="false"></div>
+      <div class="lock-hint">This check-in is for invited guests. Just your surname — spelling and capitals don't matter.</div>
+      <button class="cta" type="button" id="lock-go">Find me on the list</button>
+      <div class="note" id="lock-note"></div>
+      <div class="alt" id="lock-help" hidden>
+        <span class="alt-or">— not coming up? —</span>
+        <a class="wa-link" id="lock-wa" role="button" rel="noopener noreferrer" target="_blank">Message the team on WhatsApp</a>
+      </div>
+    </div>
 
     <form id="rsvpForm" name="galindo-rsvp" method="POST" data-netlify="true" netlify-honeypot="bot-field" autocomplete="on">
       <input type="hidden" name="form-name" value="galindo-rsvp">
@@ -351,7 +369,63 @@
      Fill for a door-iPad build, e.g. ["Jane Smith","John Doe"]. */
   var GUEST_NAMES = [];
 
-  /* ---- chips ---- */
+  /* ---- guest-list gate ----
+   The guest list is NOT in this page — only salted PBKDF2 hashes of surnames, written in by
+   tools/build-guest-gate.py. Empty GUEST_HASHES = gate off (form is open). */
+/*GUESTLIST:START*/
+var GUEST_SALT = "";
+var GUEST_HASHES = [];
+/*GUESTLIST:END*/
+function normTok(t){ return String(t).normalize('NFD').replace(/[̀-ͯ]/g,'').toLowerCase().replace(/[^a-z]/g,''); }
+function surnameKeys(raw){
+  var keys = {}, toks = String(raw).split(/\s+/).filter(Boolean);
+  for(var n=1; n<=3 && n<=toks.length; n++){ var k = normTok(toks.slice(-n).join('')); if(k.length>=2) keys[k]=1; }
+  String(raw).split(/[-–]/).forEach(function(part){
+    var t = part.split(/\s+/).filter(Boolean).pop(); var k = normTok(t||''); if(k.length>=2) keys[k]=1;
+  });
+  return Object.keys(keys);
+}
+function hashKey(k){
+  var enc = new TextEncoder();
+  return crypto.subtle.importKey('raw', enc.encode(k), 'PBKDF2', false, ['deriveBits']).then(function(km){
+    return crypto.subtle.deriveBits({name:'PBKDF2', salt:enc.encode(GUEST_SALT), iterations:100000, hash:'SHA-256'}, km, 128);
+  }).then(function(b){ return Array.prototype.map.call(new Uint8Array(b), function(x){ return ('0'+x.toString(16)).slice(-2); }).join(''); });
+}
+(function(){
+  if(!GUEST_HASHES.length) return;                       /* no list loaded = gate off */
+  var lock = document.getElementById('lock'), frm = document.getElementById('rsvpForm'), ord = document.querySelector('.order');
+  try{ if(localStorage.getItem('galindo_warm_ok') === GUEST_SALT) return; }catch(e){}
+  lock.hidden = false; frm.hidden = true; if(ord) ord.hidden = true;
+  var inp = document.getElementById('f-surname'), note = document.getElementById('lock-note'),
+      help = document.getElementById('lock-help'), wa = document.getElementById('lock-wa'), go = document.getElementById('lock-go');
+  function unlock(){
+    try{ localStorage.setItem('galindo_warm_ok', GUEST_SALT); }catch(e){}
+    lock.hidden = true; frm.hidden = false; if(ord) ord.hidden = false;
+    var nm = document.getElementById('f-name'); if(nm) nm.focus();
+  }
+  function check(){
+    var typed = inp.value.trim();
+    if(!typed){ note.textContent = "Pop your surname in first."; inp.focus(); return; }
+    if(!(window.crypto && crypto.subtle)){ note.textContent = "Please open this page from the https link to check in."; return; }
+    var keys = surnameKeys(typed);
+    if(!keys.length){ note.textContent = "That doesn't look like a surname — try again."; return; }
+    go.disabled = true; go.textContent = "Checking…"; note.textContent = ""; help.hidden = true;
+    Promise.all(keys.map(hashKey)).then(function(hs){
+      var hit = hs.some(function(h){ return GUEST_HASHES.indexOf(h) >= 0; });
+      go.disabled = false; go.textContent = "Find me on the list";
+      if(hit){ unlock(); return; }
+      note.textContent = "We can't find that surname on the guest list. Check the spelling and try again — or message the team and we'll sort it out.";
+      if(waReady()){
+        wa.href = "https://wa.me/" + WA_NUMBER + "?text=" + encodeURIComponent("Hi, it's " + typed + " — I'm not coming up on the Galindo launch guest list. Could you check for me?");
+        help.hidden = false;
+      }
+    }).catch(function(){ go.disabled = false; go.textContent = "Find me on the list"; note.textContent = "Couldn't check just now — please try again."; });
+  }
+  go.addEventListener('click', check);
+  inp.addEventListener('keydown', function(e){ if(e.key === 'Enter'){ e.preventDefault(); check(); } });
+})();
+
+/* ---- chips ---- */
   var pours = [], head = "";
   function wire(groupId, onPick){
     document.getElementById(groupId).addEventListener('click', function(e){
@@ -440,13 +514,12 @@
       document.getElementById('done-h').textContent = "Nearly there, " + name.split(' ')[0];
       var dp = document.querySelector('#done p');
       if(dp){
-        dp.innerHTML = 'Tap below to send your check-in to the team on WhatsApp \u2014 then show this pass at the bar.';
+        dp.innerHTML = '<b style="color:var(--fg)">Two quick steps.</b><br>1 \u2014 Send your check-in to the team on WhatsApp.<br>2 \u2014 Screenshot your pass below and show it at the bar.';
         var a = document.createElement('a');
         a.className = 'cta'; a.href = waUrl; a.target = '_blank'; a.rel = 'noopener noreferrer';
-        a.textContent = 'Send my check-in on WhatsApp';
+        a.textContent = 'Step 1 \u00b7 Send my check-in on WhatsApp';
         dp.insertAdjacentElement('afterend', a);
       }
-      window.open(waUrl, '_blank');
     }
   });
   function resetForm(){
