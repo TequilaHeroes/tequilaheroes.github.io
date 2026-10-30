@@ -1,0 +1,345 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="robots" content="noindex">
+<meta name="theme-color" content="#0D0C0A">
+<link rel="icon" type="image/svg+xml" href="/favicon.svg?v=2">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png?v=2">
+<title>Galindo Photo Booth</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,600;1,600&family=Archivo:wght@500;600;700&display=swap">
+<style>
+  /* Galindo brand: warm black + gold, marigold accent. Full-screen camera booth. */
+  :root{
+    color-scheme:dark;
+    --bg:#0D0C0A; --surface:#17120D; --surface-2:#1F1812; --line:#352B20; --line-2:#4A3B29;
+    --fg:#F4ECDC; --muted:#AD9D84; --faint:#7A6E5A; --gold:#D8B45E; --gold-bright:#E7C877; --marigold:#E0812B; --agave:#8BB26A;
+    --serif:'Cormorant Garamond',Georgia,serif; --sans:'Archivo',system-ui,-apple-system,sans-serif;
+  }
+  *{box-sizing:border-box}
+  [hidden]{display:none!important}
+  html,body{margin:0;height:100%}
+  body{background:var(--bg);color:var(--fg);font-family:var(--sans);-webkit-font-smoothing:antialiased;overflow-x:hidden}
+  .wrap{max-width:560px;margin:0 auto;padding:max(16px,env(safe-area-inset-top)) 16px max(18px,env(safe-area-inset-bottom))}
+
+  /* start */
+  .start{min-height:100svh;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;gap:14px;
+    background:radial-gradient(120% 70% at 50% 0%,#241804 0%,rgba(28,20,9,0) 60%),var(--bg)}
+  .start img{width:min(260px,62vw);height:auto}
+  .eyebrow{font-size:11px;letter-spacing:.34em;text-transform:uppercase;color:var(--gold);font-weight:600}
+  h1{font-family:var(--serif);font-weight:600;font-size:clamp(34px,9vw,48px);margin:4px 0 0;line-height:1.05}
+  .lead{color:var(--muted);font-size:15px;line-height:1.5;max-width:30em;margin:0 auto}
+  .btn{display:inline-flex;align-items:center;justify-content:center;gap:9px;border:none;border-radius:14px;padding:17px 26px;cursor:pointer;
+    font-family:var(--sans);font-weight:700;font-size:17px;background:linear-gradient(180deg,var(--gold-bright),var(--gold));color:#201600;text-decoration:none;
+    -webkit-tap-highlight-color:transparent;transition:transform .08s}
+  .btn:active{transform:scale(.98)}
+  .btn.ghost{background:none;color:var(--gold);border:1px solid var(--line-2)}
+  .btn:disabled{opacity:.5}
+  .err{color:var(--marigold);font-size:14px;line-height:1.45;max-width:28em}
+
+  /* stage */
+  .stage{position:relative;width:100%;aspect-ratio:4/5;border-radius:18px;overflow:hidden;background:#000;border:1px solid var(--line)}
+  .stage canvas{position:absolute;inset:0;width:100%;height:100%}
+  .count{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-family:var(--serif);font-size:min(40vw,190px);
+    color:#fff;text-shadow:0 4px 40px rgba(0,0,0,.6);pointer-events:none}
+  .flash{position:absolute;inset:0;background:#fff;opacity:0;pointer-events:none;transition:opacity .35s}
+  .flash.on{opacity:.9;transition:none}
+  .hint{position:absolute;left:0;right:0;top:12px;text-align:center;font-size:12.5px;color:#fff;text-shadow:0 1px 6px rgba(0,0,0,.8);pointer-events:none}
+
+  .chips{display:flex;gap:8px;justify-content:center;flex-wrap:wrap;margin:14px 0 4px}
+  .chip{font-family:var(--sans);font-size:14px;font-weight:600;color:var(--muted);background:var(--surface-2);border:1px solid var(--line);
+    border-radius:30px;padding:10px 16px;cursor:pointer;-webkit-tap-highlight-color:transparent}
+  .chip[aria-pressed="true"]{color:#201600;background:var(--gold);border-color:var(--gold)}
+  .controls{display:flex;align-items:center;justify-content:center;gap:22px;margin-top:12px}
+  .shutter{width:78px;height:78px;border-radius:50%;border:4px solid var(--gold);background:radial-gradient(circle,#fff 0 56%,transparent 57%);cursor:pointer;
+    box-shadow:0 0 0 6px rgba(216,180,94,.15)}
+  .shutter:active{transform:scale(.95)}
+  .small{font-size:13px;color:var(--muted);background:none;border:none;cursor:pointer;font-family:var(--sans);font-weight:600;padding:10px}
+
+  /* result */
+  .result img{width:100%;border-radius:18px;border:1px solid var(--line);display:block}
+  .actions{display:flex;flex-direction:column;gap:10px;margin-top:14px}
+  .note{font-size:13px;color:var(--muted);text-align:center;line-height:1.45;margin-top:10px}
+  .ok{color:var(--agave)}
+  .bad{color:var(--marigold)}
+</style>
+</head>
+<body>
+
+<!-- START -->
+<section class="start wrap" id="start">
+  <img src="/galindo-logo.png" alt="Tequila Galindo">
+  <div class="eyebrow">Launch Night · Photo Booth</div>
+  <h1>Strike a pose,<br>amigo.</h1>
+  <p class="lead">Sombrero, moustache, shades — they find your face automatically. Snap — it lands in Galindo's launch-night album, and one tap saves it to your phone.</p>
+  <button class="btn" id="go">Open the camera</button>
+  <div class="err" id="starterr" hidden></div>
+  <p class="lead" style="font-size:12px;color:var(--faint)">Works best in Safari or Chrome. 18+ · Enjoy Galindo responsibly.</p>
+</section>
+
+<!-- BOOTH -->
+<section class="wrap" id="booth" hidden>
+  <div class="stage" id="stage">
+    <canvas id="view" width="1080" height="1350"></canvas>
+    <div class="hint" id="hint">Loading the props…</div>
+    <div class="count" id="count"></div>
+    <div class="flash" id="flash"></div>
+  </div>
+  <div class="chips" id="props">
+    <button class="chip" type="button" data-p="hat" aria-pressed="true">Sombrero</button>
+    <button class="chip" type="button" data-p="stache" aria-pressed="true">Moustache</button>
+    <button class="chip" type="button" data-p="shades" aria-pressed="false">Shades</button>
+  </div>
+  <div class="controls">
+    <button class="small" type="button" id="flip">Flip camera</button>
+    <button class="shutter" type="button" id="snap" aria-label="Take photo"></button>
+    <button class="small" type="button" id="quick">No timer</button>
+  </div>
+</section>
+
+<!-- RESULT -->
+<section class="wrap result" id="result" hidden>
+  <img id="shot" alt="Your Galindo photo">
+  <div class="actions">
+    <button class="btn" id="share">Save to my phone</button>
+    <button class="btn ghost" id="send" hidden>Send to the Galindo album</button>
+    <button class="small" id="again">Take another</button>
+  </div>
+  <div class="note" id="sendnote"></div>
+  <div class="note" id="consent" hidden>Your photo goes into Galindo's launch-night album.</div>
+</section>
+
+<script type="module">
+/* ---- CONFIG ---- */
+/* Google Apps Script web-app URL that saves photos to Drive (tools/photo-backend/Code.gs).
+   Empty = no upload button; guests can still save/share. */
+const UPLOAD_URL = "https://bradleys-imac.tailb3d389.ts.net:10000/";
+const MP = "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14";
+const MODEL = "https://storage.googleapis.com/mediapipe-models/face_landmarker/face_landmarker/float16/1/face_landmarker.task";
+
+const $ = (id) => document.getElementById(id);
+const view = $('view'), ctx = view.getContext('2d');
+const CW = view.width, CH = view.height;
+const params = new URLSearchParams(location.search);
+const DEMO = params.get('demo');                          // ?demo=<image url> : test without a camera
+
+let video = null, source = null, stream = null, facing = 'user';
+let landmarker = null, faces = [], lastTs = -1, smooth = [];
+let props = { hat: true, stache: true, shades: false };
+let timer = true, busy = false, lastBlob = null;
+const logo = new Image(); logo.src = '/galindo-logo.png';
+
+/* ---------- face tracking ---------- */
+async function loadLandmarker(){
+  const { FaceLandmarker, FilesetResolver } = await import(MP + '/vision_bundle.mjs');
+  const fileset = await FilesetResolver.forVisionTasks(MP + '/wasm');
+  const opts = (delegate) => ({ baseOptions:{ modelAssetPath: MODEL, delegate }, runningMode:'VIDEO', numFaces:4 });
+  try { return await FaceLandmarker.createFromOptions(fileset, opts('GPU')); }
+  catch(e){ return await FaceLandmarker.createFromOptions(fileset, opts('CPU')); }
+}
+
+/* ---------- camera / source ---------- */
+async function startCamera(){
+  if(stream){ stream.getTracks().forEach(t => t.stop()); stream = null; }
+  video = video || Object.assign(document.createElement('video'), { muted:true, playsInline:true, autoplay:true });
+  video.setAttribute('playsinline', '');
+  stream = await navigator.mediaDevices.getUserMedia({ audio:false, video:{ facingMode: facing, width:{ideal:1280}, height:{ideal:1280} } });
+  video.srcObject = stream;
+  await video.play();
+  source = video;
+}
+function srcSize(){ return source === video ? [video.videoWidth, video.videoHeight] : [source.naturalWidth, source.naturalHeight]; }
+const mirrored = () => source === video && facing === 'user';
+
+/* map normalized landmark -> canvas px (cover-fit, mirrored for selfie cam) */
+function mapper(){
+  const [vw, vh] = srcSize(); const s = Math.max(CW / vw, CH / vh);
+  const ox = (CW - vw * s) / 2, oy = (CH - vh * s) / 2, m = mirrored();
+  return { s, ox, oy, vw, vh, pt: (p) => ({ x: ox + (m ? (vw - p.x * vw) : p.x * vw) * s, y: oy + p.y * vh * s }) };
+}
+
+/* ---------- drawing ---------- */
+function drawSource(M){
+  ctx.save();
+  if(mirrored()){ ctx.translate(CW, 0); ctx.scale(-1, 1); }
+  ctx.drawImage(source, M.ox, M.oy, M.vw * M.s, M.vh * M.s);
+  ctx.restore();
+}
+function faceGeom(lm, M, i){
+  const P = (k) => M.pt(lm[k]);
+  let a = P(33), b = P(263); if(a.x > b.x){ const t = a; a = b; b = t; }
+  const L = P(234), R = P(454);
+  const g = {
+    W: Math.hypot(R.x - L.x, R.y - L.y),
+    ang: Math.atan2(b.y - a.y, b.x - a.x),
+    top: P(10),
+    lip: (() => { const n = P(2), u = P(0); return { x: n.x + (u.x - n.x) * .55, y: n.y + (u.y - n.y) * .55 }; })(),
+    eyes: (() => { const e1 = mid(P(33), P(133)), e2 = mid(P(362), P(263)); return e1.x < e2.x ? [e1, e2] : [e2, e1]; })(),
+  };
+  const s = smooth[i];                                       // light smoothing to stop props jittering
+  if(s){ const k = .55; for(const key of ['W','ang']) g[key] = s[key] + (g[key] - s[key]) * k;
+    for(const key of ['top','lip']) g[key] = { x: s[key].x + (g[key].x - s[key].x) * k, y: s[key].y + (g[key].y - s[key].y) * k }; }
+  smooth[i] = g; return g;
+}
+function mid(p, q){ return { x:(p.x + q.x) / 2, y:(p.y + q.y) / 2 }; }
+function local(at, g, fn){ ctx.save(); ctx.translate(at.x, at.y); ctx.rotate(g.ang); ctx.scale(g.W, g.W); fn(); ctx.restore(); }
+
+function drawHat(g){
+  local(g.top, g, () => {
+    ctx.translate(0, -0.2);                                 // sit the brim above the brows
+    const straw = ctx.createLinearGradient(0, -0.9, 0, 0.2); straw.addColorStop(0, '#F0D594'); straw.addColorStop(1, '#B98A30');
+    ctx.lineWidth = 0.025; ctx.strokeStyle = '#5A3F12';
+    // brim
+    ctx.beginPath(); ctx.ellipse(0, 0.02, 1.28, 0.24, 0, 0, Math.PI * 2); ctx.fillStyle = straw; ctx.fill(); ctx.stroke();
+    ctx.save(); ctx.setLineDash([0.06, 0.05]); ctx.strokeStyle = '#B2342B'; ctx.lineWidth = 0.03;
+    ctx.beginPath(); ctx.ellipse(0, 0.02, 1.12, 0.19, 0, 0, Math.PI * 2); ctx.stroke(); ctx.restore();
+    // crown
+    ctx.beginPath(); ctx.moveTo(-0.5, 0.0); ctx.lineTo(-0.38, -0.78);
+    ctx.quadraticCurveTo(0, -1.02, 0.38, -0.78); ctx.lineTo(0.5, 0.0); ctx.closePath();
+    ctx.fillStyle = straw; ctx.fill(); ctx.stroke();
+    // band
+    ctx.beginPath(); ctx.moveTo(-0.49, -0.06); ctx.lineTo(-0.455, -0.28); ctx.lineTo(0.455, -0.28); ctx.lineTo(0.49, -0.06); ctx.closePath();
+    ctx.fillStyle = '#B2342B'; ctx.fill();
+    ctx.beginPath(); for(let i = 0; i <= 12; i++){ const x = -0.46 + i * (0.92 / 12), y = i % 2 ? -0.24 : -0.10; i ? ctx.lineTo(x, y) : ctx.moveTo(x, y); }
+    ctx.strokeStyle = '#E7C877'; ctx.lineWidth = 0.022; ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(-0.44, -0.17); ctx.lineTo(0.44, -0.17); ctx.strokeStyle = '#3E7A3A'; ctx.lineWidth = 0.012; ctx.stroke();
+  });
+}
+function drawStache(g){
+  local(g.lip, g, () => {
+    const half = () => {
+      ctx.beginPath(); ctx.moveTo(0, -0.035);
+      ctx.bezierCurveTo(-0.10, -0.11, -0.26, -0.10, -0.34, 0.0);
+      ctx.bezierCurveTo(-0.39, 0.06, -0.46, 0.07, -0.49, 0.01);
+      ctx.bezierCurveTo(-0.45, 0.04, -0.41, 0.0, -0.40, -0.02);
+      ctx.bezierCurveTo(-0.34, 0.08, -0.16, 0.10, 0, 0.045); ctx.closePath();
+      ctx.fillStyle = '#2B190C'; ctx.fill();
+      ctx.strokeStyle = 'rgba(140,95,50,.55)'; ctx.lineWidth = 0.008; ctx.stroke();
+    };
+    half(); ctx.scale(-1, 1); half();
+  });
+}
+function drawShades(g){
+  const [e1, e2] = g.eyes, c = mid(e1, e2), d = Math.hypot(e2.x - e1.x, e2.y - e1.y) / g.W;
+  local(c, g, () => {
+    const lens = (x) => {
+      ctx.beginPath(); ctx.roundRect ? ctx.roundRect(x - 0.19, -0.11, 0.38, 0.23, 0.09) : ctx.rect(x - 0.19, -0.11, 0.38, 0.23);
+      ctx.fillStyle = 'rgba(12,10,8,.93)'; ctx.fill(); ctx.strokeStyle = '#D8B45E'; ctx.lineWidth = 0.022; ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(x - 0.12, -0.06); ctx.lineTo(x - 0.03, -0.06); ctx.strokeStyle = 'rgba(255,255,255,.35)'; ctx.lineWidth = 0.018; ctx.stroke();
+    };
+    lens(-d / 2); lens(d / 2);
+    ctx.beginPath(); ctx.moveTo(-d / 2 + 0.19, -0.05); ctx.quadraticCurveTo(0, -0.1, d / 2 - 0.19, -0.05); ctx.strokeStyle = '#D8B45E'; ctx.lineWidth = 0.022; ctx.stroke();
+  });
+}
+function drawFrame(){
+  const band = ctx.createLinearGradient(0, CH - 330, 0, CH);
+  band.addColorStop(0, 'rgba(13,12,10,0)'); band.addColorStop(.55, 'rgba(13,12,10,.82)'); band.addColorStop(1, 'rgba(13,12,10,.96)');
+  ctx.fillStyle = band; ctx.fillRect(0, CH - 330, CW, 330);
+  ctx.strokeStyle = 'rgba(216,180,94,.85)'; ctx.lineWidth = 6; ctx.strokeRect(22, 22, CW - 44, CH - 44);
+  if(logo.complete && logo.naturalWidth){ const w = 330, h = w * logo.naturalHeight / logo.naturalWidth; ctx.drawImage(logo, (CW - w) / 2, CH - 70 - h - 40, w, h); }
+  ctx.textAlign = 'center'; ctx.fillStyle = '#E7C877';
+  ctx.font = '600 30px Archivo, system-ui, sans-serif';
+  ctx.fillText('LAUNCH NIGHT  ·  30 OCT 2026  ·  CAPE TOWN', CW / 2, CH - 70);
+  ctx.fillStyle = 'rgba(244,236,220,.6)'; ctx.font = '500 24px Archivo, system-ui, sans-serif';
+  ctx.fillText('tequilaheroes.com', CW / 2, CH - 36);
+}
+
+function render(){
+  if(source && srcSize()[0]){
+    const M = mapper();
+    if(landmarker){
+      const ts = performance.now();
+      if(ts > lastTs){ try{ faces = landmarker.detectForVideo(source, ts).faceLandmarks || []; }catch(e){} lastTs = ts; }
+    }
+    ctx.fillStyle = '#000'; ctx.fillRect(0, 0, CW, CH);
+    drawSource(M);
+    faces.forEach((lm, i) => {
+      const g = faceGeom(lm, M, i);
+      if(props.hat) drawHat(g);
+      if(props.stache) drawStache(g);
+      if(props.shades) drawShades(g);
+    });
+    smooth.length = faces.length;
+    drawFrame();
+    const h = $('hint');
+    if(landmarker) h.textContent = faces.length ? '' : 'Get your face in the frame';
+  }
+  requestAnimationFrame(render);
+}
+
+/* ---------- capture / share / upload ---------- */
+function stamp(){ const d = new Date(), p = (n) => String(n).padStart(2, '0'); return `${d.getFullYear()}${p(d.getMonth()+1)}${p(d.getDate())}-${p(d.getHours())}${p(d.getMinutes())}${p(d.getSeconds())}`; }
+async function snap(){
+  if(busy) return; busy = true;
+  if(timer){ for(const n of [3, 2, 1]){ $('count').textContent = n; await new Promise(r => setTimeout(r, 900)); } }
+  $('count').textContent = '';
+  const f = $('flash'); f.classList.add('on'); setTimeout(() => f.classList.remove('on'), 60);
+  lastBlob = await new Promise(r => view.toBlob(r, 'image/jpeg', 0.9));
+  $('shot').src = URL.createObjectURL(lastBlob);
+  $('booth').hidden = true; $('result').hidden = false; window.scrollTo(0, 0);
+  $('send').hidden = true; $('consent').hidden = !UPLOAD_URL; $('send').disabled = false;
+  $('send').textContent = 'Send to the Galindo album'; $('sendnote').textContent = ''; $('sendnote').className = 'note';
+  busy = false;
+  if(UPLOAD_URL) sendShot();                                   // goes to the album automatically; phone save is one tap
+}
+async function shareShot(){
+  if(!lastBlob) return;
+  const file = new File([lastBlob], `galindo-${stamp()}.jpg`, { type:'image/jpeg' });
+  if(navigator.canShare && navigator.canShare({ files:[file] })){
+    try{ await navigator.share({ files:[file], title:'Galindo Launch Night' }); return; }catch(e){ if(e.name === 'AbortError') return; }
+  }
+  const a = document.createElement('a'); a.href = URL.createObjectURL(lastBlob); a.download = file.name; document.body.appendChild(a); a.click(); a.remove();
+  $('sendnote').textContent = 'Saved — or press and hold the photo to save it.';
+}
+async function sendShot(){
+  if(!lastBlob || !UPLOAD_URL) return;
+  const b = $('send'), note = $('sendnote'); b.hidden = true; b.disabled = true; note.textContent = 'Adding to the Galindo album…'; note.className = 'note';
+  try{
+    const b64 = await new Promise((res, rej) => { const fr = new FileReader(); fr.onload = () => res(String(fr.result).split(',')[1]); fr.onerror = rej; fr.readAsDataURL(lastBlob); });
+    const r = await fetch(UPLOAD_URL, { method:'POST', headers:{ 'Content-Type':'text/plain;charset=utf-8' }, body: JSON.stringify({ image: b64, mime:'image/jpeg', name:`galindo-${stamp()}.jpg` }) });
+    const j = await r.json();
+    if(!j.ok) throw new Error(j.reason || 'failed');
+    note.textContent = "✓ In the Galindo album — gracias! Tap above to save it to your phone."; note.className = 'note ok';
+  }catch(e){
+    b.hidden = false; b.disabled = false; b.textContent = 'Try sending to the album again'; note.textContent = "Couldn't reach the album just now (signal?) — save it to your phone, and try again in a moment."; note.className = 'note bad';
+  }
+}
+
+/* ---------- wiring ---------- */
+$('props').addEventListener('click', (e) => { const c = e.target.closest('.chip'); if(!c) return;
+  const on = c.getAttribute('aria-pressed') !== 'true'; c.setAttribute('aria-pressed', on); props[c.dataset.p] = on; });
+$('snap').addEventListener('click', snap);
+$('quick').addEventListener('click', () => { timer = !timer; $('quick').textContent = timer ? 'No timer' : '3s timer'; });
+$('flip').addEventListener('click', async () => { if(source !== video) return; facing = facing === 'user' ? 'environment' : 'user'; smooth = [];
+  try{ await startCamera(); }catch(e){ facing = 'user'; await startCamera(); } });
+$('again').addEventListener('click', () => { $('result').hidden = true; $('booth').hidden = false; });
+$('share').addEventListener('click', shareShot);
+$('send').addEventListener('click', sendShot);
+
+$('go').addEventListener('click', async () => {
+  const err = $('starterr'); err.hidden = true; $('go').disabled = true; $('go').textContent = 'Starting…';
+  try{
+    if(DEMO){ source = await new Promise((res, rej) => { const im = new Image(); im.onload = () => res(im); im.onerror = rej; im.src = DEMO; }); $('flip').hidden = true; }
+    else {
+      if(!(navigator.mediaDevices && navigator.mediaDevices.getUserMedia)) throw Object.assign(new Error('nocam'), { name:'NoCam' });
+      await startCamera();
+    }
+    $('start').hidden = true; $('booth').hidden = false;
+    requestAnimationFrame(render);
+    loadLandmarker().then(l => { landmarker = l; }).catch(() => { $('hint').textContent = 'Props unavailable on this phone — you can still snap a framed photo.'; });
+  }catch(e){
+    $('go').disabled = false; $('go').textContent = 'Try again';
+    err.hidden = false;
+    err.textContent = (e.name === 'NotAllowedError')
+      ? 'Camera access was blocked. Allow the camera for this site (Settings → Safari → Camera), then try again.'
+      : 'Couldn’t open the camera here. If you opened this inside WhatsApp or Instagram, open it in Safari or Chrome instead.';
+  }
+});
+
+window.__booth = { get faces(){ return faces; }, get landmarker(){ return !!landmarker; }, props, snap, setTimer: (t) => { timer = t; } };
+</script>
+</body>
+</html>
