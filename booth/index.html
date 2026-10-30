@@ -92,6 +92,8 @@
     <button class="chip" type="button" data-p="hat" aria-pressed="true">Sombrero</button>
     <button class="chip" type="button" data-p="stache" aria-pressed="true">Moustache</button>
     <button class="chip" type="button" data-p="shades" aria-pressed="false">Shades</button>
+    <button class="chip" type="button" data-p="pour" aria-pressed="false">Tequila pour</button>
+    <button class="chip" type="button" data-p="hero" aria-pressed="false">Lucha · Tequila Heroes</button>
   </div>
   <div class="controls">
     <button class="small" type="button" id="flip">Flip camera</button>
@@ -129,7 +131,7 @@ const DEMO = params.get('demo');                          // ?demo=<image url> :
 
 let video = null, source = null, stream = null, facing = 'user';
 let landmarker = null, faces = [], lastTs = -1, smooth = [];
-let props = { hat: true, stache: true, shades: false };
+let props = { hat: true, stache: true, shades: false, pour: false, hero: false };
 let timer = true, busy = false, lastBlob = null;
 const logo = new Image(); logo.src = '/galindo-logo.png';
 const IOS = /iP(hone|ad|od)/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
@@ -182,6 +184,9 @@ function faceGeom(lm, M, i){
     lip: (() => { const n = P(2), u = P(0); return { x: n.x + (u.x - n.x) * .55, y: n.y + (u.y - n.y) * .55 }; })(),
     eyes: (() => { const e1 = mid(P(33), P(133)), e2 = mid(P(362), P(263)); return e1.x < e2.x ? [e1, e2] : [e2, e1]; })(),
   };
+  const up = P(13), lo = P(14);
+  g.mouth = mid(up, lo);
+  g.open = Math.hypot(lo.x - up.x, lo.y - up.y) / g.W;
   const s = smooth[i];                                       // light smoothing to stop props jittering
   if(s){ const k = .55; for(const key of ['W','ang']) g[key] = s[key] + (g[key] - s[key]) * k;
     for(const key of ['top','lip']) g[key] = { x: s[key].x + (g[key].x - s[key].x) * k, y: s[key].y + (g[key].y - s[key].y) * k }; }
@@ -237,6 +242,122 @@ function drawShades(g){
     ctx.beginPath(); ctx.moveTo(-d / 2 + 0.19, -0.05); ctx.quadraticCurveTo(0, -0.1, d / 2 - 0.19, -0.05); ctx.strokeStyle = '#D8B45E'; ctx.lineWidth = 0.022; ctx.stroke();
   });
 }
+// Galindo Reposado bottle tipped over beside the face; tequila only flows while the mouth is open.
+function drawPour(g, t){
+  local(g.mouth, g, () => {
+    const T = { x: 0.32, y: -0.36 };                         // bottle mouth, just up and to the side of the lips
+    const flowing = g.open > 0.045;
+    if(flowing){
+      const amber = ctx.createLinearGradient(T.x, T.y, 0, 0);
+      amber.addColorStop(0, 'rgba(214,150,48,.95)'); amber.addColorStop(1, 'rgba(232,176,72,.75)');
+      ctx.beginPath(); ctx.moveTo(T.x, T.y); ctx.quadraticCurveTo(0.2, -0.08, 0, 0.0);
+      ctx.strokeStyle = amber; ctx.lineWidth = 0.05; ctx.lineCap = 'round'; ctx.stroke();
+      ctx.save(); ctx.setLineDash([0.03, 0.06]); ctx.lineDashOffset = -t * 0.0004;
+      ctx.beginPath(); ctx.moveTo(T.x, T.y); ctx.quadraticCurveTo(0.2, -0.08, 0, 0.0);
+      ctx.strokeStyle = 'rgba(255,240,200,.55)'; ctx.lineWidth = 0.016; ctx.stroke(); ctx.restore();
+      for(let k = 0; k < 5; k++){                              // little splashes at the lips
+        const a = k * 1.3 + t * 0.006, r = 0.04 + 0.03 * Math.abs(Math.sin(a));
+        ctx.beginPath(); ctx.arc(Math.cos(a) * r, -0.01 + Math.sin(a) * r * 0.5, 0.012, 0, Math.PI * 2);
+        ctx.fillStyle = 'rgba(232,176,72,.8)'; ctx.fill();
+      }
+    }
+    // bottle in its own frame: neck tip at origin, body running up-and-out along -y
+    ctx.save(); ctx.translate(T.x, T.y); ctx.rotate(flowing ? 1.25 : 1.05); ctx.scale(0.8, 0.8);   // comes in from the side
+    ctx.lineWidth = 0.014; ctx.strokeStyle = 'rgba(60,40,15,.9)';
+    ctx.beginPath();
+    ctx.moveTo(-0.045, 0); ctx.lineTo(-0.045, -0.3);
+    ctx.quadraticCurveTo(-0.17, -0.36, -0.17, -0.52); ctx.lineTo(-0.17, -1.3);
+    ctx.quadraticCurveTo(-0.17, -1.37, -0.1, -1.37); ctx.lineTo(0.1, -1.37);
+    ctx.quadraticCurveTo(0.17, -1.37, 0.17, -1.3); ctx.lineTo(0.17, -0.52);
+    ctx.quadraticCurveTo(0.17, -0.36, 0.045, -0.3); ctx.lineTo(0.045, 0); ctx.closePath();
+    const glass = ctx.createLinearGradient(-0.17, 0, 0.17, 0);
+    glass.addColorStop(0, '#C98A2A'); glass.addColorStop(.45, '#F2C46A'); glass.addColorStop(1, '#B9771F');
+    ctx.fillStyle = glass; ctx.fill(); ctx.stroke();
+    ctx.beginPath(); ctx.rect(-0.03, -0.3, 0.025, 0.28); ctx.fillStyle = 'rgba(255,255,255,.35)'; ctx.fill();   // neck glint
+    // maroon label with the Galindo name
+    ctx.beginPath(); ctx.roundRect ? ctx.roundRect(-0.15, -1.2, 0.3, 0.5, 0.05) : ctx.rect(-0.15, -1.2, 0.3, 0.5);
+    ctx.fillStyle = '#5E1C1C'; ctx.fill(); ctx.strokeStyle = '#D8B45E'; ctx.lineWidth = 0.01; ctx.stroke();
+    ctx.save(); ctx.translate(0, -0.95); ctx.rotate(-Math.PI / 2); ctx.scale(0.001, 0.001);
+    ctx.fillStyle = '#F2D79A'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.font = 'italic 600 120px "Cormorant Garamond", Georgia, serif'; ctx.fillText('Galindo', 0, 0);
+    ctx.font = '600 44px Archivo, system-ui, sans-serif'; ctx.fillText('REPOSADO', 0, 95);
+    ctx.restore();
+    ctx.restore();
+  });
+}
+
+// "Tequila Heroes" crew mode: full lucha libre mask that follows the face outline.
+// Drawn on its own layer so the eye/mouth holes show the real face, not a hole in the photo.
+const FACE_OVAL = [10,338,297,332,284,251,389,356,454,323,361,288,397,365,379,378,400,377,152,148,176,149,150,136,172,58,132,93,234,127,162,21,54,103,67,109];
+const layer = document.createElement('canvas'); layer.width = CW; layer.height = CH;
+const lx = layer.getContext('2d');
+function drawLuchador(lm, M, g){
+  const P = (k) => M.pt(lm[k]);
+  const oval = FACE_OVAL.map(P);
+  const cx = oval.reduce((a, p) => a + p.x, 0) / oval.length, cy = oval.reduce((a, p) => a + p.y, 0) / oval.length;
+  const eyeY = (g.eyes[0].y + g.eyes[1].y) / 2;
+  const up = { x: Math.sin(g.ang), y: -Math.cos(g.ang) };     // "up" for the tilted head
+  const pts = oval.map((p) => {
+    let x = cx + (p.x - cx) * 1.1, y = cy + (p.y - cy) * 1.1;
+    if(p.y < eyeY){ const k = 0.16 * g.W * Math.min(1, (eyeY - p.y) / (0.5 * g.W)); x += up.x * k; y += up.y * k; }
+    return { x, y };
+  });
+  lx.clearRect(0, 0, CW, CH);
+  lx.save();
+  // base hood
+  lx.beginPath(); pts.forEach((p, i) => i ? lx.lineTo(p.x, p.y) : lx.moveTo(p.x, p.y)); lx.closePath();
+  const base = lx.createLinearGradient(cx, cy - g.W, cx, cy + g.W); base.addColorStop(0, '#C73A2F'); base.addColorStop(1, '#8E241D');
+  lx.fillStyle = base; lx.fill(); lx.lineWidth = 0.025 * g.W; lx.strokeStyle = '#E7C877'; lx.stroke();
+  lx.save(); lx.clip();                                       // all decoration stays inside the hood
+  // centre stripe up the forehead
+  const brow = P(9);
+  lx.save(); lx.translate(brow.x, brow.y); lx.rotate(g.ang);
+  lx.beginPath(); lx.moveTo(-0.07 * g.W, 0); lx.lineTo(-0.12 * g.W, -0.9 * g.W); lx.lineTo(0.12 * g.W, -0.9 * g.W); lx.lineTo(0.07 * g.W, 0); lx.closePath();
+  lx.fillStyle = '#E7C877'; lx.fill();
+  lx.beginPath(); for(let i = 0; i <= 6; i++){ const y = -0.12 * g.W - i * 0.1 * g.W, x = (i % 2 ? 0.05 : -0.05) * g.W; i ? lx.lineTo(x, y) : lx.moveTo(x, y); }
+  lx.strokeStyle = '#3E7A3A'; lx.lineWidth = 0.025 * g.W; lx.stroke();
+  lx.restore();
+  // flame eye surrounds
+  g.eyes.forEach((e, idx) => {
+    const side = (idx === 0 ? -1 : 1);
+    lx.save(); lx.translate(e.x, e.y); lx.rotate(g.ang); lx.scale(g.W, g.W);
+    lx.beginPath();
+    lx.ellipse(0, 0, 0.2, 0.13, 0, 0, Math.PI * 2);
+    lx.moveTo(side * 0.17, -0.06); lx.quadraticCurveTo(side * 0.36, -0.2, side * 0.42, -0.02); lx.quadraticCurveTo(side * 0.3, 0.02, side * 0.17, 0.06);
+    lx.fillStyle = '#FBF3E2'; lx.fill(); lx.strokeStyle = '#E7C877'; lx.lineWidth = 0.02; lx.stroke();
+    lx.restore();
+  });
+  // mouth surround
+  const ml = P(61), mr = P(291), mu = P(13), mb = P(14), mc = mid(mu, mb);
+  const mw = Math.hypot(mr.x - ml.x, mr.y - ml.y) / 2, mo = Math.hypot(mb.x - mu.x, mb.y - mu.y) / 2;
+  lx.save(); lx.translate(mc.x, mc.y); lx.rotate(g.ang);
+  lx.beginPath(); lx.ellipse(0, 0, mw * 1.55, mo + 0.12 * g.W, 0, 0, Math.PI * 2);
+  lx.fillStyle = '#FBF3E2'; lx.fill(); lx.strokeStyle = '#E7C877'; lx.lineWidth = 0.02 * g.W; lx.stroke();
+  // punch the mouth hole on the layer only
+  lx.globalCompositeOperation = 'destination-out';
+  lx.beginPath(); lx.ellipse(0, 0, mw * 1.15, mo + 0.05 * g.W, 0, 0, Math.PI * 2); lx.fill();
+  lx.globalCompositeOperation = 'source-over';
+  lx.restore();
+  lx.restore();                                              // end hood clip
+  lx.globalCompositeOperation = 'destination-out';
+  g.eyes.forEach((e) => { lx.save(); lx.translate(e.x, e.y); lx.rotate(g.ang); lx.beginPath(); lx.ellipse(0, 0, 0.11 * g.W, 0.06 * g.W, 0, 0, Math.PI * 2); lx.fill(); lx.restore(); });
+  lx.globalCompositeOperation = 'source-over';
+  lx.restore();
+  ctx.drawImage(layer, 0, 0);
+}
+function drawHeroBadge(){
+  const x = 70, y = 64, w = 132, h = 156;
+  ctx.save(); ctx.translate(x, y);
+  ctx.beginPath(); ctx.moveTo(0, 0); ctx.lineTo(w, 0); ctx.lineTo(w, h * 0.55);
+  ctx.quadraticCurveTo(w, h * 0.85, w / 2, h); ctx.quadraticCurveTo(0, h * 0.85, 0, h * 0.55); ctx.closePath();
+  const gold = ctx.createLinearGradient(0, 0, 0, h); gold.addColorStop(0, '#F0D79B'); gold.addColorStop(1, '#A9842F');
+  ctx.fillStyle = gold; ctx.fill(); ctx.lineWidth = 6; ctx.strokeStyle = '#B2342B'; ctx.stroke();
+  ctx.fillStyle = '#1A1208'; ctx.textAlign = 'center';
+  ctx.font = '600 104px "Cormorant Garamond", Georgia, serif'; ctx.fillText('4', w / 2, 98);
+  ctx.font = '700 15px Archivo, system-ui, sans-serif'; ctx.fillText('TEQUILA', w / 2, 120); ctx.fillText('HEROES', w / 2, 137);
+  ctx.restore();
+}
+
 function drawFrame(){
   const band = ctx.createLinearGradient(0, CH - 330, 0, CH);
   band.addColorStop(0, 'rgba(13,12,10,0)'); band.addColorStop(.55, 'rgba(13,12,10,.82)'); band.addColorStop(1, 'rgba(13,12,10,.96)');
@@ -245,9 +366,10 @@ function drawFrame(){
   if(logo.complete && logo.naturalWidth){ const w = 330, h = w * logo.naturalHeight / logo.naturalWidth; ctx.drawImage(logo, (CW - w) / 2, CH - 70 - h - 40, w, h); }
   ctx.textAlign = 'center'; ctx.fillStyle = '#E7C877';
   ctx.font = '600 30px Archivo, system-ui, sans-serif';
-  ctx.fillText('LAUNCH NIGHT  ·  30 OCT 2026  ·  CAPE TOWN', CW / 2, CH - 70);
+  ctx.fillText(props.hero ? 'THE 4 TEQUILA HEROES' : 'LAUNCH NIGHT  ·  30 OCT 2026  ·  CAPE TOWN', CW / 2, CH - 70);
   ctx.fillStyle = 'rgba(244,236,220,.6)'; ctx.font = '500 24px Archivo, system-ui, sans-serif';
-  ctx.fillText('tequilaheroes.com', CW / 2, CH - 36);
+  ctx.fillText(props.hero ? 'Where Galindo began  ·  Launch Night 30.10.26' : 'tequilaheroes.com', CW / 2, CH - 36);
+  if(props.hero) drawHeroBadge();
 }
 
 function render(){
@@ -261,14 +383,17 @@ function render(){
     drawSource(M);
     faces.forEach((lm, i) => {
       const g = faceGeom(lm, M, i);
+      if(props.hero) drawLuchador(lm, M, g);
       if(props.hat) drawHat(g);
       if(props.stache) drawStache(g);
       if(props.shades) drawShades(g);
+      if(props.pour) drawPour(g, performance.now());
     });
     smooth.length = faces.length;
     drawFrame();
     const h = $('hint');
-    if(landmarker) h.textContent = faces.length ? '' : 'Get your face in the frame';
+    if(landmarker) h.textContent = !faces.length ? 'Get your face in the frame'
+      : (props.pour && !smooth.some(g => g && g.open > 0.045)) ? 'Open wide! 😮' : '';
   }
   requestAnimationFrame(render);
 }
