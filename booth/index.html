@@ -106,7 +106,7 @@
   <div class="controls">
     <button class="small" type="button" id="flip">Flip camera</button>
     <button class="shutter" type="button" id="snap" aria-label="Take photo"></button>
-    <button class="small" type="button" id="quick">No timer</button>
+    <button class="small" type="button" id="quick">3s timer</button></button>
   </div>
 </section>
 
@@ -148,7 +148,7 @@ const DEMO = params.get('demo');                          // ?demo=<image url> :
 let video = null, source = null, stream = null, facing = 'user';
 let landmarker = null, faces = [], lastTs = -1, smooth = [];
 let props = { hat: true, stache: true, shades: false, pour: false, lucha: false, hero: false };
-let timer = true, busy = false, lastBlob = null, lastFile = '';
+let timer = false, busy = false, lastBlob = null, lastFile = '';
 const logo = new Image(); logo.src = '/galindo-logo.png';
 const IOS = /iP(hone|ad|od)/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
 if(IOS){ document.getElementById('holdhint').hidden = false; document.getElementById('share').textContent = 'Save to Photos'; }
