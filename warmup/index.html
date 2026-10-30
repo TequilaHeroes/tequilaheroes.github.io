@@ -1,0 +1,500 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="robots" content="noindex">
+<title>Galindo Launch Night</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<meta name="description" content="Check in before tonight's Galindo launch — a few taps now, no forms at the door, more time for tequila.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;1,500;1,600&family=EB+Garamond:ital@0;1&family=Archivo:wght@500;600;700&display=swap">
+<style>
+  /* Committed-dark invitation. Warm black + gold, agave green & marigold accents (matches the Galindo brand site). Big live countdown as the hero; capturing details before the night is the point. Serif display (Cormorant), serif body (EB Garamond), sans labels (Archivo). */
+  :root{
+    color-scheme: dark;
+    --bg:#0D0C0A;
+    --bg-2:#120F0B;
+    --surface:#17120D;
+    --surface-2:#1F1812;
+    --line:#352B20;
+    --line-2:#4A3B29;
+    --fg:#F4ECDC;
+    --muted:#AD9D84;
+    --faint:#7A6E5A;
+    --gold:#D8B45E;
+    --gold-bright:#E7C877;
+    --gold-soft:#8E7636;
+    --agave:#8BB26A;
+    --agave-dim:#3C4A2E;
+    --marigold:#E0812B;
+    --serif:'Cormorant Garamond', Georgia, 'Times New Roman', serif;
+    --body:'EB Garamond', Georgia, serif;
+    --sans:'Archivo', system-ui, -apple-system, sans-serif;
+  }
+  *{box-sizing:border-box}
+  [hidden]{display:none!important}
+  html,body{margin:0}
+  body{
+    background:
+      radial-gradient(125% 62% at 50% 0%, #241804 0%, rgba(28,20,9,0) 58%),
+      var(--bg);
+    color:var(--fg);
+    font-family:var(--body);
+    font-size:18px;line-height:1.6;
+    -webkit-font-smoothing:antialiased;
+  }
+  .wrap{
+    width:100%;max-width:620px;margin:0 auto;
+    padding-left:max(20px, env(safe-area-inset-left,0px));
+    padding-right:max(20px, env(safe-area-inset-right,0px));
+  }
+  h1,h2,h3{margin:0;text-wrap:balance;font-weight:600}
+  p{margin:0 0 1em}
+  .eyebrow{font-family:var(--sans);font-size:11px;letter-spacing:.34em;text-transform:uppercase;color:var(--gold);font-weight:600}
+  .divider{display:flex;align-items:center;gap:14px;margin:0 auto;max-width:260px}
+  .divider::before,.divider::after{content:"";height:1px;flex:1;background:linear-gradient(to right,transparent,var(--gold-soft),transparent)}
+  .divider span{width:7px;height:7px;background:var(--gold);transform:rotate(45deg);flex:none}
+
+  .rise{opacity:0;transform:translateY(14px);animation:rise .9s cubic-bezier(.2,.7,.2,1) forwards}
+  .rise.d1{animation-delay:.07s}.rise.d2{animation-delay:.16s}.rise.d3{animation-delay:.27s}.rise.d4{animation-delay:.38s}
+  @keyframes rise{to{opacity:1;transform:none}}
+  @media(prefers-reduced-motion:reduce){.rise{animation:none;opacity:1;transform:none}}
+
+  /* hero */
+  .hero{position:relative;text-align:center;padding:clamp(32px,6vh,56px) 0 22px}
+  .agave{width:48px;height:48px;margin:0 auto 14px;display:block}
+  .hero-logo{display:block;margin:2px auto 0;width:min(300px,68vw);height:auto;filter:drop-shadow(0 6px 24px rgba(0,0,0,.55))}
+
+  /* BIG live countdown — the hero centerpiece */
+  .cd{margin:26px auto 2px;position:relative;display:inline-flex;flex-direction:column;align-items:center;gap:10px;padding:4px 10px}
+  .cd-glow{position:absolute;inset:-18% -8%;background:radial-gradient(60% 70% at 50% 45%, rgba(224,129,43,.20), rgba(216,180,94,0) 70%);filter:blur(6px);pointer-events:none}
+  .cd-time{position:relative;font-family:var(--serif);font-weight:600;font-size:clamp(44px,13vw,94px);line-height:1.18;padding-block:.12em;
+    letter-spacing:.005em;font-variant-numeric:lining-nums tabular-nums;white-space:nowrap;
+    background:linear-gradient(176deg,#F7E4B0 0%,#E7C877 38%,#D8B45E 60%,#A9842F 100%);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;
+    text-shadow:0 2px 30px rgba(224,129,43,.22)}
+  .cd-time .u{font-size:.4em;font-family:var(--sans);font-weight:700;-webkit-text-fill-color:var(--gold-soft);color:var(--gold-soft);letter-spacing:0;margin:0 .22em 0 .03em;vertical-align:baseline}
+  .cd-time .s{-webkit-text-fill-color:var(--marigold);color:var(--marigold)}
+  .cd-label{position:relative;font-family:var(--sans);font-size:12px;letter-spacing:.28em;text-transform:uppercase;color:var(--muted);font-weight:600}
+  .cd-label .live{display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--marigold);margin-right:9px;vertical-align:middle;
+    box-shadow:0 0 0 0 rgba(224,129,43,.6);animation:pulse 2.1s ease-in-out infinite}
+  @keyframes pulse{0%,100%{opacity:.5;transform:scale(.85);box-shadow:0 0 0 0 rgba(224,129,43,.5)}50%{opacity:1;transform:scale(1.1);box-shadow:0 0 0 7px rgba(224,129,43,0)}}
+  @media(prefers-reduced-motion:reduce){.cd-label .live{animation:none}}
+
+  /* confirmed count */
+  .confirmed{margin:16px auto 0;display:inline-flex;align-items:center;gap:9px;background:var(--surface);border:1px solid var(--line);
+    border-radius:30px;padding:8px 16px;font-family:var(--sans);font-size:13px;color:var(--muted);font-weight:600}
+  .confirmed b{color:var(--gold);font-variant-numeric:tabular-nums;font-size:15px}
+  .confirmed .face{width:8px;height:8px;border-radius:50%;background:var(--agave);box-shadow:0 0 0 3px rgba(139,178,106,.18)}
+
+  .hero h1{font-family:var(--serif);font-size:clamp(30px,7.6vw,46px);color:var(--fg);margin:24px 0 0;line-height:1.12}
+  .hero .lead{color:var(--muted);font-size:clamp(17px,2.6vw,19px);max-width:30em;margin:14px auto 0}
+  .hero .lead b{color:var(--fg);font-style:normal}
+  .venue-line{display:inline-flex;align-items:center;gap:8px;margin:18px auto 0;font-family:var(--sans);font-size:13.5px;color:var(--gold);text-decoration:none;font-weight:600;border:1px solid var(--line-2);border-radius:30px;padding:9px 16px;transition:border-color .15s}
+  .venue-line svg{width:15px;height:15px;stroke:var(--gold);fill:none;stroke-width:1.8;flex:none}
+
+  section{padding:clamp(26px,4.5vh,40px) 0}
+
+  /* capture — the point of the page */
+  .capture{background:linear-gradient(180deg,var(--surface-2),var(--surface));border:1px solid var(--line-2);border-radius:22px;
+    padding:28px 22px;text-align:center;position:relative;overflow:hidden;margin-top:14px}
+  .capture::before{content:"";position:absolute;inset:0 0 auto;height:3px;background:linear-gradient(90deg,transparent,var(--gold),transparent);opacity:.8}
+  .capture .ctitle{font-family:var(--serif);font-size:clamp(25px,6vw,32px);color:var(--fg);line-height:1.1}
+  .capture .csub{color:var(--muted);font-size:16px;margin:10px auto 2px;max-width:30em}
+  .qlabel{font-family:var(--sans);font-size:10.5px;letter-spacing:.2em;text-transform:uppercase;color:var(--faint);font-weight:600;margin:22px 0 11px;text-align:left}
+  .chips{display:flex;flex-wrap:wrap;gap:9px;justify-content:center}
+  .chip{font-family:var(--sans);font-size:14px;font-weight:600;color:var(--muted);background:var(--surface-2);border:1px solid var(--line);
+    border-radius:30px;padding:10px 17px;cursor:pointer;transition:transform .08s,border-color .15s,color .15s,background .15s;-webkit-tap-highlight-color:transparent}
+  .chip:active{transform:scale(.95)}
+  .chip[aria-pressed="true"]{color:#201600;background:var(--gold);border-color:var(--gold)}
+  .chip.head[aria-pressed="true"]{background:var(--agave);border-color:var(--agave);color:#10200a}
+
+  .field{text-align:left;margin-top:12px}
+  .field label{display:block;font-family:var(--sans);font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--faint);font-weight:600;margin:0 2px 6px}
+  .field input{width:100%;font-family:var(--body);font-size:17px;color:var(--fg);background:var(--bg);border:1px solid var(--line);border-radius:12px;padding:14px 15px;transition:border-color .15s}
+  .field input:focus{outline:none;border-color:var(--gold-soft)}
+  .field input::placeholder{color:var(--faint)}
+  .two{display:flex;gap:11px}
+  .two .field{flex:1;min-width:0}
+  .consent{display:flex;align-items:flex-start;gap:11px;text-align:left;margin-top:18px;font-family:var(--sans);font-size:13.5px;color:var(--muted);line-height:1.45;cursor:pointer}
+  .consent input{width:20px;height:20px;flex:none;margin-top:1px;accent-color:var(--gold)}
+
+  .cta{display:flex;align-items:center;justify-content:center;gap:10px;width:100%;margin-top:22px;border:none;border-radius:14px;padding:18px;cursor:pointer;
+    font-family:var(--sans);font-weight:700;font-size:17px;letter-spacing:.01em;text-decoration:none;text-align:center;
+    background:linear-gradient(180deg,var(--gold-bright),var(--gold));color:#201600;transition:transform .08s,filter .15s}
+  .cta:active{transform:scale(.99)}
+  .cta:disabled{filter:grayscale(.4) brightness(.8);cursor:default}
+  .note{font-family:var(--sans);font-size:13px;margin-top:12px;min-height:1em;line-height:1.4;color:var(--marigold)}
+
+  .done{display:none;flex-direction:column;align-items:center;gap:10px;padding:14px 4px}
+  .done.show{display:flex}
+  .done .tick{width:54px;height:54px;border-radius:50%;background:var(--agave-dim);border:1px solid var(--agave);display:flex;align-items:center;justify-content:center}
+  .done .tick svg{width:28px;height:28px;stroke:var(--agave);fill:none;stroke-width:2.4}
+  .done h3{font-family:var(--serif);font-size:27px;color:var(--fg)}
+  .done p{color:var(--muted);font-size:16px;margin:0}
+  .done button{margin-top:4px;background:none;border:none;color:var(--gold);font-family:var(--sans);font-size:13px;font-weight:600;text-decoration:underline;text-underline-offset:3px;cursor:pointer}
+  .pass{margin:4px auto 0;background:#fff;border-radius:16px;padding:18px 18px 14px;max-width:272px;display:flex;flex-direction:column;align-items:center;gap:10px}
+  .pass-qr{width:208px;height:208px;line-height:0}
+  .pass-qr img,.pass-qr canvas{width:208px!important;height:208px!important;display:block}
+  .pass-cap{font-family:var(--sans);font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:#8a6410;font-weight:700}
+  .pass-sub{font-family:var(--sans);font-size:12px;color:#6b5a3a;line-height:1.45;text-align:center}
+
+  .order{margin-top:18px;padding-top:16px;border-top:1px solid var(--line);font-family:var(--sans);color:var(--muted);font-size:14px}
+  .order a,.order button{color:var(--gold);background:none;border:none;font-size:14.5px;font-weight:600;font-family:var(--sans);cursor:pointer;text-decoration:underline;text-underline-offset:3px;padding:6px 2px}
+  .reassure{font-family:var(--sans);font-size:12px;color:var(--faint);margin-top:14px;line-height:1.5}
+  .alt{margin-top:18px;display:flex;flex-direction:column;align-items:center;gap:11px}
+  .alt-or{font-family:var(--sans);font-size:10.5px;letter-spacing:.24em;text-transform:uppercase;color:var(--faint);font-weight:600}
+  .wa-link{display:inline-flex;align-items:center;gap:9px;font-family:var(--sans);font-size:14.5px;font-weight:600;color:var(--agave);
+    background:none;border:1px solid var(--agave-dim);border-radius:12px;padding:12px 20px;text-decoration:none;transition:border-color .15s,background .15s}
+  .wa-link:active{transform:scale(.98)}
+  .wa-link svg{width:18px;height:18px;fill:var(--agave);flex:none}
+
+  /* pours — the warm-up */
+  .sec-head{text-align:center;margin-bottom:20px}
+  .sec-head h2{font-family:var(--serif);font-size:clamp(25px,5.5vw,32px);margin:9px 0 0}
+  .pours{display:flex;flex-direction:column;gap:11px}
+  .pour{display:flex;gap:15px;align-items:flex-start;background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:15px 17px;text-align:left}
+  .pour .dot{width:11px;height:11px;border-radius:50%;flex:none;margin-top:7px;box-shadow:0 0 0 4px rgba(216,180,94,.08)}
+  .pour h3{font-family:var(--serif);font-size:22px;color:var(--fg);line-height:1.1}
+  .pour .spec{font-family:var(--sans);font-size:10.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--gold);font-weight:600;margin:3px 0 7px}
+  .pour .notes{font-style:italic;color:var(--muted);font-size:15.5px;line-height:1.5}
+  .pour .tagv{font-family:var(--sans);font-size:10px;letter-spacing:.18em;text-transform:uppercase;color:var(--marigold);font-weight:600;margin-top:7px}
+
+  /* when & where */
+  .when{text-align:center;background:var(--bg-2);border:1px solid var(--line);border-radius:16px;padding:22px}
+  .when .date{font-family:var(--serif);font-size:24px;color:var(--gold)}
+  .when .time{font-family:var(--sans);font-size:11.5px;letter-spacing:.22em;text-transform:uppercase;color:var(--muted);font-weight:600;margin-top:6px}
+  .when .venue{font-family:var(--serif);font-size:19px;color:var(--fg);margin-top:14px}
+  .when .addr{font-family:var(--sans);font-size:14px;color:var(--muted)}
+  .when .dirlink{display:inline-block;margin-top:12px;font-family:var(--sans);font-size:13px;font-weight:600;color:var(--gold);text-decoration:underline;text-underline-offset:3px}
+
+  footer{text-align:center;padding:30px 0 28px;border-top:1px solid var(--line);margin-top:30px}
+  footer .fmark{font-family:var(--serif);letter-spacing:.2em;color:var(--gold);font-size:19px}
+  footer .meta{font-family:var(--sans);font-size:11px;letter-spacing:.07em;color:var(--faint);line-height:1.9;margin-top:12px}
+  footer .legal{font-family:var(--sans);font-size:10px;letter-spacing:.16em;text-transform:uppercase;color:var(--faint);margin-top:14px}
+</style>
+
+</head>
+<body>
+<header class="hero wrap">
+  <svg class="agave rise" viewBox="0 0 100 100" aria-hidden="true">
+    <g fill="none" stroke="#D8B45E" stroke-width="2.4" stroke-linecap="round">
+      <path d="M50 92 L50 30"/><path d="M50 88 C40 70 30 58 20 50"/><path d="M50 88 C60 70 70 58 80 50"/>
+      <path d="M50 84 C44 64 38 48 34 34"/><path d="M50 84 C56 64 62 48 66 34"/><path d="M50 80 C50 58 50 40 50 22"/>
+      <path d="M50 82 C47 62 44 46 40 30" opacity=".6"/><path d="M50 82 C53 62 56 46 60 30" opacity=".6"/>
+    </g>
+  </svg>
+  <div class="eyebrow rise d1">Galindo · Launch Night</div>
+  <img class="hero-logo rise d1" src="/galindo-logo.png" alt="Tequila Galindo">
+
+  <div class="cd rise d2">
+    <div class="cd-glow" aria-hidden="true"></div>
+    <div class="cd-time" id="count">—</div>
+    <div class="cd-label"><span class="live" aria-hidden="true"></span><span id="count-label">counting down to doors</span></div>
+  </div>
+
+  <div class="confirmed rise d2" id="confirmed" hidden>
+    <span class="face" aria-hidden="true"></span><span><b id="conf-n">0</b> confirmed for tonight · and counting</span>
+  </div>
+
+  <h1 class="rise d3">Sort it now,<br>save tonight for the tequila.</h1>
+  <p class="lead rise d3">Leave your details here and you're on the list — <b>nothing to fill in at the door</b>. Just walk in, and it's all agave from there.</p>
+
+  <a class="venue-line rise d3" href="https://www.google.com/maps/search/?api=1&amp;query=Mexicola+Locale+154+Sir+Lowry+Road+Woodstock+Cape+Town" target="_blank" rel="noopener noreferrer">
+    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 21s-6-5.3-6-10a6 6 0 0 1 12 0c0 4.7-6 10-6 10z"/><circle cx="12" cy="11" r="2.2"/></svg>
+    Mexicola Locale · 154 Sir Lowry Rd, Woodstock
+  </a>
+</header>
+
+<section class="wrap" style="padding-top:6px">
+  <div class="capture rise d4">
+    <div class="ctitle">Check in, get your licence</div>
+    <div class="csub">Ten seconds now — no queue or clipboard at the door, and your Galindo licence to sip is ready.</div>
+
+    <form id="rsvpForm" name="galindo-rsvp" method="POST" data-netlify="true" netlify-honeypot="bot-field" autocomplete="on">
+      <input type="hidden" name="form-name" value="galindo-rsvp">
+      <p hidden><label>Leave this empty: <input name="bot-field"></label></p>
+
+      <div class="qlabel">Which are you most keen to try?</div>
+      <div class="chips" id="pours">
+        <button class="chip" type="button" aria-pressed="false" data-v="Reposado">Reposado</button>
+        <button class="chip" type="button" aria-pressed="false" data-v="Añejo">Añejo</button>
+        <button class="chip" type="button" aria-pressed="false" data-v="Extra Añejo ‘V’">Extra Añejo ‘V’</button>
+        <button class="chip" type="button" aria-pressed="false" data-v="all three">All three</button>
+      </div>
+
+      <div class="qlabel">Coming with…</div>
+      <div class="chips" id="head">
+        <button class="chip head" type="button" aria-pressed="false" data-h="just me">Just me</button>
+        <button class="chip head" type="button" aria-pressed="false" data-h="+1">+1</button>
+        <button class="chip head" type="button" aria-pressed="false" data-h="a few of us">A few of us</button>
+      </div>
+
+      <input type="hidden" name="keen" id="f-pours">
+      <input type="hidden" name="party" id="f-head">
+
+      <div class="qlabel" style="margin-top:20px">Your details</div>
+      <div class="field"><label for="f-name">Name</label><input id="f-name" name="name" placeholder="First & last name" autocomplete="name" list="guestlist" required><datalist id="guestlist"></datalist></div>
+      <div class="two">
+        <div class="field"><label for="f-mobile">Mobile</label><input id="f-mobile" name="mobile" type="tel" inputmode="tel" placeholder="072 000 0000" autocomplete="tel" required></div>
+        <div class="field"><label for="f-email">Email</label><input id="f-email" name="email" type="email" inputmode="email" placeholder="you@email.com" autocomplete="email" required></div>
+      </div>
+
+      <label class="consent"><input type="checkbox" id="f-consent" name="consent" value="yes"><span>Happy for Galindo to keep in touch about new releases &amp; events.</span></label>
+
+      <button class="cta" type="submit" id="submit">Check in &amp; get my licence</button>
+      <div class="note" id="note"></div>
+      <div class="reassure">Just so we've got you on the list for tonight — we won't spam you.</div>
+
+      <div class="alt">
+        <span class="alt-or">— or —</span>
+        <a class="wa-link" id="wa-rsvp" role="button" rel="noopener noreferrer" target="_blank">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12.04 2C6.58 2 2.13 6.45 2.13 11.91c0 1.75.46 3.45 1.32 4.95L2 22l5.25-1.38c1.45.79 3.08 1.21 4.79 1.21h.01c5.46 0 9.9-4.45 9.9-9.91 0-2.65-1.03-5.14-2.9-7.01A9.82 9.82 0 0 0 12.04 2zm0 1.67c2.2 0 4.27.86 5.82 2.42a8.18 8.18 0 0 1 2.41 5.82c0 4.54-3.7 8.24-8.24 8.24-1.52 0-3.01-.41-4.3-1.19l-.31-.18-3.12.82.83-3.04-.2-.32a8.17 8.17 0 0 1-1.26-4.36c0-4.54 3.7-8.23 8.24-8.23zm4.52 9.84c-.25-.12-1.46-.72-1.69-.8-.23-.08-.39-.12-.56.12-.17.25-.64.8-.79.97-.14.17-.29.19-.54.06-.25-.12-1.04-.38-1.98-1.22-.73-.65-1.23-1.46-1.37-1.71-.14-.25-.02-.38.11-.5.11-.11.25-.29.37-.43.12-.14.17-.25.25-.41.08-.17.04-.31-.02-.43-.06-.12-.56-1.35-.77-1.85-.2-.48-.41-.42-.56-.42-.14-.01-.31-.01-.48-.01s-.43.06-.66.31c-.23.25-.86.85-.86 2.07 0 1.22.89 2.4 1.01 2.56.12.17 1.75 2.67 4.24 3.74.59.26 1.05.41 1.41.52.59.19 1.13.16 1.56.1.47-.07 1.46-.6 1.66-1.17.2-.58.2-1.07.14-1.17-.06-.11-.22-.17-.47-.29z"/></svg>
+          Check in on WhatsApp
+        </a>
+      </div>
+    </form>
+
+    <div class="done" id="done">
+      <div class="tick"><svg viewBox="0 0 24 24"><path d="M5 13l4 4L19 7"/></svg></div>
+      <h3 id="done-h">You're on the list</h3>
+      <p>Here's your Galindo licence — show it at the bar tonight.</p>
+      <div class="pass">
+        <div class="pass-qr" id="passqr"></div>
+        <div class="pass-cap">Galindo licence to sip</div>
+        <div class="pass-sub">Screenshot this and show it at the bar — your details load in one scan, no queue.</div>
+      </div>
+      <button type="button" onclick="resetForm()">Add someone else</button>
+    </div>
+
+    <div class="order">
+      Want bottles for yourself, a gift, or by the case?
+      <br><a id="order" role="button" rel="noopener noreferrer" target="_blank">Pre-order on WhatsApp →</a>
+    </div>
+  </div>
+</section>
+
+<section class="wrap">
+  <div class="divider rise"><span></span></div>
+  <div class="sec-head"><div class="eyebrow">While you wait</div><h2>What you'll be tasting</h2></div>
+  <div class="pours">
+    <div class="pour">
+      <span class="dot" style="background:#E7C877"></span>
+      <div>
+        <h3>Reposado</h3>
+        <div class="spec">Aged 9 months · 40%</div>
+        <div class="notes">Smooth and creamy, light amber — mature agave and oak, lifted by honey, fruit and citrus.</div>
+        <div class="tagv">Double Gold · Best in Class 2026</div>
+      </div>
+    </div>
+    <div class="pour">
+      <span class="dot" style="background:#D8B45E"></span>
+      <div>
+        <h3>Añejo</h3>
+        <div class="spec">Aged 24 months · Double distilled</div>
+        <div class="notes">A rich, creamy body with golden highlights — sweet, robust oak with walnut and hazelnut.</div>
+      </div>
+    </div>
+    <div class="pour">
+      <span class="dot" style="background:#E0812B"></span>
+      <div>
+        <h3>Extra Añejo ‘V’</h3>
+        <div class="spec">3–5 years · Reserva Privada · Gift boxed</div>
+        <div class="notes">Roasted agave, caramel, dried fruit and vanilla; a long, warming finish of dark chocolate and spice. Made for sipping.</div>
+        <div class="tagv">Limited pour on the night</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="wrap">
+  <div class="when">
+    <div class="date">Friday, 30 October</div>
+    <div class="time">Doors 6pm · until 10</div>
+    <div class="venue">Mexicola Locale</div>
+    <div class="addr">154 Sir Lowry Road, Woodstock, Cape Town</div>
+    <a class="dirlink" href="https://www.google.com/maps/search/?api=1&amp;query=Mexicola+Locale+154+Sir+Lowry+Road+Woodstock+Cape+Town" target="_blank" rel="noopener noreferrer">Get directions →</a>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap">
+    <div class="fmark">GALINDO</div>
+    <div class="meta">
+      The first house of Tequila Heroes<br>
+      Casa Galindo · NOM 1517 · Los Altos de Jalisco, Mexico
+    </div>
+    <div class="legal">18+ · Not for sale to persons under 18 · Please enjoy responsibly</div>
+  </div>
+</footer>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<script>
+  /* ---- CONFIG ---- */
+  /* Guests already confirmed (Edrich gives us this). Set to a number to show
+     the social-proof badge, or null to hide it. */
+  var CONFIRMED = 120;
+  /* Where the RSVP form delivers. Empty = preview only (shows success, stores
+     nothing). On the live site: Netlify Forms captures automatically (the
+     form markup above is already Netlify-ready), or set a form endpoint URL. */
+  var FORM_ENDPOINT = "";
+  /* Team WhatsApp (Andrea) for pre-orders / bulk, full international, digits only. */
+  var WA_NUMBER = "27722240774";
+  function waReady(){ return /^\d{8,15}$/.test(WA_NUMBER); }
+  /* Confirmed guest NAMES for type-ahead on the Name field (Edrich's list).
+     Empty [] = plain free text (keeps the guest list private on a public link).
+     Fill for a door-iPad build, e.g. ["Jane Smith","John Doe"]. */
+  var GUEST_NAMES = [];
+
+  /* ---- chips ---- */
+  var pours = [], head = "";
+  function wire(groupId, onPick){
+    document.getElementById(groupId).addEventListener('click', function(e){
+      var b = e.target.closest('.chip'); if(!b) return; onPick(b); syncHidden();
+    });
+  }
+  wire('pours', function(b){
+    b.setAttribute('aria-pressed', b.getAttribute('aria-pressed')==='true' ? 'false' : 'true');
+    pours = Array.prototype.filter.call(document.querySelectorAll('#pours .chip'),
+      function(c){return c.getAttribute('aria-pressed')==='true';}).map(function(c){return c.dataset.v;});
+  });
+  wire('head', function(b){
+    var on = b.getAttribute('aria-pressed')==='true';
+    document.querySelectorAll('#head .chip').forEach(function(c){c.setAttribute('aria-pressed','false');});
+    head = on ? "" : b.dataset.h;
+    if(!on) b.setAttribute('aria-pressed','true');
+  });
+  function syncHidden(){
+    document.getElementById('f-pours').value = pours.join(", ");
+    document.getElementById('f-head').value = head;
+    updateWa();
+  }
+  function rsvpText(){
+    var nm = (document.getElementById('f-name').value || '').trim();
+    var m = nm ? ("Hi, it's " + nm + " — checking in for the Galindo launch tonight 🥃")
+               : "Hi! Checking in for the Galindo launch tonight 🥃";
+    if(head) m += " (" + head + ")";
+    if(pours.length) m += ". Keen to try: " + pours.join(", ");
+    return m + ".";
+  }
+  function updateWa(){
+    var el = document.getElementById('wa-rsvp'); if(!el) return;
+    if(waReady()){ el.href = "https://wa.me/" + WA_NUMBER + "?text=" + encodeURIComponent(rsvpText()); }
+    else { el.removeAttribute('href'); }
+  }
+  document.getElementById('f-name').addEventListener('input', updateWa);
+
+  /* personal "Galindo pass" — encodes this guest's details so the till can scan & prefill, fully offline */
+  function passPayload(){
+    var d = { n:(document.getElementById('f-name').value||'').trim(), m:(document.getElementById('f-mobile').value||'').trim(), e:(document.getElementById('f-email').value||'').trim(), c:(document.getElementById('f-consent') && document.getElementById('f-consent').checked)?1:0, p:pours.join(","), h:head };
+    var json = JSON.stringify(d), b64;
+    try{ b64 = btoa(unescape(encodeURIComponent(json))); }catch(err){ b64 = btoa(json); }
+    return "GLNDPASS1:" + b64.replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'');
+  }
+
+  /* ---- submit ---- */
+  var form = document.getElementById('rsvpForm');
+  form.addEventListener('submit', function(e){
+    e.preventDefault();
+    var name = document.getElementById('f-name').value.trim();
+    var mobile = document.getElementById('f-mobile').value.trim();
+    var note = document.getElementById('note');
+    if(!name){ note.textContent = "Pop your name in and you're set."; document.getElementById('f-name').focus(); return; }
+    if(!mobile){ note.textContent = "A mobile number so we know it's you."; document.getElementById('f-mobile').focus(); return; }
+    var email = document.getElementById('f-email').value.trim();
+    if(!email){ note.textContent = "And your email, so we can keep you posted."; document.getElementById('f-email').focus(); return; }
+    note.textContent = "";
+    syncHidden();
+    var btn = document.getElementById('submit'); btn.disabled = true; btn.textContent = "Adding you…";
+
+    function succeed(){
+      var first = name.split(' ')[0];
+      document.getElementById('done-h').textContent = "You're on the list, " + first;
+      try{
+        var qbox = document.getElementById('passqr');
+        if(qbox){ qbox.innerHTML=''; if(typeof QRCode!=='undefined'){ new QRCode(qbox, {text:passPayload(), width:208, height:208, colorDark:'#14110C', colorLight:'#ffffff', correctLevel:QRCode.CorrectLevel.M}); } }
+      }catch(e){}
+      form.style.display = 'none';
+      document.getElementById('done').classList.add('show');
+      if(typeof CONFIRMED === 'number'){ CONFIRMED += 1; renderConfirmed(); }
+    }
+    if(FORM_ENDPOINT){
+      var body = new URLSearchParams(new FormData(form)).toString();
+      fetch(FORM_ENDPOINT, {method:'POST', headers:{'Content-Type':'application/x-www-form-urlencoded'}, body:body})
+        .then(function(r){ succeed(); })
+        .catch(function(){ note.textContent = "Couldn't send just now — try again, or WhatsApp us below."; btn.disabled=false; btn.textContent="Check in & get my licence"; });
+    } else {
+      /* Static hosting (GitHub Pages): no form backend, so the check-in is delivered by
+         handing the guest's details to the team on WhatsApp. */
+      var m = "Hi, it's " + name + " — checking in for the Galindo launch tonight 🥃";
+      if(head) m += " (" + head + ")";
+      if(pours.length) m += ". Keen to try: " + pours.join(", ");
+      m += ". Mobile: " + mobile + ". Email: " + email + ".";
+      var waUrl = "https://wa.me/" + WA_NUMBER + "?text=" + encodeURIComponent(m);
+      succeed();
+      document.getElementById('done-h').textContent = "Nearly there, " + name.split(' ')[0];
+      var dp = document.querySelector('#done p');
+      if(dp){
+        dp.innerHTML = 'Tap below to send your check-in to the team on WhatsApp \u2014 then show this pass at the bar.';
+        var a = document.createElement('a');
+        a.className = 'cta'; a.href = waUrl; a.target = '_blank'; a.rel = 'noopener noreferrer';
+        a.textContent = 'Send my check-in on WhatsApp';
+        dp.insertAdjacentElement('afterend', a);
+      }
+      window.open(waUrl, '_blank');
+    }
+  });
+  function resetForm(){
+    form.reset(); form.style.display=''; document.getElementById('done').classList.remove('show');
+    document.getElementById('submit').disabled=false; document.getElementById('submit').textContent="Check in & get my licence";
+    pours=[]; head="";
+    document.querySelectorAll('.chip').forEach(function(c){c.setAttribute('aria-pressed','false');});
+    var qb=document.getElementById('passqr'); if(qb) qb.innerHTML=''; var sb=document.querySelector('#done a.cta'); if(sb) sb.remove();
+    syncHidden();
+  }
+
+  /* ---- pre-order on WhatsApp ---- */
+  function orderText(){ return "Hi! I'd love to order Galindo — could you send me pricing & how to pay? Thanks!"; }
+  var order = document.getElementById('order');
+  if(waReady()){ order.href = "https://wa.me/" + WA_NUMBER + "?text=" + encodeURIComponent(orderText()); }
+  else { order.addEventListener('click', function(e){ e.preventDefault(); }); }
+  updateWa();
+
+  /* ---- confirmed badge ---- */
+  function renderConfirmed(){
+    var el = document.getElementById('confirmed');
+    if(typeof CONFIRMED === 'number' && CONFIRMED > 0){
+      document.getElementById('conf-n').textContent = CONFIRMED; el.hidden = false;
+    } else { el.hidden = true; }
+  }
+  renderConfirmed();
+
+  /* populate the name type-ahead from the guest list (empty = plain free text) */
+  (function(){ var dl=document.getElementById('guestlist'); if(dl && GUEST_NAMES.length){ dl.innerHTML = GUEST_NAMES.map(function(n){ return '<option value="'+String(n).replace(/"/g,'&quot;')+'"></option>'; }).join(''); } })();
+
+  /* ---- big live countdown to 6pm tonight (local), now with seconds ---- */
+  (function(){
+    try{
+      var t = document.getElementById('count'), l = document.getElementById('count-label');
+      var doors = new Date(); doors.setHours(18,0,0,0);
+      function seg(n,u,cls){ return n + '<span class="u ' + (cls||'') + '">' + u + '</span>'; }
+      function tick(){
+        var ms = doors - new Date();
+        if(ms > 0 && ms < 24*3600*1000){
+          var h = Math.floor(ms/3600000), m = Math.floor((ms%3600000)/60000), s = Math.floor((ms%60000)/1000);
+          t.innerHTML = (h>0 ? seg(h,'h') + ' ' : '') + seg(m,'m') + ' ' + seg(s,'s','s');
+          l.textContent = "counting down to doors";
+        } else if(ms <= 0 && ms > -4*3600*1000){
+          t.textContent = "It's time";
+          l.textContent = "doors are open — come through";
+        } else {
+          var cd = document.querySelector('.cd'); if(cd) cd.style.display = 'none';
+        }
+      }
+      tick(); setInterval(tick, 1000);
+    }catch(e){}
+  })();
+</script>
+</body>
+</html>
