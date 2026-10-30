@@ -182,6 +182,26 @@
   .lock{margin-top:6px;text-align:left}
   .lock .lock-hint{font-family:var(--sans);font-size:13px;color:var(--muted);margin:2px 2px 0;line-height:1.45}
   .lock .note{color:var(--marigold)}
+
+  /* pledges (bigger orders) */
+  .pledge .ptitle{font-family:var(--serif);font-size:clamp(25px,6vw,32px);color:var(--fg);line-height:1.1}
+  .prow{display:flex;align-items:center;gap:10px;padding:12px 0;border-bottom:1px solid var(--line);text-align:left}
+  .prow .pn{flex:1;font-family:var(--serif);font-size:19px;color:var(--fg)}
+  .prow .pn small{display:block;font-family:var(--sans);font-size:11px;color:var(--faint);letter-spacing:.06em}
+  .step{display:flex;align-items:center;gap:6px}
+  .step button{width:38px;height:38px;border-radius:10px;border:1px solid var(--line-2);background:var(--surface-2);color:var(--fg);font-size:20px;font-weight:700;cursor:pointer}
+  .step .q{min-width:34px;text-align:center;font-family:var(--sans);font-weight:700;font-size:18px;color:var(--gold)}
+  .step .case{width:auto;padding:0 10px;font-size:12px;font-family:var(--sans);color:var(--gold)}
+  .ptype{display:flex;gap:8px;justify-content:center;margin-top:14px}
+  /* door-mode staff panel */
+  .staff{position:fixed;inset:0;z-index:200;background:rgba(9,8,7,.97);overflow:auto;padding:max(18px,env(safe-area-inset-top)) 16px 30px}
+  .staff h3{font-family:var(--serif);font-size:26px;margin:4px 0 6px}
+  .staff .sbtns{display:flex;flex-wrap:wrap;gap:8px;margin:12px 0}
+  .staff .sbtns button{font-family:var(--sans);font-weight:600;font-size:14px;border-radius:10px;padding:11px 14px;border:1px solid var(--line-2);background:var(--surface-2);color:var(--fg);cursor:pointer}
+  .staff .sbtns .gold{background:var(--gold);color:#201600;border-color:var(--gold)}
+  .staff .ent{font-family:var(--sans);font-size:13px;color:var(--muted);border-bottom:1px solid var(--line);padding:9px 0;line-height:1.45}
+  .staff .ent b{color:var(--fg)}
+  .doorbadge{position:fixed;right:10px;bottom:10px;z-index:50;font-family:var(--sans);font-size:10px;letter-spacing:.14em;color:var(--faint);text-transform:uppercase}
 </style>
 
 </head>
@@ -297,6 +317,41 @@
   </div>
 </section>
 
+<section class="wrap" id="pledge-sec">
+  <div class="capture pledge">
+    <div class="eyebrow">Bigger order?</div>
+    <div class="ptitle" style="margin-top:8px">Pledge it tonight</div>
+    <div class="csub">For your bar, your business, your gifting list — tell us what you'd like and the team will come back to you with pricing and delivery. No payment now.</div>
+    <div id="pledgeForm">
+      <div class="prow"><div class="pn">Reposado<small>750ml · aged 9 months</small></div>
+        <div class="step" data-k="Reposado"><button type="button" data-d="-1">–</button><span class="q">0</span><button type="button" data-d="1">+</button><button type="button" class="case" data-d="6">+6 case</button></div></div>
+      <div class="prow"><div class="pn">Añejo<small>750ml · aged 24 months</small></div>
+        <div class="step" data-k="Añejo"><button type="button" data-d="-1">–</button><span class="q">0</span><button type="button" data-d="1">+</button><button type="button" class="case" data-d="6">+6 case</button></div></div>
+      <div class="prow"><div class="pn">Extra Añejo ‘V’<small>gift boxed · limited — subject to availability</small></div>
+        <div class="step" data-k="Extra Añejo ‘V’"><button type="button" data-d="-1">–</button><span class="q">0</span><button type="button" data-d="1">+</button></div></div>
+      <div class="ptype chips" id="ptype">
+        <button class="chip" type="button" aria-pressed="true" data-t="Personal / gifting">Personal / gifting</button>
+        <button class="chip" type="button" aria-pressed="false" data-t="Business / venue">Business / venue</button>
+      </div>
+      <div class="field"><label for="p-name">Name</label><input id="p-name" autocomplete="name" placeholder="First & last name"></div>
+      <div class="field" id="p-biz-wrap" hidden><label for="p-biz">Business / venue</label><input id="p-biz" placeholder="e.g. The Bar Co."></div>
+      <div class="two">
+        <div class="field"><label for="p-mobile">Mobile</label><input id="p-mobile" type="tel" inputmode="tel" autocomplete="tel" placeholder="072 000 0000"></div>
+        <div class="field"><label for="p-email">Email</label><input id="p-email" type="email" inputmode="email" autocomplete="email" placeholder="you@email.com"></div>
+      </div>
+      <div class="field"><label for="p-note">When / where / anything else</label><input id="p-note" placeholder="e.g. delivery to Gardens before 15 Dec"></div>
+      <button class="cta" type="button" id="p-send">Send my pledge</button>
+      <div class="note" id="p-note-msg"></div>
+    </div>
+    <div class="done" id="p-done">
+      <div class="tick"><svg viewBox="0 0 24 24"><path d="M5 13l4 4L19 7"/></svg></div>
+      <h3 id="p-done-h">Pledge received</h3>
+      <p id="p-done-p">The team will be in touch with pricing and delivery.</p>
+      <button type="button" id="p-again">Make another pledge</button>
+    </div>
+  </div>
+</section>
+
 <section class="wrap">
   <div class="divider rise"><span></span></div>
   <div class="sec-head"><div class="eyebrow">While you wait</div><h2>What you'll be tasting</h2></div>
@@ -339,6 +394,22 @@
     <a class="dirlink" href="https://www.google.com/maps/search/?api=1&amp;query=Mexicola+Locale+154+Sir+Lowry+Road+Woodstock+Cape+Town" target="_blank" rel="noopener noreferrer">Get directions →</a>
   </div>
 </section>
+
+<div class="staff" id="staff" hidden>
+  <div class="wrap" style="padding:0">
+    <div class="eyebrow">Door iPad · staff</div>
+    <h3>Check-ins &amp; pledges</h3>
+    <div class="ent" id="staff-sum"></div>
+    <div class="sbtns">
+      <button class="gold" type="button" id="st-copy">Copy all (for WhatsApp)</button>
+      <button type="button" id="st-csv">Download spreadsheet (CSV)</button>
+      <button type="button" id="st-close">Close</button>
+      <button type="button" id="st-clear" style="color:var(--marigold)">Clear all…</button>
+    </div>
+    <div id="staff-list"></div>
+  </div>
+</div>
+<div class="doorbadge" id="doorbadge" hidden>Door mode</div>
 
 <footer>
   <div class="wrap">
@@ -497,6 +568,15 @@ function hashKey(k){
       document.getElementById('done').classList.add('show');
       if(typeof CONFIRMED === 'number'){ CONFIRMED += 1; renderConfirmed(); }
     }
+    if(DOOR){                                                   /* shared door iPad: save here, no WhatsApp */
+      doorSave({ type:'Check-in', name:name, mobile:mobile, email:email, party:head, keen:pours.join(', '),
+        consent:(document.getElementById('f-consent') && document.getElementById('f-consent').checked) ? 'yes' : 'no' });
+      succeed();
+      document.getElementById('done-h').textContent = "You're checked in, " + name.split(' ')[0] + " — enjoy the night!";
+      var dpd = document.querySelector('#done p'); if(dpd) dpd.textContent = 'Screenshot the pass if you like — next guest in a moment.';
+      setTimeout(resetForm, 9000);
+      return;
+    }
     if(FORM_ENDPOINT){
       var body = new URLSearchParams(new FormData(form)).toString();
       fetch(FORM_ENDPOINT, {method:'POST', headers:{'Content-Type':'application/x-www-form-urlencoded'}, body:body})
@@ -537,6 +617,105 @@ function hashKey(k){
   if(waReady()){ order.href = "https://wa.me/" + WA_NUMBER + "?text=" + encodeURIComponent(orderText()); }
   else { order.addEventListener('click', function(e){ e.preventDefault(); }); }
   updateWa();
+
+  /* ---- door mode (shared iPad at the venue): ?door=1 ---- */
+  var DOOR = /[?&]door=1\b/.test(location.search);
+  var DOOR_KEY = 'galindo_door_entries';
+  function doorLoad(){ try{ return JSON.parse(localStorage.getItem(DOOR_KEY) || '[]'); }catch(e){ return []; } }
+  function doorSave(entry){
+    var list = doorLoad(); entry.time = new Date().toLocaleString('en-ZA'); list.push(entry);
+    try{ localStorage.setItem(DOOR_KEY, JSON.stringify(list)); }catch(e){}
+  }
+  if(DOOR){ document.getElementById('doorbadge').hidden = false; }
+
+  /* ---- pledges (bigger orders) ---- */
+  var pq = { 'Reposado':0, 'Añejo':0, 'Extra Añejo ‘V’':0 }, ptype = 'Personal / gifting';
+  document.querySelectorAll('.step').forEach(function(st){
+    st.addEventListener('click', function(e){
+      var b = e.target.closest('button'); if(!b) return;
+      var k = st.dataset.k; pq[k] = Math.max(0, Math.min(500, pq[k] + Number(b.dataset.d)));
+      st.querySelector('.q').textContent = pq[k];
+    });
+  });
+  document.getElementById('ptype').addEventListener('click', function(e){
+    var c = e.target.closest('.chip'); if(!c) return;
+    document.querySelectorAll('#ptype .chip').forEach(function(x){ x.setAttribute('aria-pressed','false'); });
+    c.setAttribute('aria-pressed','true'); ptype = c.dataset.t;
+    document.getElementById('p-biz-wrap').hidden = (ptype !== 'Business / venue');
+  });
+  function pledgeLines(){ return Object.keys(pq).filter(function(k){ return pq[k] > 0; }).map(function(k){ return pq[k] + '× ' + k; }); }
+  document.getElementById('p-send').addEventListener('click', function(){
+    var msg = document.getElementById('p-note-msg'), v = function(id){ return document.getElementById(id).value.trim(); };
+    var lines = pledgeLines(), name = v('p-name'), mobile = v('p-mobile'), email = v('p-email'), biz = v('p-biz'), note = v('p-note');
+    if(!lines.length){ msg.textContent = 'Add at least one bottle with the + buttons.'; return; }
+    if(!name){ msg.textContent = 'Pop your name in.'; document.getElementById('p-name').focus(); return; }
+    if(!mobile && !email){ msg.textContent = 'A mobile or email so the team can come back to you.'; document.getElementById('p-mobile').focus(); return; }
+    msg.textContent = '';
+    var entry = { type:'Pledge', name:name, business:(ptype === 'Business / venue' ? (biz || '(business)') : ''), mobile:mobile, email:email, order:lines.join(', '), note:note };
+    doorSave(entry);
+    document.getElementById('pledgeForm').style.display = 'none';
+    document.getElementById('p-done').classList.add('show');
+    document.getElementById('p-done-h').textContent = 'Pledge received, ' + name.split(' ')[0];
+    var pp = document.getElementById('p-done-p');
+    if(DOOR){
+      pp.textContent = lines.join(' · ') + ' — the team will be in touch with pricing and delivery.';
+      setTimeout(resetPledge, 9000);
+    } else if(waReady()){
+      var t = "Hi, it's " + name + (entry.business ? ' (' + entry.business + ')' : '') + " — I'd like to pledge a Galindo order: " + lines.join(', ') +
+              ". Mobile: " + (mobile || '—') + ". Email: " + (email || '—') + "." + (note ? ' Note: ' + note + '.' : '');
+      pp.innerHTML = 'Last step — tap below to send it to the team on WhatsApp.';
+      var a = document.createElement('a'); a.className = 'cta'; a.id = 'p-wa'; a.target = '_blank'; a.rel = 'noopener noreferrer';
+      a.href = 'https://wa.me/' + WA_NUMBER + '?text=' + encodeURIComponent(t); a.textContent = 'Send my pledge on WhatsApp';
+      pp.insertAdjacentElement('afterend', a);
+    }
+  });
+  function resetPledge(){
+    Object.keys(pq).forEach(function(k){ pq[k] = 0; }); document.querySelectorAll('.step .q').forEach(function(q){ q.textContent = '0'; });
+    ['p-name','p-biz','p-mobile','p-email','p-note'].forEach(function(id){ document.getElementById(id).value = ''; });
+    var w = document.getElementById('p-wa'); if(w) w.remove();
+    document.getElementById('p-done').classList.remove('show'); document.getElementById('pledgeForm').style.display = '';
+  }
+  document.getElementById('p-again').addEventListener('click', resetPledge);
+
+  /* ---- staff panel (door mode): tap the logo 5 times ---- */
+  var taps = [];
+  document.querySelector('.hero-logo').addEventListener('click', function(){
+    if(!DOOR) return; var now = Date.now(); taps = taps.filter(function(t){ return now - t < 3000; }); taps.push(now);
+    if(taps.length >= 5){ taps = []; openStaff(); }
+  });
+  function esc(s){ return String(s == null ? '' : s).replace(/[&<>"]/g, function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]; }); }
+  function openStaff(){
+    var list = doorLoad(), ci = list.filter(function(e){ return e.type === 'Check-in'; }).length;
+    document.getElementById('staff-sum').innerHTML = '<b>' + ci + '</b> check-ins · <b>' + (list.length - ci) + '</b> pledges — saved on this iPad only. Copy them out regularly.';
+    document.getElementById('staff-list').innerHTML = list.slice().reverse().map(function(e){
+      return '<div class="ent"><b>' + esc(e.type) + ' · ' + esc(e.name) + '</b>' + (e.business ? ' · ' + esc(e.business) : '') + '<br>' +
+        esc([e.mobile, e.email].filter(Boolean).join(' · ')) + (e.order ? '<br>Order: ' + esc(e.order) : '') + (e.keen ? '<br>Keen: ' + esc(e.keen) : '') +
+        (e.note ? '<br>Note: ' + esc(e.note) : '') + '<br><span style="color:var(--faint)">' + esc(e.time) + (e.consent ? ' · opt-in ' + esc(e.consent) : '') + '</span></div>';
+    }).join('') || '<div class="ent">Nothing yet.</div>';
+    document.getElementById('staff').hidden = false;
+  }
+  function staffText(){
+    return 'GALINDO LAUNCH — door iPad (' + new Date().toLocaleString('en-ZA') + ')\n' + doorLoad().map(function(e){
+      return '- ' + e.type + ': ' + e.name + (e.business ? ' (' + e.business + ')' : '') + ' · ' + [e.mobile, e.email].filter(Boolean).join(' · ') +
+        (e.order ? ' · ORDER ' + e.order : '') + (e.keen ? ' · keen ' + e.keen : '') + (e.note ? ' · ' + e.note : '') + (e.consent ? ' · opt-in ' + e.consent : '');
+    }).join('\n');
+  }
+  document.getElementById('st-close').addEventListener('click', function(){ document.getElementById('staff').hidden = true; });
+  document.getElementById('st-copy').addEventListener('click', function(){
+    var t = staffText(), b = this;
+    (navigator.clipboard ? navigator.clipboard.writeText(t) : Promise.reject()).then(function(){ b.textContent = 'Copied ✓'; setTimeout(function(){ b.textContent = 'Copy all (for WhatsApp)'; }, 1800); })
+      .catch(function(){ window.prompt('Copy this:', t); });
+  });
+  document.getElementById('st-csv').addEventListener('click', function(){
+    var cols = ['time','type','name','business','mobile','email','order','keen','party','consent','note'];
+    var csv = cols.join(',') + '\n' + doorLoad().map(function(e){ return cols.map(function(c){ return '"' + String(e[c] == null ? '' : e[c]).replace(/"/g, '""') + '"'; }).join(','); }).join('\n');
+    var a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([csv], { type:'text/csv' })); a.download = 'galindo-door-' + Date.now() + '.csv';
+    document.body.appendChild(a); a.click(); a.remove();
+  });
+  document.getElementById('st-clear').addEventListener('click', function(){
+    var w = window.prompt('This deletes every check-in and pledge on this iPad. Copy them first! Type RESET to clear.');
+    if(w && w.trim().toUpperCase() === 'RESET'){ try{ localStorage.setItem('galindo_door_backup', localStorage.getItem(DOOR_KEY) || '[]'); localStorage.removeItem(DOOR_KEY); }catch(e){} openStaff(); }
+  });
 
   /* ---- confirmed badge ---- */
   function renderConfirmed(){
