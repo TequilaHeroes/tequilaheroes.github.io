@@ -64,6 +64,13 @@
   .actions{display:flex;flex-direction:column;gap:10px;margin-top:14px}
   .note{font-size:13px;color:var(--muted);text-align:center;line-height:1.45;margin-top:10px}
   .ok{color:var(--agave)}
+  .joincard{margin-top:16px;padding:16px;border:1px solid var(--line-2);border-radius:16px;background:var(--surface)}
+  .joincard .jt{font-family:var(--serif);font-size:22px;color:var(--fg);margin-bottom:10px;line-height:1.2}
+  .joincard input:not([type=checkbox]){width:100%;font-size:16px;color:var(--fg);background:var(--bg);border:1px solid var(--line);border-radius:11px;padding:12px 13px;margin-bottom:9px;font-family:var(--sans)}
+  .joincard .two{display:flex;gap:9px}
+  .joincard .jconsent{display:flex;gap:10px;align-items:flex-start;font-size:13px;color:var(--muted);line-height:1.45;margin:4px 0 12px}
+  .joincard .jconsent input{width:20px;height:20px;flex:none;accent-color:var(--gold)}
+  .joincard .btn{width:100%}
   .bad{color:var(--marigold)}
 </style>
 </head>
@@ -113,6 +120,14 @@
     <button class="small" id="again">Take another</button>
   </div>
   <div class="note" id="sendnote"></div>
+  <div class="joincard" id="joincard" hidden>
+    <div class="jt">Want this photo + first dibs on Galindo releases?</div>
+    <div class="jrow"><input id="j-first" placeholder="First name" autocomplete="given-name"></div>
+    <div class="jrow two"><input id="j-mobile" type="tel" inputmode="tel" placeholder="Mobile" autocomplete="tel"><input id="j-email" type="email" inputmode="email" placeholder="Email" autocomplete="email"></div>
+    <label class="jconsent"><input type="checkbox" id="j-consent"><span>Yes, Galindo can send me my photo and news about releases &amp; events. I can opt out any time.</span></label>
+    <button class="btn" type="button" id="j-go">Join the Galindo list</button>
+    <div class="note" id="j-note"></div>
+  </div>
   <div class="note" id="consent" hidden>Your photo goes into Galindo's launch-night album.</div>
 </section>
 
@@ -133,7 +148,7 @@ const DEMO = params.get('demo');                          // ?demo=<image url> :
 let video = null, source = null, stream = null, facing = 'user';
 let landmarker = null, faces = [], lastTs = -1, smooth = [];
 let props = { hat: true, stache: true, shades: false, pour: false, lucha: false, hero: false };
-let timer = true, busy = false, lastBlob = null;
+let timer = true, busy = false, lastBlob = null, lastFile = '';
 const logo = new Image(); logo.src = '/galindo-logo.png';
 const IOS = /iP(hone|ad|od)/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
 if(IOS){ document.getElementById('holdhint').hidden = false; document.getElementById('share').textContent = 'Save to Photos'; }
@@ -414,6 +429,7 @@ async function snap(){
   $('shot').src = URL.createObjectURL(lastBlob);
   $('booth').hidden = true; $('result').hidden = false; window.scrollTo(0, 0);
   $('send').hidden = true; $('consent').hidden = !UPLOAD_URL; $('send').disabled = false;
+  lastFile = ''; $('joincard').hidden = !UPLOAD_URL || joined; $('j-note').textContent = '';
   $('send').textContent = 'Send to the Galindo album'; $('sendnote').textContent = ''; $('sendnote').className = 'note';
   busy = false;
   if(UPLOAD_URL) sendShot();                                   // goes to the album automatically; phone save is one tap
@@ -435,13 +451,34 @@ async function sendShot(){
     const r = await fetch(UPLOAD_URL, { method:'POST', headers:{ 'Content-Type':'text/plain;charset=utf-8' }, body: JSON.stringify({ image: b64, mime:'image/jpeg', name:`galindo-${stamp()}.jpg` }) });
     const j = await r.json();
     if(!j.ok) throw new Error(j.reason || 'failed');
+    lastFile = j.file || '';
     note.textContent = "✓ In the Galindo album — gracias! Tap above to save it to your phone."; note.className = 'note ok';
   }catch(e){
     b.hidden = false; b.disabled = false; b.textContent = 'Try sending to the album again'; note.textContent = "Couldn't reach the album just now (signal?) — save it to your phone, and try again in a moment."; note.className = 'note bad';
   }
 }
 
+/* ---------- optional contact capture (opt-in) ---------- */
+let joined = false;                                           // once per guest session: don't ask again on every photo
+async function joinList(){
+  const first = $('j-first').value.trim(), mobile = $('j-mobile').value.trim(), email = $('j-email').value.trim(), note = $('j-note');
+  if(!first){ note.textContent = 'Pop your first name in.'; note.className = 'note bad'; return; }
+  if(!mobile && !email){ note.textContent = 'A mobile or email so we can send it.'; note.className = 'note bad'; return; }
+  const b = $('j-go'); b.disabled = true; b.textContent = 'Adding you…';
+  try{
+    for(let i = 0; i < 20 && !lastFile && $('sendnote').textContent.indexOf('Adding') === 0; i++) await new Promise(r => setTimeout(r, 250));   // let the photo upload finish so we can link it
+    const r = await fetch(UPLOAD_URL, { method:'POST', headers:{ 'Content-Type':'text/plain;charset=utf-8' },
+      body: JSON.stringify({ type:'contact', first, mobile, email, consent: $('j-consent').checked, photo: lastFile }) });
+    const j = await r.json(); if(!j.ok) throw new Error(j.reason || 'failed');
+    joined = true; $('joincard').hidden = true;
+    $('sendnote').textContent = '✓ You’re on the Galindo list, ' + first + ' — gracias!'; $('sendnote').className = 'note ok';
+  }catch(e){
+    note.textContent = 'Couldn’t add you just now — try again in a moment.'; note.className = 'note bad';
+  }finally{ b.disabled = false; b.textContent = 'Join the Galindo list'; }
+}
+
 /* ---------- wiring ---------- */
+$('j-go').addEventListener('click', joinList);
 $('props').addEventListener('click', (e) => { const c = e.target.closest('.chip'); if(!c) return;
   const on = c.getAttribute('aria-pressed') !== 'true'; c.setAttribute('aria-pressed', on); props[c.dataset.p] = on; });
 $('snap').addEventListener('click', snap);
