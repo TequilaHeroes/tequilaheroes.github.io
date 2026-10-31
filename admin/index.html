@@ -196,6 +196,11 @@
       <div class="team-only">
       <h4>Members' prices <span style="text-transform:none;letter-spacing:0">(what Galindo ID holders pay; changes apply to new orders)</span></h4>
       <div class="list" id="p-list"></div>
+      <h4>Phone alerts <span style="text-transform:none;letter-spacing:0">(a ping when a member orders, changes or cancels)</span></h4>
+      <div class="list"><div class="item" style="display:block">
+        <label class="checks" style="margin:0"><label><input type="checkbox" id="al-on"> Send phone alerts</label></label>
+        <div class="s" id="al-how" style="margin-top:8px">Loading…</div>
+      </div></div>
       </div>
     </section>
 
@@ -461,9 +466,35 @@
   function loadOrders(){
     Promise.all([sb.from('orders').select('*').order('created_at', { ascending:false }).limit(2000), sb.from('price_list').select('*').order('sort')]).then(function(r){
       if(r[0].error){ $('o-list').innerHTML = '<div class="empty">Could not load orders: ' + esc(r[0].error.message) + '</div>'; return; }
-      orders = r[0].data; prices = r[1].data || []; renderOrders(); if(!partner) renderPrices();
+      orders = r[0].data; prices = r[1].data || []; renderOrders(); if(!partner){ renderPrices(); loadAlerts(); }
     });
   }
+  var alerts = null;
+  function loadAlerts(){
+    sb.from('settings').select('*').then(function(r){
+      alerts = r.data && r.data.filter(function(s){ return s.key === 'order_alerts'; })[0];
+      if(!alerts){ $('al-on').disabled = true; $('al-how').textContent = 'Not set up yet (run the order alerts SQL in Supabase).'; return; }
+      var t = alerts.value.topic;
+      $('al-on').disabled = false; $('al-on').checked = !!alerts.value.on;
+      $('al-how').innerHTML = 'On each phone: install the free <b style="color:var(--fg)">ntfy</b> app (App Store / Play Store), tap <b style="color:var(--fg)">+</b>, and subscribe to<br>' +
+        '<b style="color:var(--gold);font-size:15px;user-select:all">' + esc(t) + '</b> <button class="link" type="button" id="al-copy">Copy</button><br>' +
+        'Alerts show the order number, bottles, total and collect/deliver. No names or numbers. Keep the topic name inside the team.';
+    });
+  }
+  $('al-on').addEventListener('change', function(){
+    if(!alerts) return;
+    var v = Object.assign({}, alerts.value, { on:$('al-on').checked }), box = $('al-on');
+    box.disabled = true;
+    sb.from('settings').update({ value:v, updated_at:new Date().toISOString() }).eq('key', 'order_alerts').then(function(r){
+      box.disabled = false;
+      if(r.error){ alert('Not saved: ' + r.error.message); box.checked = !box.checked; return; }
+      alerts.value = v;
+    });
+  });
+  $('al-how').addEventListener('click', function(e){
+    if(e.target.id !== 'al-copy' || !alerts) return;
+    navigator.clipboard.writeText(alerts.value.topic).then(function(){ e.target.textContent = 'Copied ✓'; });
+  });
   function shownOrders(){ var f = $('o-filter').value; return orders.filter(function(o){ return !f ? true : f === 'open' ? ['done', 'cancelled'].indexOf(o.status) < 0 : o.status === f; }); }
   function orderItems(o){ return (o.items || []).map(function(i){ return i.qty + '× ' + String(i.name).replace('Galindo ', ''); }).join(', '); }
   function renderOrders(){

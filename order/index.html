@@ -93,6 +93,16 @@
   .two{display:flex;gap:10px}.two .field{flex:1;min-width:0}
   .cbnote{margin-top:20px;background:var(--bg);border:1px solid var(--line);border-radius:12px;padding:12px 14px;font-family:var(--sans);font-size:13.5px;color:var(--muted);line-height:1.5}
   .cbnote b{color:var(--fg)}
+  .paybox{margin-top:20px;border:1px solid var(--gold-soft);border-radius:14px;padding:14px 16px;background:linear-gradient(180deg,rgba(216,180,94,.08),rgba(216,180,94,.02))}
+  .paybox .ph{display:flex;align-items:center;justify-content:space-between;gap:10px}
+  .paybox .pt{font-family:var(--sans);font-weight:700;font-size:15px;color:var(--fg)}
+  .paybox .soon{font-family:var(--sans);font-size:11px;letter-spacing:.14em;text-transform:uppercase;font-weight:800;color:#1a1208;background:var(--gold);padding:5px 10px;border-radius:999px;flex:none}
+  .paybox p{font-family:var(--sans);font-size:13.5px;color:var(--muted);line-height:1.5;margin:0}
+  .paybox p b{color:var(--fg)}
+  .paybox .steps{list-style:none;counter-reset:s;margin:10px 0 0;padding:0;font-family:var(--sans);font-size:13.5px;color:var(--muted);line-height:1.45}
+  .paybox .steps li{counter-increment:s;position:relative;padding-left:32px;margin-top:8px;min-height:22px}
+  .paybox .steps li::before{content:counter(s);position:absolute;left:0;top:-1px;width:22px;height:22px;box-sizing:border-box;border-radius:50%;border:1px solid var(--gold-soft);color:var(--gold);font-weight:700;font-size:12px;display:flex;align-items:center;justify-content:center}
+  .paybox .steps b{color:var(--fg)}
   .editbar{margin-top:16px;font-family:var(--sans);font-size:14px;color:var(--gold);text-align:center}
   .olist{display:flex;flex-direction:column;gap:10px;margin-top:14px}
   .orow{background:var(--bg);border:1px solid var(--line);border-radius:12px;padding:12px 14px;font-family:var(--sans)}
@@ -121,7 +131,10 @@
   .tierrow .dot{width:12px;height:12px;border-radius:50%;flex:none;margin-top:8px}
   .tierrow h3{font-family:var(--serif);font-size:20px}
   .tierrow p{font-family:var(--sans);font-size:13.5px;color:var(--muted);margin:3px 0 0;line-height:1.45}
-  .tierrow .you{font-family:var(--sans);font-size:10px;letter-spacing:.18em;text-transform:uppercase;color:var(--gold);font-weight:700;margin-left:6px}
+  .tierrow > div{flex:1;min-width:0}
+  .tierrow h3{display:flex;align-items:center;justify-content:space-between;gap:10px}
+  .tierrow .you{font-family:var(--sans);font-size:13px;letter-spacing:.16em;text-transform:uppercase;color:#1a1208;background:var(--gold);font-weight:800;padding:5px 12px;border-radius:999px;line-height:1;flex:none}
+  .tierrow .you[hidden]{display:none}
   /* photos */
   .grid{display:grid;grid-template-columns:repeat(3,1fr);gap:5px;margin-top:14px}
   .grid button{padding:0;border:none;background:var(--surface);border-radius:8px;overflow:hidden;aspect-ratio:4/5;cursor:pointer}
@@ -215,7 +228,16 @@
         </div>
         <p class="small" id="collect-note" style="text-align:left;margin-top:10px">Collection in Cape Town. We'll confirm where and when on WhatsApp.</p>
 
-        <div class="cbnote"><b>How paying works.</b> Galindo is sold through <b>Creative Beverages</b>, our licensed distributor. Once we've confirmed stock, they send you the invoice and you pay them directly. We look after collection or delivery.</div>
+        <div class="paybox">
+          <div class="ph"><span class="pt">Pay on this page</span><span class="soon">Coming soon</span></div>
+          <p style="margin-top:8px">Until then, here's how it works:</p>
+          <ol class="steps">
+            <li>Place your order here. Nothing to pay yet.</li>
+            <li>We check stock and pass your order to <b>Creative Beverages</b>, our licensed distributor, who prepare your invoice.</li>
+            <li>We WhatsApp you their secure <b>iKhokha</b> pay link.</li>
+            <li>Tap the link to pay by card, and we'll sort collection or delivery.</li>
+          </ol>
+        </div>
         <div class="field"><label for="o-mobile">Your mobile <span class="opt">(the one we have for you)</span></label><input id="o-mobile" type="tel" inputmode="tel" autocomplete="tel" placeholder="072 000 0000"></div>
         <div class="field"><label for="o-note">Anything else? <span class="opt">(optional)</span></label><input id="o-note" maxlength="500" placeholder="e.g. it's a gift, needs to arrive before Friday"></div>
 
@@ -345,7 +367,7 @@
   });
   function payNote(){
     $('collect-note').hidden = ful !== 'collect';
-    $('pay-note').textContent = "No payment now. We share your name, contact details and order with Creative Beverages so they can invoice you. 18+ only.";
+    $('pay-note').textContent = "We share your name, contact details and order with Creative Beverages so they can invoice you. 18+ only.";
   }
   function chipGroup(id, set){
     $(id).addEventListener('click', function(e){
@@ -376,7 +398,7 @@
         if(!r || !r.ok){ n.textContent = REASON[r && r.reason] || "That didn't go through. Try again, or message us."; return; }
         var lines = member.prices.filter(function(p){ return qty[p.key] > 0; }).map(function(p){ return qty[p.key] + '× ' + p.name.replace('Galindo ', ''); });
         $('d-ref').textContent = r.ref; $('d-title').textContent = r.edited ? 'Order changed.' : 'Order in. ¡Gracias!';
-        $('d-sum').textContent = lines.join(', ') + ' · ' + rand(r.total) + ' · ' + (ful === 'deliver' ? 'delivery' : 'collection') + '. We’ll WhatsApp you to confirm stock, then Creative Beverages sends you the invoice.';
+        $('d-sum').textContent = lines.join(', ') + ' · ' + rand(r.total) + ' · ' + (ful === 'deliver' ? 'delivery' : 'collection') + '. We’ll WhatsApp you to confirm stock, then send you a pay link from Creative Beverages.';
         $('d-wa').href = 'https://wa.me/' + WA_NUMBER + '?text=' + encodeURIComponent('Hi! I just ' + (r.edited ? 'changed' : 'placed') + ' Galindo order ' + r.ref + ' (' + lines.join(', ') + ', ' + rand(r.total) + ', ' + (ful === 'deliver' ? 'delivery' : 'collect') + '). ' + member.first + ', ' + member.id);
         stopEditing(); loadOrders();
         $('order').hidden = true; $('o-done').hidden = false; $('o-done').scrollIntoView({ behavior:'smooth', block:'center' });
