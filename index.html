@@ -104,6 +104,7 @@
                radial-gradient(130% 80% at 50% 0%,rgba(30,21,9,.55),transparent 66%)}
   .hero .wrap{position:relative;z-index:2;width:100%}
   @media(prefers-reduced-motion:reduce){.hero-video{display:none}}
+  .hero-video::-webkit-media-controls-start-playback-button,.hero-video::-webkit-media-controls{display:none!important;-webkit-appearance:none}
   .hero .agave{width:74px;height:74px;margin:0 auto 22px;display:block}
   .hero .eyebrow{margin-bottom:20px}
   .hero .mark{font-family:var(--serif);font-weight:600;letter-spacing:.14em;font-size:clamp(58px,13vw,118px);line-height:.9;color:var(--gold);
@@ -826,6 +827,17 @@
   new IntersectionObserver(function(es, io){
     if(es[es.length - 1].isIntersecting){ setTimeout(function(){ m.classList.add('zoomed'); }, 250); io.disconnect(); }
   }, { threshold:.45 }).observe(m);
+})();
+</script>
+<script>
+/* Hero video: some phones (iPhone Low Power Mode, data saver) block autoplay and show a grey play button.
+   Hide that button (the poster photo shows instead) and start the video on the visitor's first tap or scroll. */
+(function(){
+  var v = document.querySelector('.hero-video'); if(!v) return;
+  function kick(){ if(v.paused) v.play().catch(function(){}); }
+  v.play && v.play().catch(function(){
+    ['touchstart','click','scroll','keydown'].forEach(function(ev){ window.addEventListener(ev, kick, { once:true, passive:true }); });
+  });
 })();
 </script>
 </body>
