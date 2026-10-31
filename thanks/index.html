@@ -9,7 +9,7 @@
 <link rel="apple-touch-icon" href="/apple-touch-icon.png?v=2">
 <meta name="robots" content="noindex">
 <title>Thank you · Galindo</title>
-<meta name="description" content="Thank you for coming to the Galindo launch. Leave your details and be first to the next one.">
+<meta name="description" content="Thank you for coming to the Galindo launch. Get your Galindo ID: members' prices, the launch photos and first word on the next night.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;1,500;1,600&family=EB+Garamond:ital@0;1&family=Archivo:wght@500;600;700&display=swap">
@@ -150,6 +150,10 @@
   .chips.multi .chip[aria-pressed="true"]{background:var(--agave);border-color:var(--agave);color:#10200a}
   .field .opt{text-transform:none;letter-spacing:0;color:var(--faint);font-weight:500}
   .consent.need{color:var(--marigold)}
+  .perks{list-style:none;padding:0;margin:18px auto 4px;max-width:30em;text-align:left;display:flex;flex-direction:column;gap:10px}
+  .perks li{position:relative;padding-left:26px;color:var(--muted);font-size:16px;line-height:1.45}
+  .perks li::before{content:"";position:absolute;left:4px;top:8px;width:8px;height:8px;background:var(--gold);transform:rotate(45deg)}
+  .perks b{color:var(--fg);font-weight:600}
   /* photos from the night: tiny softened tiles, so it reads as the launch without picking out faces */
   .mosaic{display:block;width:100%;height:auto;border-radius:16px;border:1px solid var(--line);margin-top:4px}
   .mosaic-link{display:block;position:relative;text-decoration:none}
@@ -182,8 +186,13 @@
 
 <section class="wrap" style="padding-top:6px">
   <div class="capture rise d4">
-    <div class="ctitle">Be first to the next one</div>
-    <div class="csub">Leave your details and we'll tell you about the next Galindo night, new releases and bottle drops before anyone else.</div>
+    <div class="ctitle">Get your Galindo ID</div>
+    <div class="csub">Your members' card for Galindo. It takes a minute, and it's yours straight away.</div>
+    <ul class="perks">
+      <li><b>Members' prices on bottles.</b> The friends-of-the-house rate, to collect or have delivered. We switch it on once we've said hello.</li>
+      <li><b>Every photo from launch night,</b> full size, to save to your phone.</li>
+      <li><b>First word</b> on the next Galindo night and new releases.</li>
+    </ul>
 
     <form id="signup" autocomplete="on" novalidate>
       <div class="qlabel">Your favourite on the night</div>
@@ -213,25 +222,25 @@
       </div>
       <div class="field"><label for="f-note">Anything else? <span class="opt">(optional)</span></label><input id="f-note" placeholder="e.g. loved the Añejo, keen on a case for Christmas"></div>
 
-      <label class="consent" id="consent-row"><input type="checkbox" id="f-consent"><span>Yes, Galindo can contact me about events, new releases and offers. I can ask to be removed any time.</span></label>
+      <label class="consent" id="consent-row"><input type="checkbox" id="f-consent"><span>Yes, Galindo can contact me about my ID, orders, events and new releases. I can ask to be removed any time.</span></label>
 
-      <button class="cta" type="submit" id="submit">Keep me in the loop</button>
+      <button class="cta" type="submit" id="submit">Get my Galindo ID</button>
       <div class="note" id="note"></div>
       <div class="alt" id="fallback" hidden>
         <span class="alt-or">— or send it on WhatsApp —</span>
         <a class="wa-link" id="wa-send" rel="noopener noreferrer" target="_blank">Send my details on WhatsApp</a>
       </div>
-      <div class="reassure">We only use this to invite you to Galindo events and share news. No spam, and we never pass your details on.</div>
+      <div class="reassure">We only message you about Galindo: your ID, your orders, events and new releases. Never spam, and we never pass your details on.</div>
     </form>
 
     <div class="done" id="done">
       <div class="tick"><svg viewBox="0 0 24 24"><path d="M5 13l4 4L19 7"/></svg></div>
-      <h3>You're on the list</h3>
-      <p>We'll be in touch before the next one. ¡Salud!</p>
+      <h3>Welcome to Galindo</h3>
+      <p>Thank you! ¡Salud!</p>
       <div class="gid-box" id="gid-box" hidden>
         <p>Your Galindo ID</p>
         <div class="gid" id="gid-val"></div>
-        <p style="font-size:14px">It's your members' card and your key to the launch photos. We'll keep it on this phone for you.</p>
+        <p style="font-size:14px">It's your members' card: the launch photos are ready now, and we'll message you when your members' prices are switched on. We'll keep it on this phone for you.</p>
         <a class="cta" id="gid-go" href="/order/">See your photos &amp; card</a>
       </div>
       <p id="gid-has" hidden style="font-size:15px">You already have a Galindo ID. It's in the WhatsApp we sent you, or <a id="gid-ask" target="_blank" rel="noopener noreferrer" style="color:var(--gold)">ask us for it</a>.</p>
@@ -328,7 +337,7 @@
              email:$('f-email').value.trim(), favourite:fav, interests:topics(), note:$('f-note').value.trim(), consent:$('f-consent').checked };
   }
   function waText(d){
-    return "Hi! Thanks for the Galindo launch. Please keep me in the loop for the next event.\n" +
+    return "Hi! Thanks for the Galindo launch. I'd love a Galindo ID please.\n" +
       "Name: " + d.first + " " + d.last + "\n" + (d.mobile ? "Mobile: " + d.mobile + "\n" : "") + (d.email ? "Email: " + d.email + "\n" : "") +
       (d.favourite ? "Favourite: " + d.favourite + "\n" : "") + (d.interests ? "Interested in: " + d.interests + "\n" : "") + (d.note ? "Note: " + d.note + "\n" : "") +
       "Happy for Galindo to contact me.";
@@ -352,7 +361,7 @@
         $('wa-send').href = "https://wa.me/" + WA_NUMBER + "?text=" + encodeURIComponent(waText(d));
         $('fallback').hidden = false;
       })
-      .then(function(){ btn.disabled = false; btn.textContent = "Keep me in the loop"; });
+      .then(function(){ btn.disabled = false; btn.textContent = "Get my Galindo ID"; });
   });
   function post(url, headers, body){
     var ctl = window.AbortController ? new AbortController() : null, t = setTimeout(function(){ if(ctl) ctl.abort(); }, 10000);
