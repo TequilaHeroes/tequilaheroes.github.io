@@ -341,7 +341,9 @@
         ((c.interests || []).length ? '<div class="s">Interested in: ' + esc(c.interests.join(', ')) + '</div>' : '') +
         (c.notes ? '<div class="s">“' + esc(c.notes) + '”</div>' : '') +
         (c.galindo_id ? '<div class="s" style="margin-top:4px"><span class="gidtag">' + esc(c.galindo_id) + '</span> · <select class="mini" data-tier="' + c.id + '">' +
-          ['reposado', 'anejo', 'extra'].map(function(t){ return '<option value="' + t + '"' + (c.tier === t ? ' selected' : '') + '>' + TIER[t] + '</option>'; }).join('') + '</select></div>' : '') + '</div>' +
+          ['reposado', 'anejo', 'extra'].map(function(t){ return '<option value="' + t + '"' + (c.tier === t ? ' selected' : '') + '>' + TIER[t] + '</option>'; }).join('') + '</select>' +
+          ' <label style="display:inline-flex;align-items:center;gap:5px;margin:0 0 0 6px;text-transform:none;letter-spacing:0;font-size:13px;color:var(--fg);font-weight:500">' +
+          '<input type="checkbox" data-mates="' + c.id + '"' + (c.mates ? ' checked' : '') + ' style="width:16px;height:16px;accent-color:var(--gold)"> Mates rate</label></div>' : '') + '</div>' +
         '<div style="text-align:right"><div class="s">' + day(c.created_at) + '</div><div class="acts">' +
         (c.galindo_id ? (c.mobile_norm ? '<a class="link" style="color:var(--agave);font-weight:600;font-size:14px" target="_blank" rel="noopener" href="' + waLink(c) + '">WhatsApp ID</a>' : '') +
             '<button class="link" type="button" data-copy="' + c.id + '">Copy link</button>'
@@ -383,6 +385,11 @@
   function waLink(c){ return 'https://wa.me/' + c.mobile_norm + '?text=' + encodeURIComponent(msgTemplate().replace(/\{first\}/g, c.first_name).replace(/\{link\}/g, memberLink(c))); }
   function copyText(t){ return navigator.clipboard ? navigator.clipboard.writeText(t) : Promise.resolve(window.prompt('Copy this link:', t)); }
   $('c-list').addEventListener('change', function(e){
+    var mt = e.target.closest('[data-mates]');
+    if(mt){ var cm = contacts.filter(function(x){ return x.id === mt.dataset.mates; })[0];
+      if(mt.checked && !confirm('Switch on members\' prices for ' + cm.first_name + '?')){ mt.checked = false; return; }
+      sb.from('contacts').update({ mates:mt.checked }).eq('id', cm.id).then(function(r){
+        if(r.error){ alert('Not changed: ' + r.error.message); loadContacts(); return; } cm.mates = mt.checked; }); return; }
     var sel = e.target.closest('[data-tier]'); if(!sel) return;
     sb.from('contacts').update({ tier:sel.value }).eq('id', sel.dataset.tier).then(function(r){
       if(r.error){ alert('Tier not changed: ' + r.error.message); loadContacts(); return; }
@@ -419,7 +426,7 @@
     var open = orders.filter(function(o){ return ['done', 'cancelled'].indexOf(o.status) < 0; });
     $('o-stat').innerHTML = '<b>' + open.length + '</b> open · ' + rand(open.reduce(function(t, o){ return t + Number(o.total); }, 0));
     $('o-list').innerHTML = list.length ? list.map(function(o){
-      var nx = NEXT[o.status], mob = String(o.mobile || '').replace(/\D/g, '').replace(/^0(\d{9})$/, '27$1');
+      var nx = NEXT[o.status], mob = String(o.mobile || '').replace(/\D/g, '').replace(/^0(\d{9})$/, '27$1').replace(/^([6-8]\d{8})$/, '27$1');
       return '<div class="item"><div><div class="t">' + esc(o.ref) + ' · ' + esc([o.first_name, o.last_name].filter(Boolean).join(' ')) + '</div>' +
         '<div class="s">' + esc(orderItems(o)) + '</div>' +
         '<div class="s">' + (o.fulfilment === 'deliver' ? 'Deliver to: ' + esc(o.address) : 'Collect') + '</div>' +

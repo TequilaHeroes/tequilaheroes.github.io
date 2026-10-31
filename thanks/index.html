@@ -150,6 +150,18 @@
   .chips.multi .chip[aria-pressed="true"]{background:var(--agave);border-color:var(--agave);color:#10200a}
   .field .opt{text-transform:none;letter-spacing:0;color:var(--faint);font-weight:500}
   .consent.need{color:var(--marigold)}
+  /* photos from the night: tiny softened tiles, so it reads as the launch without picking out faces */
+  .mosaic{display:block;width:100%;height:auto;border-radius:16px;border:1px solid var(--line);margin-top:4px}
+  .mosaic-link{display:block;position:relative;text-decoration:none}
+  .mosaic-link .over{position:absolute;left:50%;bottom:16px;transform:translateX(-50%);white-space:nowrap;font-family:var(--sans);font-weight:700;font-size:14.5px;
+    color:#201600;background:linear-gradient(180deg,var(--gold-bright),var(--gold));border-radius:30px;padding:11px 18px;box-shadow:0 8px 24px rgba(0,0,0,.55)}
+  .gid-box{margin-top:6px;text-align:center}
+  .gid-box .gid{font-family:var(--sans);font-size:21px;letter-spacing:.12em;font-weight:700;color:var(--gold-bright);margin:4px 0 2px}
+  .gid-box .cta{margin-top:12px}
+  .booth-cta{display:flex;align-items:center;justify-content:center;gap:9px;margin:18px auto 0;max-width:340px;border-radius:14px;padding:15px 18px;
+    font-family:var(--sans);font-weight:700;font-size:15.5px;text-decoration:none;color:var(--gold);border:1px solid var(--gold-soft);background:var(--surface)}
+  .booth-cta svg{width:20px;height:20px;stroke:var(--gold);fill:none;stroke-width:1.8;flex:none}
+  .photos-sub{color:var(--muted);font-size:16px;text-align:center;margin:-6px auto 16px;max-width:28em}
 </style>
 </head>
 <body>
@@ -216,6 +228,13 @@
       <div class="tick"><svg viewBox="0 0 24 24"><path d="M5 13l4 4L19 7"/></svg></div>
       <h3>You're on the list</h3>
       <p>We'll be in touch before the next one. ¡Salud!</p>
+      <div class="gid-box" id="gid-box" hidden>
+        <p>Your Galindo ID</p>
+        <div class="gid" id="gid-val"></div>
+        <p style="font-size:14px">It's your members' card and your key to the launch photos. We'll keep it on this phone for you.</p>
+        <a class="cta" id="gid-go" href="/order/">See your photos &amp; card</a>
+      </div>
+      <p id="gid-has" hidden style="font-size:15px">You already have a Galindo ID. It's in the WhatsApp we sent you, or <a id="gid-ask" target="_blank" rel="noopener noreferrer" style="color:var(--gold)">ask us for it</a>.</p>
       <button type="button" id="again">Add someone else</button>
     </div>
 
@@ -224,6 +243,18 @@
       <br><a id="order" rel="noopener noreferrer" target="_blank">Order on WhatsApp →</a>
     </div>
   </div>
+</section>
+
+<section class="wrap">
+  <div class="divider rise"><span></span></div>
+  <div class="sec-head"><div class="eyebrow">Photo booth</div><h2>What a night</h2></div>
+  <p class="photos-sub">Sombreros, moustaches and a lot of Blue Steel. Thank you for every one of these.</p>
+  <a class="mosaic-link" id="mosaic-link" href="#signup">
+    <img class="mosaic" src="launch-mosaic.jpg" alt="A mosaic of photo-booth pictures from the Galindo launch night" width="995" height="1235" loading="lazy">
+    <span class="over" id="mosaic-over">Get your Galindo ID for the photos</span>
+  </a>
+  <p class="photos-sub" id="mosaic-hint" style="margin-top:14px;font-size:15px">Sign up above and your Galindo ID opens every photo from the night, full size, to save.</p>
+  <a class="booth-cta" href="/booth/"><svg viewBox="0 0 24 24"><path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5"/></svg>Open the Galindo photo booth</a>
 </section>
 
 <section class="wrap">
@@ -306,7 +337,7 @@
 
   $('signup').addEventListener('submit', function(e){
     e.preventDefault();
-    var d = data(), note = $('note'), btn = $('submit');
+    var d = data(), note = $('note'), btn = $('submit'); note.style.color = '';
     $('consent-row').classList.remove('need'); $('fallback').hidden = true;
     if(!d.first){ note.textContent = "Pop your first name in."; $('f-first').focus(); return; }
     if(!d.mobile && !d.email){ note.textContent = "Add a mobile number or an email so we can reach you."; $('f-mobile').focus(); return; }
@@ -315,7 +346,7 @@
     if(!d.consent){ note.textContent = "Tick the box so we're allowed to keep in touch."; $('consent-row').classList.add('need'); return; }
     note.textContent = ""; btn.disabled = true; btn.textContent = "Sending…";
     toSupabase(d).catch(function(){ return toImac(d); })
-      .then(function(){ $('signup').hidden = true; $('done').classList.add('show'); })
+      .then(function(j){ $('signup').hidden = true; $('done').classList.add('show'); showId(j || {}, d); })
       .catch(function(){
         note.textContent = "We couldn't save that just now. Send it to the team on WhatsApp instead, one tap:";
         $('wa-send').href = "https://wa.me/" + WA_NUMBER + "?text=" + encodeURIComponent(waText(d));
@@ -335,6 +366,32 @@
     return post(SUPABASE_URL + '/rest/v1/rpc/submit_contact', { 'Content-Type':'application/json', apikey:SUPABASE_KEY, Authorization:'Bearer ' + SUPABASE_KEY }, { p:p });
   }
   function toImac(d){ return post(ENDPOINT, {'Content-Type':'application/json'}, d); }
+
+  /* Galindo ID from the sign-up: kept on this phone (same key the members' page uses) so the photos are one tap away. */
+  var ID_KEY = 'galindo_member_id';
+  function memberUrl(id){ return '/order/?id=' + encodeURIComponent(id) + '#photos'; }
+  function storedId(){ try{ return localStorage.getItem(ID_KEY) || ''; }catch(e){ return ''; } }
+  function showId(j, d){
+    $('gid-box').hidden = true; $('gid-has').hidden = true;
+    if(j.id){
+      try{ localStorage.setItem(ID_KEY, j.id); }catch(e){}
+      $('gid-val').textContent = j.id; $('gid-go').href = memberUrl(j.id); $('gid-box').hidden = false; mosaicLink();
+    }else if(j.has_id){
+      $('gid-ask').href = "https://wa.me/" + WA_NUMBER + "?text=" + encodeURIComponent("Hi! Could you resend my Galindo ID please? I'm " + d.first + " " + d.last + (d.mobile ? ", " + d.mobile : ""));
+      $('gid-has').hidden = false;
+    }
+  }
+  function mosaicLink(){
+    var id = storedId();
+    if(id){ $('mosaic-link').href = memberUrl(id); $('mosaic-over').textContent = 'See all the photos'; $('mosaic-hint').hidden = true; }
+  }
+  $('mosaic-link').addEventListener('click', function(e){
+    if(storedId()) return;
+    e.preventDefault(); $('signup').hidden = false; $('done').classList.remove('show');
+    $('signup').scrollIntoView({ behavior:'smooth', block:'start' });
+    $('note').textContent = "Sign up here and you'll get your Galindo ID and the photos straight away."; $('note').style.color = 'var(--gold)';
+  });
+  mosaicLink();
   $('again').addEventListener('click', function(){
     ['f-first','f-last','f-mobile','f-email','f-note'].forEach(function(id){ $(id).value = ''; });
     $('f-consent').checked = false; $('note').textContent = '';
