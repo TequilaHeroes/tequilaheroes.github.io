@@ -54,7 +54,36 @@
   .card .gid{font-family:var(--sans);font-size:15px;letter-spacing:.14em;font-weight:700;margin-top:8px}
   .card .since{font-family:var(--sans);font-size:11px;opacity:.75;margin-top:3px}
   .card .qr{background:#fff;padding:6px;border-radius:8px;flex:none;line-height:0}
-  .card .qr img,.card .qr canvas{width:84px!important;height:84px!important}
+  .card .qr img,.card .qr canvas{width:100px!important;height:100px!important}
+  .card .plogo{display:none}
+  /* Print my card: just the card, at bank-card size (85.6 x 54 mm) with a cut line */
+  @media print{
+    @page{size:A4 portrait;margin:15mm}
+    :root{color-scheme:light}
+    html,body{background:#fff!important}
+    body > :not(#print-area){display:none!important}
+    #print-area{display:block!important}
+    #print-area .card{width:85.6mm;height:54mm;box-sizing:border-box;padding:4mm 4.5mm;border-radius:3.2mm;box-shadow:none;
+      display:flex;flex-direction:column;justify-content:space-between;outline:.2mm dashed #999;outline-offset:0;
+      -webkit-print-color-adjust:exact;print-color-adjust:exact;
+      background:#fff!important;color:#1a1208!important;border:.5mm solid #C9A24E;outline-offset:.6mm;border-top-width:2.2mm}
+    #print-area .card.anejo{border-color:#B9772F}
+    #print-area .card.extra{border-color:#3a2c1a}
+    #print-area .card .mark{font-size:13pt;color:#9A7424}
+    #print-area .card.anejo .mark{color:#8A5420}
+    #print-area .card.extra .mark{color:#1a1208}
+    #print-area .card .kind{font-size:5pt;margin-top:.6mm}
+    #print-area .card .tierpill{font-size:5pt;padding:.8mm 2mm;border-width:.3mm}
+    #print-area .card .bottom{margin-top:0;gap:3mm}
+    #print-area .card .plogo{display:block;width:9mm;height:9mm;margin:0 0 2mm;color:#9A7424}
+    #print-area .card.anejo .plogo{color:#8A5420}
+    #print-area .card.extra .plogo{color:#1a1208}
+    #print-area .card .name{font-size:15pt}
+    #print-area .card .gid{font-size:7.5pt;margin-top:1.5mm}
+    #print-area .card .since{font-size:5pt;margin-top:.6mm}
+    #print-area .card .qr{padding:0;border-radius:0}
+    #print-area .card .qr img,#print-area .card .qr canvas{width:24mm!important;height:24mm!important}
+  }
   .cardhint{font-family:var(--sans);font-size:12.5px;color:var(--faint);text-align:center;margin-top:12px;line-height:1.5}
 
   .field{margin-top:12px}
@@ -181,11 +210,13 @@
         <div class="tierpill" id="c-tier">Reposado</div>
       </div>
       <div class="bottom">
-        <div><div class="name" id="c-name"></div><div class="gid" id="c-id"></div><div class="since" id="c-since"></div></div>
+        <div><svg class="plogo" viewBox="10 18 80 78" aria-hidden="true"><g fill="none" stroke="currentColor" stroke-width="5.6" stroke-linecap="round"><path d="M50 92 L50 30"/><path d="M50 88 C40 70 30 58 20 50"/><path d="M50 88 C60 70 70 58 80 50"/><path d="M50 84 C44 64 38 48 34 34"/><path d="M50 84 C56 64 62 48 66 34"/><path d="M50 80 C50 58 50 40 50 22"/></g></svg><div class="name" id="c-name"></div><div class="gid" id="c-id"></div><div class="since" id="c-since"></div></div>
         <div class="qr" id="c-qr"></div>
       </div>
     </div>
     <div class="cardhint">This is your members' card. Bookmark this page or add it to your Home Screen, and show the QR at Galindo events.</div>
+    <p class="center" style="margin:6px 0 0"><button class="linkbtn" type="button" id="print-card">Print my card</button></p>
+    <div class="cardhint" style="margin-top:0">Prints bank-card size. Or just screenshot it to keep on your phone.</div>
   </section>
 
   <section class="wrap" id="myorders" hidden>
@@ -337,7 +368,7 @@
     var t = member.tier || 'reposado';
     $('card').className = 'card ' + t;
     $('c-tier').textContent = TIER[t]; $('c-name').textContent = member.first; $('c-id').textContent = member.id;
-    $('c-since').textContent = member.since ? 'Member since ' + new Date(member.since).toLocaleDateString('en-ZA', { month:'long', year:'numeric' }) : '';
+    $('c-since').textContent = member.since ? 'Member since ' + new Date(member.since).toLocaleDateString('en-ZA', { day:'numeric', month:'long', year:'numeric' }) : '';
     $('c-qr').innerHTML = '';
     if(window.QRCode) new QRCode($('c-qr'), { text:url, width:168, height:168, colorDark:'#0D0C0A', colorLight:'#ffffff', correctLevel:QRCode.CorrectLevel.M });
     $('hello').textContent = 'Hola ' + member.first + '. Choose your bottles; we confirm stock on WhatsApp.';
@@ -490,6 +521,12 @@
 
   $('d-again').addEventListener('click', function(){ renderMember(location.href); $('o-note').value = ''; });
   $('enter').addEventListener('submit', function(e){ e.preventDefault(); var v = $('gid-in').value.trim(); if(v) open(v); });
+  function printArea(){
+    var a = $('print-area'); if(!a){ a = document.createElement('div'); a.id = 'print-area'; a.hidden = true; document.body.appendChild(a); }
+    a.innerHTML = ''; a.appendChild($('card').cloneNode(true)); a.firstChild.removeAttribute('id');
+  }
+  window.addEventListener('beforeprint', printArea);
+  $('print-card').addEventListener('click', function(){ printArea(); window.print(); });
   $('not-me').addEventListener('click', function(){ store(''); member = null; history.replaceState(null, '', location.pathname); $('gid-in').value = ''; showEnter(''); });
 
   var start = new URLSearchParams(location.search).get('id') || stored();

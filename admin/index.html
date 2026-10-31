@@ -150,6 +150,10 @@
         <label for="s-maps">Google Maps link <span class="faint" style="text-transform:none;letter-spacing:0">(optional: we search by name + address if blank)</span></label>
         <input id="s-maps" inputmode="url" autocapitalize="off" placeholder="https://maps.app.goo.gl/…">
         <div class="row">
+          <div><label for="s-evname">Event on their card <span class="faint" style="text-transform:none;letter-spacing:0">(optional)</span></label><input id="s-evname" maxlength="60" placeholder="e.g. Galindo tasting night"></div>
+          <div><label for="s-evdate">Event date <span class="faint" style="text-transform:none;letter-spacing:0">(shows "Done" after)</span></label><input id="s-evdate" type="date"></div>
+        </div>
+        <div class="row">
           <div><label for="s-sort">Order on site <span class="faint" style="text-transform:none;letter-spacing:0">(lower = first)</span></label><input id="s-sort" type="number" value="100"></div>
           <div><label>On the website</label><div class="checks"><label><input type="checkbox" id="s-active" checked> Show it</label></div></div>
         </div>
@@ -312,7 +316,7 @@
     $('s-form-h').textContent = editing ? 'Edit ' + s.name : 'New stockist';
     $('s-name').value = s.name || ''; $('s-kind').value = s.kind; $('s-area').value = s.area || ''; $('s-city').value = s.city || '';
     $('s-address').value = s.address || ''; $('s-phone').value = s.phone || ''; $('s-website').value = s.website || '';
-    $('s-maps').value = s.maps_url || ''; $('s-sort').value = s.sort; $('s-active').checked = s.active; $('s-notes').value = s.notes || '';
+    $('s-maps').value = s.maps_url || ''; $('s-evname').value = s.event_name || ''; $('s-evdate').value = (s.event_date || '').slice(0, 10); $('s-sort').value = s.sort; $('s-active').checked = s.active; $('s-notes').value = s.notes || '';
     [].forEach.call($('s-products').querySelectorAll('input'), function(c){ c.checked = (s.products || []).indexOf(c.value) >= 0; });
     $('s-del').hidden = !editing; $('s-note').textContent = ''; $('s-note').className = 'note';
     $('s-form').hidden = false; $('s-list').hidden = true; $('s-add').hidden = true; $('s-name').focus();
@@ -326,10 +330,11 @@
     var row = {
       name:$('s-name').value.trim(), kind:$('s-kind').value, area:$('s-area').value.trim() || null, city:$('s-city').value.trim() || 'Cape Town',
       address:$('s-address').value.trim() || null, phone:$('s-phone').value.trim() || null, website:https($('s-website').value), maps_url:https($('s-maps').value),
-      sort:parseInt($('s-sort').value, 10) || 100, active:$('s-active').checked, notes:$('s-notes').value.trim() || null,
+      sort:parseInt($('s-sort').value, 10) || 100, event_name:$('s-evname').value.trim() || null, event_date:$('s-evdate').value || null, active:$('s-active').checked, notes:$('s-notes').value.trim() || null,
       products:[].filter.call($('s-products').querySelectorAll('input'), function(c){ return c.checked; }).map(function(c){ return c.value; })
     };
     if(!row.name){ $('s-note').textContent = 'Give it a name.'; return; }
+    if(!row.event_name !== !row.event_date){ $('s-note').textContent = 'Give the event a name and a date, or clear both.'; return; }
     $('s-save').disabled = true;
     (editing ? sb.from('stockists').update(row).eq('id', editing.id) : sb.from('stockists').insert(row)).then(function(r){
       $('s-save').disabled = false;
