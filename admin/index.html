@@ -103,6 +103,13 @@
   .tot{display:flex;justify-content:space-between;font-size:20px;font-weight:700;padding-top:10px}
   .qrbox{background:#fff;display:inline-block;padding:10px;border-radius:10px;margin-top:8px}
   .item.hit{border-color:var(--gold);box-shadow:0 0 0 2px rgba(216,180,94,.35)}
+  /* privacy: sales, takings and month end stay folded away unless a team member opens them */
+  body.tp-hide .t-priv{display:none!important}
+  .privbtn{width:100%;margin:18px 0 8px;color:var(--muted);font-weight:500}
+  .handover{position:fixed;inset:0;z-index:60;overflow:auto;background:radial-gradient(120% 50% at 50% 0%, #1d1406 0%, rgba(0,0,0,0) 60%), var(--bg)}
+  .handover .hold{width:100%;margin-top:26px;padding:16px;font-size:15px;color:var(--muted);user-select:none;-webkit-user-select:none;-webkit-touch-callout:none;position:relative;overflow:hidden}
+  .handover .hold i{position:absolute;inset:0 auto 0 0;width:0;background:rgba(216,180,94,.25)}
+  .handover .hold.on i{width:100%;transition:width 1.1s linear}
 </style>
 </head>
 <body>
@@ -272,14 +279,34 @@
         <div class="formbtns"><button class="gold" type="submit" id="t-save">Save</button><button type="button" id="t-cancel">Cancel</button></div>
         <div class="note" id="t-note"></div>
       </form>
+      <div class="handover" id="t-hand" hidden>
+        <div class="wrap" style="max-width:480px;padding-top:max(36px, env(safe-area-inset-top,0px))">
+          <div class="brand" style="text-align:center;font-size:36px">Galindo</div>
+          <form id="t-hform" autocomplete="off">
+            <p class="muted" style="text-align:center;margin:6px 0 4px">Your details for your Galindo bottles</p>
+            <div class="row"><div><label for="h-first">First name</label><input id="h-first" maxlength="60" autocomplete="off"></div><div><label for="h-last">Surname</label><input id="h-last" maxlength="60" autocomplete="off"></div></div>
+            <label for="h-mobile">Mobile</label><input id="h-mobile" type="tel" maxlength="30" autocomplete="off" placeholder="082 123 4567">
+            <label for="h-email">Email <span style="text-transform:none;letter-spacing:0">(optional)</span></label><input id="h-email" type="email" maxlength="120" autocomplete="off">
+            <div class="checks" style="margin-top:14px"><label><input type="checkbox" id="h-consent"> Let me know about Galindo releases and events</label></div>
+            <button class="gold bigbtn" type="submit">Done</button>
+            <div class="note" id="h-note"></div>
+          </form>
+          <div id="t-hthanks" hidden style="text-align:center;padding-top:30px">
+            <div style="font-size:44px">🥃</div>
+            <h3 style="margin-top:8px">Thank you, <span id="h-name"></span>!</h3>
+            <p class="muted">Please hand the phone back.</p>
+          </div>
+          <button type="button" class="hold" id="t-hold"><i></i><span id="t-holdtxt">Team: press and hold to cancel</span></button>
+        </div>
+      </div>
       <div id="t-scanner" hidden style="position:fixed;inset:0;background:rgba(0,0,0,.94);z-index:50;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;padding:16px">
         <video id="t-video" playsinline muted style="width:min(92vw,420px);max-height:60vh;border-radius:14px;border:2px solid var(--gold);background:#000"></video>
         <div class="muted" id="t-scanmsg" style="text-align:center">Point at the QR on their Galindo card</div>
         <button type="button" id="t-scanx">Cancel</button>
       </div>
       <div id="t-main" hidden>
-        <div class="tiles"><div class="tile"><b id="t-rev">R0</b><span>Takings</span></div><div class="tile"><b id="t-units">0</b><span>Bottles sold</span></div><div class="tile"><b id="t-n">0</b><span>Sales</span></div></div>
-        <div class="stat" id="t-pays" style="margin:-4px 0 10px"></div>
+        <div class="tiles t-priv"><div class="tile"><b id="t-rev">R0</b><span>Takings</span></div><div class="tile"><b id="t-units">0</b><span>Bottles sold</span></div><div class="tile"><b id="t-n">0</b><span>Sales</span></div></div>
+        <div class="stat t-priv" id="t-pays" style="margin:-4px 0 10px"></div>
         <div id="t-closed" class="card" hidden style="margin-bottom:12px;border-color:var(--marigold)">This event is closed. Sales can still be saved (late ones from a phone that was offline), but check with whoever closed it.</div>
         <div class="card" id="t-who" hidden style="margin-bottom:12px">
           <label style="margin-top:0">Who's buying? <span style="text-transform:none;letter-spacing:0">(needed for every direct sale)</span></label>
@@ -289,6 +316,7 @@
             <div class="list" id="t-hits" style="margin-top:8px"></div>
             <div class="bar" style="margin:8px 0 0"><input id="t-gid" placeholder="or type their GAL number" autocapitalize="characters" autocomplete="off" style="flex:1;text-transform:uppercase"><button type="button" id="t-gidgo">Use card</button></div>
             <div class="s" style="margin-top:4px">Members' prices need a Galindo card with the mates rate. Anyone else pays retail.</div>
+            <button type="button" id="t-handgo" style="width:100%;margin-top:10px">New buyer? Hand them the phone to type their details</button>
           </div>
           <div id="t-whoslot"></div>
         </div>
@@ -329,11 +357,12 @@
           <div class="bar"><input id="t-pick" maxlength="8" autocapitalize="characters" autocomplete="off" placeholder="Pickup code" style="flex:1;text-transform:uppercase"><button type="button" id="t-pickgo">Find</button></div>
           <div class="list" id="t-qrlist"></div>
         </div>
-        <h4><span id="t-listh">Sales tonight</span> <span style="text-transform:none;letter-spacing:0">(newest first, from every phone)</span></h4>
-        <div class="list" id="t-list"></div>
+        <button type="button" class="privbtn" id="t-privtog">Show sales &amp; totals (team only)</button>
+        <h4 class="t-priv"><span id="t-listh">Sales tonight</span> <span style="text-transform:none;letter-spacing:0">(newest first, from every phone)</span></h4>
+        <div class="list t-priv" id="t-list"></div>
 
-        <h4 id="t-closeh">Close out for Creative Beverages</h4>
-        <div class="card" id="t-close">
+        <h4 class="t-priv" id="t-closeh">Close out for Creative Beverages</h4>
+        <div class="card t-priv" id="t-close">
           <div class="s" id="t-sum" style="white-space:pre-line;font-size:14px"></div>
           <div class="formbtns"><button type="button" id="t-copy">Copy summary for CB</button><button type="button" id="t-edit">Edit event</button></div>
           <div class="row">
@@ -351,7 +380,7 @@
             <div class="qrbox" id="t-gqr"></div>
           </div>
         </div>
-        <div class="formbtns"><label class="checks" style="margin:0;font-size:13px">This phone is called</label><input id="t-device" maxlength="40" style="width:auto;flex:1;min-width:120px;padding:7px 10px;font-size:14px"></div>
+        <div class="formbtns t-priv"><label class="checks" style="margin:0;font-size:13px">This phone is called</label><input id="t-device" maxlength="40" style="width:auto;flex:1;min-width:120px;padding:7px 10px;font-size:14px"></div>
       </div>
     </section>
   </div>
@@ -1019,7 +1048,7 @@
     cart = {}; ['t-slip', 't-other', 't-first', 't-last', 't-mobile', 't-email', 't-snote'].forEach(function(id){ $(id).value = ''; });
     $('t-consent').checked = false; $('t-handed').checked = true; $('t-buyer').open = false; tPay = defaultPay(); tBuyer = null; $('t-q').value = ''; $('t-gid').value = '';
     $('t-done').textContent = '✓ Saved ' + rand(tot) + (navigator.onLine ? '' : ' on this phone (sends when there\'s signal)');
-    renderTill(); flush();
+    hidePriv(); renderTill(); flush();
   });
 
   // sends queued sales one at a time; a sale stays queued until the database says it has it
@@ -1259,6 +1288,37 @@
       }, function(){ $('t-scanmsg').textContent = 'Couldn\'t load the scanner. Type their GAL number instead.'; });
     }, function(){ $('t-scanmsg').textContent = 'Camera blocked. Allow the camera for this site, or type their GAL number.'; });
   });
+
+  /* ---------- privacy: the phone may be handed to a customer ---------- */
+  // sales, takings and the month end are folded away by default, and again after every sale
+  document.body.classList.add('tp-hide');
+  function privLabel(){ $('t-privtog').textContent = document.body.classList.contains('tp-hide') ? 'Show sales & totals (team only)' : 'Hide sales & totals'; }
+  function hidePriv(){ document.body.classList.add('tp-hide'); privLabel(); }
+  $('t-privtog').addEventListener('click', function(){ document.body.classList.toggle('tp-hide'); privLabel(); });
+  // "hand them the phone": a full-screen form with only their own details; back to the till only by press-and-hold
+  var holdTimer = null;
+  $('t-handgo').addEventListener('click', function(){
+    hidePriv(); ['h-first', 'h-last', 'h-mobile', 'h-email'].forEach(function(id){ $(id).value = ''; }); $('h-consent').checked = false; $('h-note').textContent = '';
+    $('t-hform').hidden = false; $('t-hthanks').hidden = true; $('t-holdtxt').textContent = 'Team: press and hold to cancel';
+    $('t-hand').hidden = false; window.scrollTo(0, 0); $('h-first').focus();
+  });
+  $('t-hform').addEventListener('submit', function(e){
+    e.preventDefault();
+    var first = $('h-first').value.trim(), mob = $('h-mobile').value.trim(), em = $('h-email').value.trim(), n = $('h-note');
+    if(!first){ n.textContent = 'Please add your first name.'; $('h-first').focus(); return; }
+    if(mob.replace(/\D/g, '').length < 9 && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(em)){ n.textContent = 'Please add your mobile number.'; $('h-mobile').focus(); return; }
+    tBuyer = null; $('t-first').value = first; $('t-last').value = $('h-last').value.trim(); $('t-mobile').value = mob; $('t-email').value = em;
+    $('t-consent').checked = $('h-consent').checked; $('t-buyer').open = true;
+    document.activeElement && document.activeElement.blur && document.activeElement.blur();
+    $('h-name').textContent = first; $('t-hform').hidden = true; $('t-hthanks').hidden = false; $('t-holdtxt').textContent = 'Team: press and hold to carry on';
+    renderTill();
+  });
+  function holdStart(e){ e.preventDefault(); var b = $('t-hold'); b.classList.add('on'); clearTimeout(holdTimer);
+    holdTimer = setTimeout(function(){ b.classList.remove('on'); $('t-hand').hidden = true; if(!$('t-hthanks').hidden) $('t-buyer').scrollIntoView({ block:'center' }); }, 1100); }
+  function holdEnd(){ clearTimeout(holdTimer); $('t-hold').classList.remove('on'); }
+  $('t-hold').addEventListener('pointerdown', holdStart);
+  ['pointerup', 'pointerleave', 'pointercancel'].forEach(function(ev){ $('t-hold').addEventListener(ev, holdEnd); });
+  $('t-hold').addEventListener('contextmenu', function(e){ e.preventDefault(); });
 
   // a guest's pickup QR opens tequilaheroes.com/admin/#collect=CODE
   function collectFromHash(){
