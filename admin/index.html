@@ -438,13 +438,21 @@
   var STATUS = { 'new':'New', sent:'With Creative Beverages', invoiced:'Invoiced', paid:'Paid', done:'Done', cancelled:'Cancelled' };
   var NEXT = { 'new':['sent', 'Send to Creative Beverages'], sent:['invoiced', 'Add CB invoice no.'], invoiced:['paid', 'Mark paid'], paid:['done', collectLabel] };
   function collectLabel(o){ return o.fulfilment === 'deliver' ? 'Delivered' : 'Collected'; }
+  // iKhokha iK Pay link for the order (made in Creative Beverages' iKhokha app); shows as "Pay now" on the member's page
+  function askPayLink(o){
+    var v = window.prompt('iKhokha Pay link for ' + o.ref + ' (' + rand(o.total) + '). Paste it, or leave blank to skip:', o.pay_url || '');
+    if(v === null) return false; v = v.trim(); if(!v) return '';
+    if(!/^https:\/\/\S+$/.test(v)){ alert('That doesn\'t look like a link. It should start with https://'); return false; }
+    return v.slice(0, 500);
+  }
   function waNumber(o){ return String(o.mobile || '').replace(/\D/g, '').replace(/^0(\d{9})$/, '27$1').replace(/^([6-8]\d{8})$/, '27$1'); }
   function waText(o){
     var hi = 'Hi ' + o.first_name + ', ', what = ' (' + orderItems(o) + ', ' + rand(o.total) + ')', how = o.fulfilment === 'deliver' ? 'delivery' : 'collection';
     return {
       'new': hi + 'thanks for your Galindo order ' + o.ref + what + '. We\'re checking stock, then Creative Beverages, our licensed distributor, will send you the invoice.',
       sent: hi + 'your Galindo order ' + o.ref + what + ' is with Creative Beverages, our licensed distributor. They\'ll send you the invoice shortly.',
-      invoiced: hi + 'Creative Beverages has sent you invoice ' + (o.cb_invoice || '') + ' for Galindo order ' + o.ref + what + '. Once it\'s paid we\'ll arrange your ' + how + '.',
+      invoiced: hi + 'Creative Beverages has sent you invoice ' + (o.cb_invoice || '') + ' for Galindo order ' + o.ref + what + '.' +
+        (o.pay_url ? ' Pay securely here: ' + o.pay_url + ' ' : ' ') + 'Once it\'s paid we\'ll arrange your ' + how + '.',
       paid: hi + 'payment received for Galindo order ' + o.ref + ', thank you! ' + (o.fulfilment === 'deliver' ? 'We\'ll let you know when your delivery is on its way.' : 'We\'ll be in touch to arrange collection.'),
       done: 'Enjoy your Galindo, ' + o.first_name + '! ¡Salud! 🥃',
       cancelled: hi + 'your Galindo order ' + o.ref + ' has been cancelled. Any questions, just reply here.'
@@ -472,6 +480,7 @@
         (o.note ? '<div class="s">“' + esc(o.note) + '”</div>' : '') +
         '<div class="s">' + esc([o.mobile, o.email, o.galindo_id].filter(Boolean).join(' · ')) + '</div>' +
         (o.cb_invoice ? '<div class="s">CB invoice <b style="color:var(--fg)">' + esc(o.cb_invoice) + '</b>' + (o.payment_ref ? ' · paid ref ' + esc(o.payment_ref) : '') + '</div>' : '') +
+        (o.pay_url ? '<div class="s">Pay link: <a href="' + esc(o.pay_url) + '" target="_blank" rel="noopener" style="color:var(--gold)">' + esc(o.pay_url.replace(/^https:\/\//, '').slice(0, 40)) + '…</a></div>' : '') +
         '<div><span class="pill' + (o.status === 'new' ? ' off' : o.status === 'done' || o.status === 'paid' ? ' yes' : '') + '">' + STATUS[o.status] + '</span>' +
           (o.edited_at && o.status === 'new' ? '<span class="pill off">Changed by customer</span>' : '') +
           (o.status === 'cancelled' && o.cancelled_by === 'customer' ? '<span class="pill off">Cancelled by customer</span>' : '') + '</div></div>' +
@@ -479,6 +488,7 @@
         (mob && !partner ? '<a class="link" style="color:var(--agave);font-weight:600;font-size:14px" target="_blank" rel="noopener" href="https://wa.me/' + mob + '?text=' +
           encodeURIComponent(waText(o)) + '">WhatsApp ' + o.first_name + '</a>' : '') +
         (nx ? '<button class="link" type="button" data-ost="' + o.id + '" data-to="' + nx[0] + '">' + (typeof nx[1] === 'function' ? nx[1](o) : nx[1]) + '</button>' : '') +
+        (o.status === 'invoiced' ? '<button class="link" type="button" data-ost="' + o.id + '" data-to="paylink">' + (o.pay_url ? 'Change Pay link' : 'Add Pay link') + '</button>' : '') +
         (!partner && ['done', 'cancelled'].indexOf(o.status) < 0 ? '<button class="link danger" type="button" data-ost="' + o.id + '" data-to="cancelled">Cancel</button>' : '') +
         '</div></div></div>';
     }).join('') : '<div class="empty">' + (orders.length ? 'No orders here.' : 'No orders yet. They arrive here when members order on tequilaheroes.com/order/.') + '</div>';
@@ -490,7 +500,11 @@
     var to = b.dataset.to, row = { status:to };
     if(to === 'cancelled' && !confirm('Cancel order ' + o.ref + '? Then tap WhatsApp to tell ' + o.first_name + '.')) return;
     if(to === 'sent' && !confirm('Send ' + o.ref + ' to Creative Beverages to invoice? The customer can no longer change it after this.')) return;
-    if(to === 'invoiced'){ var inv = window.prompt('Creative Beverages invoice number for ' + o.ref + ':', o.cb_invoice || ''); if(!inv || !inv.trim()) return; row.cb_invoice = inv.trim().slice(0, 40); }
+    if(to === 'invoiced'){
+      var inv = window.prompt('Creative Beverages invoice number for ' + o.ref + ':', o.cb_invoice || ''); if(!inv || !inv.trim()) return; row.cb_invoice = inv.trim().slice(0, 40);
+      var pl = askPayLink(o); if(pl === false) return; if(pl) row.pay_url = pl;
+    }
+    if(to === 'paylink'){ var pl2 = askPayLink(o); if(!pl2) return; row = { pay_url:pl2 }; }
     if(to === 'paid'){ var pref = window.prompt('Payment reference for ' + o.ref + ' (optional):', o.payment_ref || ''); if(pref === null) return; if(pref.trim()) row.payment_ref = pref.trim().slice(0, 80); }
     b.disabled = true;
     sb.from('orders').update(row).eq('id', o.id).then(function(r){
