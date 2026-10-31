@@ -79,9 +79,9 @@
 <!-- START -->
 <section class="start wrap" id="start">
   <img src="/galindo-logo.png" alt="Tequila Galindo">
-  <div class="eyebrow">Launch Night · Photo Booth</div>
+  <div class="eyebrow">Photo Booth</div>
   <h1>Strike a pose,<br>amigo.</h1>
-  <p class="lead">Sombrero, moustache, shades — they find your face automatically. Snap — it lands in Galindo's launch-night album, and one tap saves it to your phone.</p>
+  <p class="lead">Sombrero, moustache, shades — they find your face automatically. Snap — it lands in the Galindo album, and one tap saves it to your phone.</p>
   <button class="btn" id="go">Open the camera</button>
   <div class="err" id="starterr" hidden></div>
   <p class="lead" style="font-size:12px;color:var(--faint)">Works best in Safari or Chrome. 18+ · Enjoy Galindo responsibly.</p>
@@ -128,7 +128,7 @@
     <button class="btn" type="button" id="j-go">Join the Galindo list</button>
     <div class="note" id="j-note"></div>
   </div>
-  <div class="note" id="consent" hidden>Your photo goes into Galindo's launch-night album.</div>
+  <div class="note" id="consent" hidden>Your photo goes into the Galindo album.</div>
 </section>
 
 <script type="module">
@@ -386,9 +386,9 @@ function drawFrame(){
   if(logo.complete && logo.naturalWidth){ const w = 330, h = w * logo.naturalHeight / logo.naturalWidth; ctx.drawImage(logo, (CW - w) / 2, CH - 70 - h - 40, w, h); }
   ctx.textAlign = 'center'; ctx.fillStyle = '#E7C877';
   ctx.font = '600 30px Archivo, system-ui, sans-serif';
-  ctx.fillText(props.hero ? 'THE 4 TEQUILA HEROES' : 'LAUNCH NIGHT  ·  30 OCT 2026  ·  CAPE TOWN', CW / 2, CH - 70);
+  ctx.fillText(props.hero ? 'THE 4 TEQUILA HEROES' : 'TEQUILA GALINDO  ·  100% BLUE AGAVE', CW / 2, CH - 70);
   ctx.fillStyle = 'rgba(244,236,220,.6)'; ctx.font = '500 24px Archivo, system-ui, sans-serif';
-  ctx.fillText(props.hero ? 'Blue Steel edition  ·  Where Galindo began  ·  30.10.26' : 'tequilaheroes.com', CW / 2, CH - 36);
+  ctx.fillText(props.hero ? 'Blue Steel edition  ·  Where Galindo began' : 'tequilaheroes.com', CW / 2, CH - 36);
 }
 
 function render(){
