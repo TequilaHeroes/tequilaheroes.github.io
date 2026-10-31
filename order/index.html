@@ -90,6 +90,7 @@
   .chips{display:flex;gap:9px}
   .chip{flex:1;font-family:var(--sans);font-size:15px;font-weight:600;color:var(--muted);background:var(--surface-2);border:1px solid var(--line);border-radius:30px;padding:12px 10px;cursor:pointer}
   .chip[aria-pressed="true"]{color:#201600;background:var(--gold);border-color:var(--gold)}
+  .two{display:flex;gap:10px}.two .field{flex:1;min-width:0}
   .total{display:flex;justify-content:space-between;align-items:baseline;margin-top:20px;padding-top:14px;border-top:1px solid var(--line-2)}
   .total span{font-family:var(--sans);font-size:12px;letter-spacing:.16em;text-transform:uppercase;color:var(--faint);font-weight:600}
   .total b{font-family:var(--serif);font-size:30px;color:var(--gold-bright)}
@@ -163,13 +164,27 @@
           <button class="chip" type="button" data-v="collect" aria-pressed="true">I'll collect</button>
           <button class="chip" type="button" data-v="deliver" aria-pressed="false">Deliver to me</button>
         </div>
-        <div class="field" id="addr-wrap" hidden><label for="o-addr">Delivery address</label><textarea id="o-addr" maxlength="300" autocomplete="street-address" placeholder="Street, suburb, city, and anything the driver should know"></textarea></div>
+        <div id="addr-wrap" hidden>
+          <div class="field"><label for="o-street">Street address</label><input id="o-street" maxlength="120" autocomplete="address-line1" placeholder="e.g. 12 Main Road, Unit 4"></div>
+          <div class="two">
+            <div class="field"><label for="o-suburb">Suburb</label><input id="o-suburb" maxlength="60" autocomplete="address-level3" placeholder="Woodstock"></div>
+            <div class="field"><label for="o-city">City</label><input id="o-city" maxlength="60" autocomplete="address-level2" value="Cape Town"></div>
+          </div>
+          <div class="field" style="max-width:50%"><label for="o-pc">Postal code</label><input id="o-pc" inputmode="numeric" maxlength="4" autocomplete="postal-code" placeholder="7925"></div>
+        </div>
+        <p class="small" id="collect-note" style="text-align:left;margin-top:10px">Collection in Cape Town. We'll confirm where and when on WhatsApp.</p>
+
+        <div class="qlabel">How would you like to pay?</div>
+        <div class="chips" id="pay">
+          <button class="chip" type="button" data-v="eft" aria-pressed="true">EFT</button>
+          <button class="chip" type="button" data-v="card" aria-pressed="false" id="pay-card">Card on collection</button>
+        </div>
         <div class="field"><label for="o-mobile">Your mobile <span class="opt">(the one we have for you)</span></label><input id="o-mobile" type="tel" inputmode="tel" autocomplete="tel" placeholder="072 000 0000"></div>
         <div class="field"><label for="o-note">Anything else? <span class="opt">(optional)</span></label><input id="o-note" maxlength="500" placeholder="e.g. it's a gift, needs to arrive before Friday"></div>
 
         <button class="cta" type="submit" id="o-go">Place my order</button>
         <div class="note" id="o-note-msg"></div>
-        <p class="small">No payment now. We'll WhatsApp you to confirm stock and a time, and you pay by card when you collect or we deliver. 18+ only.</p>
+        <p class="small" id="pay-note"></p>
       </form>
       <div class="done" id="o-done" hidden>
         <div class="tick"><svg viewBox="0 0 24 24"><path d="M5 13l4 4L19 7"/></svg></div>
@@ -209,7 +224,7 @@
   var STORE = 'galindo_member_id';
 
   var $ = function(id){ return document.getElementById(id); };
-  var member = null, qty = {}, ful = 'collect';
+  var member = null, qty = {}, ful = 'collect', pay = 'eft';
   function rand(n){ return 'R' + Number(n || 0).toLocaleString('en-ZA', { maximumFractionDigits:2 }); }
   function esc(s){ return String(s == null ? '' : s).replace(/[&<>"']/g, function(c){ return '&#' + c.charCodeAt(0) + ';'; }); }
   function rpc(fn, body){
@@ -273,14 +288,27 @@
     var b = e.target.closest('button[data-k]'); if(!b) return;
     qty[b.dataset.k] = Math.max(0, Math.min(120, (qty[b.dataset.k] || 0) + parseInt(b.dataset.d, 10))); renderTotal();
   });
-  $('ful').addEventListener('click', function(e){
-    var b = e.target.closest('.chip'); if(!b) return; ful = b.dataset.v;
-    [].forEach.call(this.querySelectorAll('.chip'), function(x){ x.setAttribute('aria-pressed', String(x === b)); });
-    $('addr-wrap').hidden = ful !== 'deliver'; if(ful === 'deliver') $('o-addr').focus();
-  });
+  function payNote(){
+    var when = ful === 'deliver' ? ' and delivery' : ' and a collection time';
+    $('pay-card').textContent = ful === 'deliver' ? 'Card on delivery' : 'Card on collection';
+    $('collect-note').hidden = ful !== 'collect';
+    $('pay-note').textContent = "No payment now. We'll WhatsApp you to confirm stock" + when +
+      (pay === 'eft' ? ", with our bank details and your order number as the reference. Bottles go out once it clears."
+                     : ", and you pay by card when " + (ful === 'deliver' ? 'we deliver.' : 'you collect.')) + ' 18+ only.';
+  }
+  function chipGroup(id, set){
+    $(id).addEventListener('click', function(e){
+      var b = e.target.closest('.chip'); if(!b) return; set(b.dataset.v);
+      [].forEach.call(this.querySelectorAll('.chip'), function(x){ x.setAttribute('aria-pressed', String(x === b)); });
+      payNote();
+    });
+  }
+  chipGroup('ful', function(v){ ful = v; $('addr-wrap').hidden = v !== 'deliver'; if(v === 'deliver') $('o-street').focus(); });
+  chipGroup('pay', function(v){ pay = v; });
+  payNote();
 
   var REASON = { 'mobile-mismatch':"That mobile doesn't match the one we have for you. Use the number you gave us, or message us.",
-    'bad-mobile':'That mobile number looks wrong.', address:'Add your delivery address.', empty:'Choose at least one bottle.',
+    'bad-mobile':'That mobile number looks wrong.', address:'Add your street address and suburb.', 'postal-code':'Add your 4-digit postal code.', empty:'Choose at least one bottle.',
     'too-many':"That's a big order! Message us and we'll sort it out directly.", 'slow-down':'Too many tries just now. Give it a few minutes.',
     unknown:"We don't recognise your ID any more. Message us." };
   $('order').addEventListener('submit', function(e){
@@ -288,15 +316,17 @@
     var n = $('o-note-msg'), any = Object.keys(qty).some(function(k){ return qty[k] > 0; }), mob = $('o-mobile').value.trim();
     if(!any){ n.textContent = REASON.empty; return; }
     if(mob.replace(/\D/g, '').length < 9){ n.textContent = 'Add your mobile so we can confirm.'; $('o-mobile').focus(); return; }
-    if(ful === 'deliver' && $('o-addr').value.trim().length < 8){ n.textContent = REASON.address; $('o-addr').focus(); return; }
+    if(ful === 'deliver' && ($('o-street').value.trim().length < 4 || !($('o-suburb').value.trim() || $('o-city').value.trim()))){ n.textContent = REASON.address; $('o-street').focus(); return; }
+    if(ful === 'deliver' && !/^\d{4}$/.test($('o-pc').value.trim())){ n.textContent = REASON['postal-code']; $('o-pc').focus(); return; }
     n.textContent = ''; $('o-go').disabled = true; $('o-go').textContent = 'Placing your order…';
-    rpc('place_order', { p:{ gid:member.id, mobile:mob, items:qty, fulfilment:ful, address:$('o-addr').value.trim(), note:$('o-note').value.trim() } })
+    rpc('place_order', { p:{ gid:member.id, mobile:mob, items:qty, fulfilment:ful, payment:pay, street:$('o-street').value.trim(), suburb:$('o-suburb').value.trim(),
+      city:$('o-city').value.trim(), postal_code:$('o-pc').value.trim(), note:$('o-note').value.trim() } })
       .then(function(r){
         if(!r || !r.ok){ n.textContent = REASON[r && r.reason] || "That didn't go through. Try again, or message us."; return; }
         var lines = member.prices.filter(function(p){ return qty[p.key] > 0; }).map(function(p){ return qty[p.key] + '× ' + p.name.replace('Galindo ', ''); });
         $('d-ref').textContent = r.ref;
-        $('d-sum').textContent = lines.join(', ') + ' · ' + rand(r.total) + ' · ' + (ful === 'deliver' ? 'delivery' : 'collection') + '. We’ll WhatsApp you shortly to confirm.';
-        $('d-wa').href = 'https://wa.me/' + WA_NUMBER + '?text=' + encodeURIComponent('Hi! I just placed Galindo order ' + r.ref + ' (' + lines.join(', ') + ', ' + rand(r.total) + ', ' + (ful === 'deliver' ? 'delivery' : 'collect') + '). ' + member.first + ', ' + member.id);
+        $('d-sum').textContent = lines.join(', ') + ' · ' + rand(r.total) + ' · ' + (ful === 'deliver' ? 'delivery' : 'collection') + ' · ' + (pay === 'eft' ? 'EFT' : 'card') + '. We’ll WhatsApp you shortly to confirm' + (pay === 'eft' ? ', with bank details. Use ' + r.ref + ' as your payment reference.' : '.');
+        $('d-wa').href = 'https://wa.me/' + WA_NUMBER + '?text=' + encodeURIComponent('Hi! I just placed Galindo order ' + r.ref + ' (' + lines.join(', ') + ', ' + rand(r.total) + ', ' + (ful === 'deliver' ? 'delivery' : 'collect') + ', ' + (pay === 'eft' ? 'EFT' : 'card') + '). ' + member.first + ', ' + member.id);
         $('order').hidden = true; $('o-done').hidden = false; $('o-done').scrollIntoView({ behavior:'smooth', block:'center' });
       })
       .catch(function(){ n.textContent = "We couldn't reach the order system. Check your signal and try again."; })
