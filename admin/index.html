@@ -51,6 +51,9 @@
   .tabs{display:flex;gap:6px;margin:6px 0 16px;border-bottom:1px solid var(--line)}
   .tabs button{border:none;background:none;border-radius:0;color:var(--muted);padding:10px 12px;border-bottom:2px solid transparent}
   .tabs button[aria-selected="true"]{color:var(--gold);border-bottom-color:var(--gold)}
+  .tabs .refresh{margin-left:auto;display:flex;align-items:center;gap:8px;font-size:12px;color:var(--faint)}
+  .tabs .refresh button{border:1px solid var(--line-2);border-radius:10px;padding:7px 12px;color:var(--gold);border-bottom:1px solid var(--line-2)}
+  @media(max-width:560px){.tabs{flex-wrap:wrap}.tabs .refresh{width:100%;justify-content:flex-end;padding-bottom:6px}}
   .bar{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:12px}
   .bar input[type=search]{flex:1;min-width:180px}
   .stat{font-size:13px;color:var(--muted)}
@@ -113,6 +116,7 @@
       <button type="button" role="tab" aria-selected="false" data-tab="contacts">Contacts</button>
       <button type="button" role="tab" aria-selected="false" data-tab="orders">Orders <span id="o-badge" class="pill" hidden></span></button>
       <button type="button" role="tab" aria-selected="false" data-tab="sales">Sales</button>
+      <span class="refresh"><span id="r-at"></span><button type="button" id="r-go" title="Load the latest">↻ Refresh</button></span>
     </div>
 
     <!-- stockists -->
@@ -230,11 +234,11 @@
   /* ---------- sign in / out ---------- */
   function show(session){
     $('v-login').hidden = !!session; $('v-app').hidden = !session;
-    if(!session) return;
+    if(!session){ teamOk = false; return; }
     $('who').textContent = session.user.email;
     sb.rpc('is_team').then(function(r){
       var ok = r.data === true; $('not-team').hidden = ok; $('team-ui').hidden = !ok;
-      if(ok){ loadStockists(); loadContacts(); loadSales(); loadOrders(); }
+      if(ok) refreshAll();
     });
   }
   $('login-form').addEventListener('submit', function(e){
@@ -250,10 +254,21 @@
 
   /* ---------- tabs ---------- */
   document.querySelector('.tabs').addEventListener('click', function(e){
-    var b = e.target.closest('button'); if(!b) return;
-    [].forEach.call(this.querySelectorAll('button'), function(x){ x.setAttribute('aria-selected', String(x === b)); });
+    var b = e.target.closest('button[data-tab]'); if(!b) return;
+    [].forEach.call(this.querySelectorAll('button[data-tab]'), function(x){ x.setAttribute('aria-selected', String(x === b)); });
     ['stockists', 'contacts', 'orders', 'sales'].forEach(function(t){ $('t-' + t).hidden = b.dataset.tab !== t; });
   });
+
+  /* ---------- refresh: button, every minute while the page is open, and on coming back to it ---------- */
+  var teamOk = false;
+  function refreshAll(){
+    teamOk = true; loadStockists(); loadContacts(); loadSales(); loadOrders();
+    $('r-at').textContent = 'Updated ' + new Date().toLocaleTimeString('en-ZA', { hour:'2-digit', minute:'2-digit' });
+  }
+  function busy(){ return !$('s-form').hidden || !$('x-form').hidden || !$('c-msg-card').hidden || (document.activeElement && /INPUT|SELECT|TEXTAREA/.test(document.activeElement.tagName)); }
+  $('r-go').addEventListener('click', function(){ if(teamOk) refreshAll(); });
+  setInterval(function(){ if(teamOk && !document.hidden && !busy()) refreshAll(); }, 60000);
+  document.addEventListener('visibilitychange', function(){ if(teamOk && !document.hidden && !busy()) refreshAll(); });
 
   /* ---------- stockists ---------- */
   function loadStockists(){
