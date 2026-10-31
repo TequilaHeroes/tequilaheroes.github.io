@@ -1,0 +1,314 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="robots" content="noindex,nofollow">
+<link rel="icon" type="image/svg+xml" href="/favicon.svg?v=2">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png?v=2">
+<title>Galindo Team</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@600&family=Archivo:wght@400;500;600;700&display=swap">
+<style>
+  /* Team admin for Galindo: stockists shown on tequilaheroes.com + the contacts list. Same warm-black/gold as the site.
+     Sign-in is Supabase Auth (email + password); what you can see is decided by the database (public.team), not this page. */
+  :root{
+    color-scheme:dark;
+    --bg:#0D0C0A; --surface:#17120D; --surface-2:#1F1812; --line:#352B20; --line-2:#4A3B29;
+    --fg:#F4ECDC; --muted:#AD9D84; --faint:#7A6E5A; --gold:#D8B45E; --gold-bright:#E7C877; --agave:#8BB26A; --marigold:#E0812B;
+    --serif:'Cormorant Garamond', Georgia, serif; --sans:'Archivo', system-ui, -apple-system, sans-serif;
+  }
+  *{box-sizing:border-box}
+  [hidden]{display:none!important}
+  html,body{margin:0}
+  body{background:radial-gradient(120% 50% at 50% 0%, #1d1406 0%, rgba(0,0,0,0) 60%), var(--bg);color:var(--fg);font-family:var(--sans);font-size:15px;line-height:1.45;min-height:100vh}
+  .wrap{max-width:860px;margin:0 auto;padding:0 max(16px, env(safe-area-inset-left,0px)) 40px}
+  h1,h2,h3{margin:0;font-weight:600}
+  .brand{font-family:var(--serif);font-size:26px;color:var(--gold)}
+  .muted{color:var(--muted)} .faint{color:var(--faint)}
+  .card{background:linear-gradient(180deg,var(--surface-2),var(--surface));border:1px solid var(--line);border-radius:16px;padding:20px}
+  label{display:block;font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--faint);font-weight:600;margin:14px 2px 6px}
+  input,select,textarea{width:100%;font:inherit;font-size:16px;color:var(--fg);background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:11px 12px}
+  input:focus,select:focus,textarea:focus{outline:none;border-color:var(--gold)}
+  textarea{min-height:70px;resize:vertical}
+  .row{display:flex;gap:10px}.row>*{flex:1;min-width:0}
+  button{font:inherit;font-weight:600;cursor:pointer;border-radius:10px;padding:11px 16px;border:1px solid var(--line-2);background:var(--surface-2);color:var(--fg)}
+  button.gold{background:linear-gradient(180deg,var(--gold-bright),var(--gold));color:#201600;border-color:var(--gold)}
+  button.link{background:none;border:none;color:var(--gold);padding:6px 0;text-decoration:underline;text-underline-offset:3px}
+  button.danger{color:var(--marigold)}
+  button:disabled{opacity:.5;cursor:default}
+  .note{min-height:1.2em;margin-top:10px;font-size:13.5px;color:var(--marigold)}
+  .note.ok{color:var(--agave)}
+
+  .login{max-width:380px;margin:12vh auto 0}
+  .login .brand{text-align:center;font-size:34px}
+  .login p{text-align:center;margin:6px 0 14px}
+  .login button{width:100%;margin-top:18px}
+
+  header.top{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:18px 0 10px}
+  header.top .who{font-size:12.5px;color:var(--faint);text-align:right}
+  .tabs{display:flex;gap:6px;margin:6px 0 16px;border-bottom:1px solid var(--line)}
+  .tabs button{border:none;background:none;border-radius:0;color:var(--muted);padding:10px 12px;border-bottom:2px solid transparent}
+  .tabs button[aria-selected="true"]{color:var(--gold);border-bottom-color:var(--gold)}
+  .bar{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:12px}
+  .bar input[type=search]{flex:1;min-width:180px}
+  .stat{font-size:13px;color:var(--muted)}
+  .stat b{color:var(--fg)}
+
+  .list{display:flex;flex-direction:column;gap:8px}
+  .item{display:flex;justify-content:space-between;gap:12px;align-items:flex-start;background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:12px 14px}
+  .item.click{cursor:pointer}
+  .item .t{font-weight:600}
+  .item .s{font-size:13px;color:var(--muted)}
+  .pill{display:inline-block;font-size:11px;font-weight:600;border:1px solid var(--line-2);color:var(--gold-bright);border-radius:20px;padding:2px 8px;margin:4px 4px 0 0}
+  .pill.off{color:var(--marigold);border-color:var(--marigold)}
+  .pill.yes{color:var(--agave);border-color:var(--agave)}
+  .checks{display:flex;flex-wrap:wrap;gap:14px;margin-top:4px}
+  .checks label{display:flex;align-items:center;gap:7px;margin:0;text-transform:none;letter-spacing:0;font-size:15px;color:var(--fg);font-weight:500}
+  .checks input{width:18px;height:18px;accent-color:var(--gold)}
+  .formbtns{display:flex;flex-wrap:wrap;gap:8px;margin-top:18px}
+  .empty{text-align:center;color:var(--muted);padding:26px 10px}
+  @media(max-width:560px){.row{flex-direction:column;gap:0}}
+</style>
+</head>
+<body>
+
+<!-- sign in -->
+<div class="wrap" id="v-login" hidden>
+  <form class="login card" id="login-form">
+    <div class="brand">Galindo Team</div>
+    <p class="muted">Stockists and contacts for tequilaheroes.com</p>
+    <label for="l-email">Email</label><input id="l-email" type="email" autocomplete="username" required>
+    <label for="l-pass">Password</label><input id="l-pass" type="password" autocomplete="current-password" required>
+    <button class="gold" type="submit" id="l-go">Sign in</button>
+    <div class="note" id="l-note"></div>
+  </form>
+</div>
+
+<!-- signed in -->
+<div class="wrap" id="v-app" hidden>
+  <header class="top">
+    <div class="brand">Galindo Team</div>
+    <div class="who"><span id="who"></span><br><button class="link" type="button" id="logout">Sign out</button></div>
+  </header>
+
+  <div class="card" id="not-team" hidden>
+    <h3>You're signed in, but not on the team list yet.</h3>
+    <p class="muted">Ask Bradley to add your email to the team, then sign in again.</p>
+  </div>
+
+  <div id="team-ui" hidden>
+    <div class="tabs" role="tablist">
+      <button type="button" role="tab" aria-selected="true" data-tab="stockists">Stockists</button>
+      <button type="button" role="tab" aria-selected="false" data-tab="contacts">Contacts</button>
+    </div>
+
+    <!-- stockists -->
+    <section id="t-stockists">
+      <div class="bar">
+        <button class="gold" type="button" id="s-add">+ Add stockist</button>
+        <span class="stat" id="s-stat"></span>
+        <a class="stat" href="/#buy" target="_blank" rel="noopener" style="margin-left:auto;color:var(--gold)">View on site →</a>
+      </div>
+      <form class="card" id="s-form" hidden>
+        <h3 id="s-form-h">New stockist</h3>
+        <label for="s-name">Name</label><input id="s-name" maxlength="80" required placeholder="e.g. Mexicola">
+        <div class="row">
+          <div><label for="s-kind">Type</label>
+            <select id="s-kind"><option value="restaurant">Restaurant</option><option value="bar">Bar</option><option value="bottle_store">Bottle store</option><option value="hotel">Hotel</option><option value="online">Online</option><option value="other">Other</option></select></div>
+          <div><label for="s-area">Area / suburb</label><input id="s-area" maxlength="60" placeholder="e.g. Woodstock"></div>
+          <div><label for="s-city">City</label><input id="s-city" maxlength="60" value="Cape Town"></div>
+        </div>
+        <label for="s-address">Address</label><input id="s-address" maxlength="160" placeholder="e.g. 154 Sir Lowry Road">
+        <label>Bottles they carry</label>
+        <div class="checks" id="s-products">
+          <label><input type="checkbox" value="reposado"> Reposado</label>
+          <label><input type="checkbox" value="anejo"> Añejo</label>
+          <label><input type="checkbox" value="extra"> Extra Añejo ‘V’</label>
+        </div>
+        <div class="row">
+          <div><label for="s-phone">Phone</label><input id="s-phone" type="tel" maxlength="30"></div>
+          <div><label for="s-website">Website</label><input id="s-website" inputmode="url" autocapitalize="off" placeholder="https://…"></div>
+        </div>
+        <label for="s-maps">Google Maps link <span class="faint" style="text-transform:none;letter-spacing:0">(optional: we search by name + address if blank)</span></label>
+        <input id="s-maps" inputmode="url" autocapitalize="off" placeholder="https://maps.app.goo.gl/…">
+        <div class="row">
+          <div><label for="s-sort">Order on site <span class="faint" style="text-transform:none;letter-spacing:0">(lower = first)</span></label><input id="s-sort" type="number" value="100"></div>
+          <div><label>On the website</label><div class="checks"><label><input type="checkbox" id="s-active" checked> Show it</label></div></div>
+        </div>
+        <label for="s-notes">Team notes <span class="faint" style="text-transform:none;letter-spacing:0">(never shown publicly)</span></label>
+        <textarea id="s-notes" maxlength="1000" placeholder="Contact person, order history, pricing agreed…"></textarea>
+        <div class="formbtns">
+          <button class="gold" type="submit" id="s-save">Save</button>
+          <button type="button" id="s-cancel">Cancel</button>
+          <button type="button" class="danger" id="s-del" hidden>Delete</button>
+        </div>
+        <div class="note" id="s-note"></div>
+      </form>
+      <div class="list" id="s-list"></div>
+    </section>
+
+    <!-- contacts -->
+    <section id="t-contacts" hidden>
+      <div class="bar">
+        <input type="search" id="c-q" placeholder="Search name, mobile, email…">
+        <label class="checks" style="margin:0"><label><input type="checkbox" id="c-opt"> Opted-in only</label></label>
+        <button type="button" id="c-csv">Export CSV</button>
+      </div>
+      <div class="stat" id="c-stat" style="margin-bottom:10px"></div>
+      <div class="list" id="c-list"></div>
+    </section>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
+<script>
+  var SUPABASE_URL = "https://yfopoeuncfpfizghqczr.supabase.co", SUPABASE_KEY = "sb_publishable_aCL5Ko6acTk_pBSJ-zXvzA_UNSAyOcl";
+  var sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+  var $ = function(id){ return document.getElementById(id); };
+  var KIND = { restaurant:'Restaurant', bar:'Bar', bottle_store:'Bottle store', hotel:'Hotel', online:'Online', other:'Other' };
+  var PROD = { reposado:'Reposado', anejo:'Añejo', extra:'Extra Añejo ‘V’' };
+  var SRC = { thanks:'Thank-you page', booth:'Photo booth', warmup:'Warm-up page', door:'Door iPad', till:'Till', whatsapp:'WhatsApp', import:'Import' };
+  var stockists = [], contacts = [], editing = null;
+  function esc(s){ return String(s == null ? '' : s).replace(/[&<>"']/g, function(c){ return '&#' + c.charCodeAt(0) + ';'; }); }
+  function day(t){ return t ? new Date(t).toLocaleDateString('en-ZA', { day:'numeric', month:'short', year:'numeric' }) : ''; }
+
+  /* ---------- sign in / out ---------- */
+  function show(session){
+    $('v-login').hidden = !!session; $('v-app').hidden = !session;
+    if(!session) return;
+    $('who').textContent = session.user.email;
+    sb.rpc('is_team').then(function(r){
+      var ok = r.data === true; $('not-team').hidden = ok; $('team-ui').hidden = !ok;
+      if(ok){ loadStockists(); loadContacts(); }
+    });
+  }
+  $('login-form').addEventListener('submit', function(e){
+    e.preventDefault(); var b = $('l-go'), n = $('l-note'); b.disabled = true; n.textContent = '';
+    sb.auth.signInWithPassword({ email:$('l-email').value.trim(), password:$('l-pass').value }).then(function(r){
+      b.disabled = false;
+      if(r.error){ n.textContent = /invalid/i.test(r.error.message) ? 'Email or password is wrong.' : r.error.message; return; }
+      $('l-pass').value = ''; show(r.data.session);
+    });
+  });
+  $('logout').addEventListener('click', function(){ sb.auth.signOut().then(function(){ show(null); }); });
+  sb.auth.getSession().then(function(r){ show(r.data.session); });
+
+  /* ---------- tabs ---------- */
+  document.querySelector('.tabs').addEventListener('click', function(e){
+    var b = e.target.closest('button'); if(!b) return;
+    [].forEach.call(this.querySelectorAll('button'), function(x){ x.setAttribute('aria-selected', String(x === b)); });
+    $('t-stockists').hidden = b.dataset.tab !== 'stockists'; $('t-contacts').hidden = b.dataset.tab !== 'contacts';
+  });
+
+  /* ---------- stockists ---------- */
+  function loadStockists(){
+    sb.from('stockists').select('*').order('sort').order('name').then(function(r){
+      if(r.error){ $('s-list').innerHTML = '<div class="empty">Could not load stockists: ' + esc(r.error.message) + '</div>'; return; }
+      stockists = r.data; renderStockists();
+    });
+  }
+  function renderStockists(){
+    var live = stockists.filter(function(s){ return s.active; }).length;
+    $('s-stat').innerHTML = '<b>' + live + '</b> on the site' + (stockists.length > live ? ' · ' + (stockists.length - live) + ' hidden' : '');
+    $('s-list').innerHTML = stockists.length ? stockists.map(function(s){
+      return '<div class="item click" data-id="' + s.id + '"><div><div class="t">' + esc(s.name) + '</div>' +
+        '<div class="s">' + esc([KIND[s.kind], s.area, s.city].filter(Boolean).join(' · ')) + '</div>' +
+        '<div>' + (s.products || []).map(function(p){ return '<span class="pill">' + esc(PROD[p]) + '</span>'; }).join('') +
+        (s.active ? '' : '<span class="pill off">Hidden</span>') + '</div></div><div class="s">Edit ›</div></div>';
+    }).join('') : '<div class="empty">No stockists yet. Tap “Add stockist” and they appear on the site straight away.</div>';
+  }
+  $('s-list').addEventListener('click', function(e){
+    var it = e.target.closest('.item'); if(!it) return;
+    openForm(stockists.filter(function(s){ return s.id === it.dataset.id; })[0]);
+  });
+  function openForm(s){
+    editing = s || null; s = s || { kind:'restaurant', city:'Cape Town', products:[], sort:100, active:true };
+    $('s-form-h').textContent = editing ? 'Edit ' + s.name : 'New stockist';
+    $('s-name').value = s.name || ''; $('s-kind').value = s.kind; $('s-area').value = s.area || ''; $('s-city').value = s.city || '';
+    $('s-address').value = s.address || ''; $('s-phone').value = s.phone || ''; $('s-website').value = s.website || '';
+    $('s-maps').value = s.maps_url || ''; $('s-sort').value = s.sort; $('s-active').checked = s.active; $('s-notes').value = s.notes || '';
+    [].forEach.call($('s-products').querySelectorAll('input'), function(c){ c.checked = (s.products || []).indexOf(c.value) >= 0; });
+    $('s-del').hidden = !editing; $('s-note').textContent = ''; $('s-note').className = 'note';
+    $('s-form').hidden = false; $('s-list').hidden = true; $('s-add').hidden = true; $('s-name').focus();
+  }
+  function closeForm(){ $('s-form').hidden = true; $('s-list').hidden = false; $('s-add').hidden = false; editing = null; }
+  $('s-add').addEventListener('click', function(){ openForm(null); });
+  $('s-cancel').addEventListener('click', closeForm);
+  function https(v){ v = v.trim(); if(!v) return null; return /^https:\/\//i.test(v) ? v : 'https://' + v.replace(/^http:\/\//i, ''); }
+  $('s-form').addEventListener('submit', function(e){
+    e.preventDefault();
+    var row = {
+      name:$('s-name').value.trim(), kind:$('s-kind').value, area:$('s-area').value.trim() || null, city:$('s-city').value.trim() || 'Cape Town',
+      address:$('s-address').value.trim() || null, phone:$('s-phone').value.trim() || null, website:https($('s-website').value), maps_url:https($('s-maps').value),
+      sort:parseInt($('s-sort').value, 10) || 100, active:$('s-active').checked, notes:$('s-notes').value.trim() || null,
+      products:[].filter.call($('s-products').querySelectorAll('input'), function(c){ return c.checked; }).map(function(c){ return c.value; })
+    };
+    if(!row.name){ $('s-note').textContent = 'Give it a name.'; return; }
+    $('s-save').disabled = true;
+    (editing ? sb.from('stockists').update(row).eq('id', editing.id) : sb.from('stockists').insert(row)).then(function(r){
+      $('s-save').disabled = false;
+      if(r.error){ $('s-note').textContent = 'Not saved: ' + r.error.message; return; }
+      closeForm(); loadStockists();
+    });
+  });
+  $('s-del').addEventListener('click', function(){
+    if(!editing || !confirm('Delete ' + editing.name + '? Untick “Show it” instead if you only want it off the site for now.')) return;
+    sb.from('stockists').delete().eq('id', editing.id).then(function(r){
+      if(r.error){ $('s-note').textContent = 'Not deleted: ' + r.error.message; return; }
+      closeForm(); loadStockists();
+    });
+  });
+
+  /* ---------- contacts ---------- */
+  function loadContacts(){
+    sb.from('contacts').select('*').order('created_at', { ascending:false }).limit(5000).then(function(r){
+      if(r.error){ $('c-list').innerHTML = '<div class="empty">Could not load contacts: ' + esc(r.error.message) + '</div>'; return; }
+      contacts = r.data; renderContacts();
+    });
+  }
+  function filtered(){
+    var q = $('c-q').value.trim().toLowerCase(), opt = $('c-opt').checked;
+    return contacts.filter(function(c){
+      if(opt && !c.consent) return false;
+      if(!q) return true;
+      return [c.first_name, c.last_name, c.mobile, c.email, c.notes].join(' ').toLowerCase().indexOf(q) >= 0;
+    });
+  }
+  function renderContacts(){
+    var list = filtered(), opted = contacts.filter(function(c){ return c.consent; }).length;
+    $('c-stat').innerHTML = '<b>' + contacts.length + '</b> contacts · <b>' + opted + '</b> happy to hear from us' + (list.length !== contacts.length ? ' · showing ' + list.length : '');
+    $('c-list').innerHTML = list.length ? list.map(function(c){
+      return '<div class="item"><div><div class="t">' + esc([c.first_name, c.last_name].filter(Boolean).join(' ')) + '</div>' +
+        '<div class="s">' + esc([c.mobile, c.email].filter(Boolean).join(' · ')) + '</div>' +
+        '<div>' + (c.consent ? '<span class="pill yes">Opted in</span>' : '<span class="pill off">No marketing</span>') +
+        (c.favourite ? '<span class="pill">♥ ' + esc(c.favourite) + '</span>' : '') +
+        (c.sources || []).map(function(s){ return '<span class="pill" style="color:var(--muted)">' + esc(SRC[s] || s) + '</span>'; }).join('') + '</div>' +
+        ((c.interests || []).length ? '<div class="s">Interested in: ' + esc(c.interests.join(', ')) + '</div>' : '') +
+        (c.notes ? '<div class="s">“' + esc(c.notes) + '”</div>' : '') + '</div>' +
+        '<div style="text-align:right"><div class="s">' + day(c.created_at) + '</div>' +
+        (c.consent ? '<button class="link danger" type="button" data-optout="' + c.id + '">Opt out</button>' : '') + '</div></div>';
+    }).join('') : '<div class="empty">' + (contacts.length ? 'Nobody matches that.' : 'No contacts yet.') + '</div>';
+  }
+  $('c-q').addEventListener('input', renderContacts);
+  $('c-opt').addEventListener('change', renderContacts);
+  $('c-list').addEventListener('click', function(e){
+    var b = e.target.closest('[data-optout]'); if(!b) return;
+    var c = contacts.filter(function(x){ return x.id === b.dataset.optout; })[0];
+    if(!c || !confirm('Opt ' + c.first_name + ' out of marketing? Only do this if they asked to be removed.')) return;
+    sb.from('contacts').update({ consent:false }).eq('id', c.id).then(function(r){
+      if(r.error){ alert('Not changed: ' + r.error.message); return; }
+      c.consent = false; renderContacts();
+    });
+  });
+  $('c-csv').addEventListener('click', function(){
+    var cols = ['created_at','first_name','last_name','mobile','email','consent','favourite','interests','sources','notes'];
+    var cell = function(v){ var t = Array.isArray(v) ? v.join('; ') : String(v == null ? '' : v); if(/^[=+\-@\t\r]/.test(t)) t = "'" + t; return '"' + t.replace(/"/g, '""') + '"'; };
+    var csv = cols.join(',') + '\n' + filtered().map(function(c){ return cols.map(function(k){ return cell(c[k]); }).join(','); }).join('\n');
+    var a = document.createElement('a'); a.href = URL.createObjectURL(new Blob(['﻿' + csv], { type:'text/csv' }));
+    a.download = 'galindo-contacts-' + new Date().toISOString().slice(0, 10) + '.csv'; a.click();
+  });
+</script>
+</body>
+</html>
