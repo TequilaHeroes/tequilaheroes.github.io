@@ -263,10 +263,14 @@
   var teamOk = false;
   function refreshAll(){
     teamOk = true; loadStockists(); loadContacts(); loadSales(); loadOrders();
-    $('r-at').textContent = 'Updated ' + new Date().toLocaleTimeString('en-ZA', { hour:'2-digit', minute:'2-digit' });
+    $('r-at').textContent = 'Updated ' + new Date().toLocaleTimeString('en-ZA', { hour:'2-digit', minute:'2-digit', second:'2-digit' });
   }
   function busy(){ return !$('s-form').hidden || !$('x-form').hidden || !$('c-msg-card').hidden || (document.activeElement && /INPUT|SELECT|TEXTAREA/.test(document.activeElement.tagName)); }
-  $('r-go').addEventListener('click', function(){ if(teamOk) refreshAll(); });
+  $('r-go').addEventListener('click', function(){
+    if(!teamOk) return; var b = this; b.disabled = true; b.textContent = 'Refreshing…'; refreshAll();
+    setTimeout(function(){ b.textContent = '✓ Up to date'; }, 700);
+    setTimeout(function(){ b.disabled = false; b.textContent = '↻ Refresh'; }, 2200);
+  });
   setInterval(function(){ if(teamOk && !document.hidden && !busy()) refreshAll(); }, 60000);
   document.addEventListener('visibilitychange', function(){ if(teamOk && !document.hidden && !busy()) refreshAll(); });
 
