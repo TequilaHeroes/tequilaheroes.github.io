@@ -69,6 +69,15 @@
   .checks input{width:18px;height:18px;accent-color:var(--gold)}
   .formbtns{display:flex;flex-wrap:wrap;gap:8px;margin-top:18px}
   .empty{text-align:center;color:var(--muted);padding:26px 10px}
+  .tiles{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:12px}
+  .tile{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:12px 14px}
+  .tile b{display:block;font-size:22px;color:var(--gold-bright)} .tile span{font-size:12px;color:var(--muted)}
+  h4{margin:18px 0 8px;font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--faint)}
+  .item.void{opacity:.5}
+  .acts{display:flex;flex-wrap:wrap;gap:4px 12px;justify-content:flex-end;margin-top:4px}
+  .gidtag{font-size:12.5px;letter-spacing:.08em;font-weight:700;color:var(--gold-bright)}
+  select.mini{width:auto;font-size:13px;padding:4px 8px;border-radius:8px}
+  .msgbox{width:100%;min-height:150px;font-size:14px}
   @media(max-width:560px){.row{flex-direction:column;gap:0}}
 </style>
 </head>
@@ -78,7 +87,7 @@
 <div class="wrap" id="v-login" hidden>
   <form class="login card" id="login-form">
     <div class="brand">Galindo Team</div>
-    <p class="muted">Stockists and contacts for tequilaheroes.com</p>
+    <p class="muted">Stockists, contacts, orders and sales for tequilaheroes.com</p>
     <label for="l-email">Email</label><input id="l-email" type="email" autocomplete="username" required>
     <label for="l-pass">Password</label><input id="l-pass" type="password" autocomplete="current-password" required>
     <button class="gold" type="submit" id="l-go">Sign in</button>
@@ -102,6 +111,8 @@
     <div class="tabs" role="tablist">
       <button type="button" role="tab" aria-selected="true" data-tab="stockists">Stockists</button>
       <button type="button" role="tab" aria-selected="false" data-tab="contacts">Contacts</button>
+      <button type="button" role="tab" aria-selected="false" data-tab="orders">Orders <span id="o-badge" class="pill" hidden></span></button>
+      <button type="button" role="tab" aria-selected="false" data-tab="sales">Sales</button>
     </div>
 
     <!-- stockists -->
@@ -156,8 +167,50 @@
         <label class="checks" style="margin:0"><label><input type="checkbox" id="c-opt"> Opted-in only</label></label>
         <button type="button" id="c-csv">Export CSV</button>
       </div>
+      <div class="bar">
+        <button type="button" id="c-issue">Give Galindo IDs to everyone opted in</button>
+        <button type="button" id="c-msg-edit" class="link">Edit the WhatsApp message</button>
+      </div>
+      <div class="card" id="c-msg-card" hidden style="margin-bottom:12px">
+        <label for="c-msg" style="margin-top:0">Message sent with each person's Galindo ID <span class="faint" style="text-transform:none;letter-spacing:0">({first} and {link} are filled in per person; saved on this device)</span></label>
+        <textarea id="c-msg" class="msgbox"></textarea>
+        <div class="formbtns"><button type="button" class="gold" id="c-msg-done">Done</button><button type="button" id="c-msg-reset">Reset to default</button></div>
+      </div>
       <div class="stat" id="c-stat" style="margin-bottom:10px"></div>
       <div class="list" id="c-list"></div>
+    </section>
+
+    <!-- orders (members ordering at tequilaheroes.com/order/) -->
+    <section id="t-orders" hidden>
+      <div class="bar">
+        <select id="o-filter" style="width:auto"><option value="open">Open orders</option><option value="">All orders</option><option value="done">Done</option><option value="cancelled">Cancelled</option></select>
+        <span class="stat" id="o-stat"></span>
+        <button type="button" id="o-csv" style="margin-left:auto">Export CSV</button>
+      </div>
+      <div class="list" id="o-list"></div>
+      <h4>Members' prices <span style="text-transform:none;letter-spacing:0">(what Galindo ID holders pay; changes apply to new orders)</span></h4>
+      <div class="list" id="p-list"></div>
+    </section>
+
+    <!-- sales (imported from the till iPad) -->
+    <section id="t-sales" hidden>
+      <div class="bar">
+        <select id="x-event" style="flex:1;min-width:180px"></select>
+        <button class="gold" type="button" id="x-open">Import till file</button>
+        <button type="button" id="x-csv">Export CSV</button>
+      </div>
+      <form class="card" id="x-form" hidden style="margin-bottom:14px">
+        <h3>Import from the till iPad</h3>
+        <p class="muted" style="margin:6px 0 0;font-size:13.5px">On the till: <b>Tonight</b> → <b>Export data</b>, save the file (AirDrop, Files or WhatsApp to yourself), then choose it here. Importing the same file twice is safe: sales already here are skipped.</p>
+        <label for="x-name">Event</label><input id="x-name" maxlength="80" list="x-names" required placeholder="e.g. Launch night · 30 Oct 2026"><datalist id="x-names"></datalist>
+        <label for="x-file">Till file (.json)</label><input id="x-file" type="file" accept=".json,application/json" required>
+        <div class="formbtns"><button class="gold" type="submit" id="x-go">Import</button><button type="button" id="x-cancel">Cancel</button></div>
+        <div class="note" id="x-note"></div>
+      </form>
+      <div class="tiles"><div class="tile"><b id="x-rev">R0</b><span>Takings</span></div><div class="tile"><b id="x-n">0</b><span>Sales</span></div><div class="tile"><b id="x-units">0</b><span>Bottles</span></div></div>
+      <h4>By product</h4><div class="list" id="x-prod"></div>
+      <div id="x-delwrap" hidden><h4>To deliver</h4><div class="list" id="x-del"></div></div>
+      <h4>Every sale <span style="text-transform:none;letter-spacing:0">(check slips against the iKhokha report)</span></h4><div class="list" id="x-list"></div>
     </section>
   </div>
 </div>
@@ -181,7 +234,7 @@
     $('who').textContent = session.user.email;
     sb.rpc('is_team').then(function(r){
       var ok = r.data === true; $('not-team').hidden = ok; $('team-ui').hidden = !ok;
-      if(ok){ loadStockists(); loadContacts(); }
+      if(ok){ loadStockists(); loadContacts(); loadSales(); loadOrders(); }
     });
   }
   $('login-form').addEventListener('submit', function(e){
@@ -199,7 +252,7 @@
   document.querySelector('.tabs').addEventListener('click', function(e){
     var b = e.target.closest('button'); if(!b) return;
     [].forEach.call(this.querySelectorAll('button'), function(x){ x.setAttribute('aria-selected', String(x === b)); });
-    $('t-stockists').hidden = b.dataset.tab !== 'stockists'; $('t-contacts').hidden = b.dataset.tab !== 'contacts';
+    ['stockists', 'contacts', 'orders', 'sales'].forEach(function(t){ $('t-' + t).hidden = b.dataset.tab !== t; });
   });
 
   /* ---------- stockists ---------- */
@@ -273,7 +326,7 @@
     return contacts.filter(function(c){
       if(opt && !c.consent) return false;
       if(!q) return true;
-      return [c.first_name, c.last_name, c.mobile, c.email, c.notes].join(' ').toLowerCase().indexOf(q) >= 0;
+      return [c.first_name, c.last_name, c.mobile, c.email, c.notes, c.galindo_id].join(' ').toLowerCase().indexOf(q) >= 0;
     });
   }
   function renderContacts(){
@@ -286,14 +339,24 @@
         (c.favourite ? '<span class="pill">♥ ' + esc(c.favourite) + '</span>' : '') +
         (c.sources || []).map(function(s){ return '<span class="pill" style="color:var(--muted)">' + esc(SRC[s] || s) + '</span>'; }).join('') + '</div>' +
         ((c.interests || []).length ? '<div class="s">Interested in: ' + esc(c.interests.join(', ')) + '</div>' : '') +
-        (c.notes ? '<div class="s">“' + esc(c.notes) + '”</div>' : '') + '</div>' +
-        '<div style="text-align:right"><div class="s">' + day(c.created_at) + '</div>' +
-        (c.consent ? '<button class="link danger" type="button" data-optout="' + c.id + '">Opt out</button>' : '') + '</div></div>';
+        (c.notes ? '<div class="s">“' + esc(c.notes) + '”</div>' : '') +
+        (c.galindo_id ? '<div class="s" style="margin-top:4px"><span class="gidtag">' + esc(c.galindo_id) + '</span> · <select class="mini" data-tier="' + c.id + '">' +
+          ['reposado', 'anejo', 'extra'].map(function(t){ return '<option value="' + t + '"' + (c.tier === t ? ' selected' : '') + '>' + TIER[t] + '</option>'; }).join('') + '</select></div>' : '') + '</div>' +
+        '<div style="text-align:right"><div class="s">' + day(c.created_at) + '</div><div class="acts">' +
+        (c.galindo_id ? (c.mobile_norm ? '<a class="link" style="color:var(--agave);font-weight:600;font-size:14px" target="_blank" rel="noopener" href="' + waLink(c) + '">WhatsApp ID</a>' : '') +
+            '<button class="link" type="button" data-copy="' + c.id + '">Copy link</button>'
+          : '<button class="link" type="button" data-issue="' + c.id + '">Give Galindo ID</button>') +
+        (c.consent ? '<button class="link danger" type="button" data-optout="' + c.id + '">Opt out</button>' : '') + '</div></div></div>';
     }).join('') : '<div class="empty">' + (contacts.length ? 'Nobody matches that.' : 'No contacts yet.') + '</div>';
   }
   $('c-q').addEventListener('input', renderContacts);
   $('c-opt').addEventListener('change', renderContacts);
   $('c-list').addEventListener('click', function(e){
+    var iss = e.target.closest('[data-issue]'), cp = e.target.closest('[data-copy]');
+    if(iss){ iss.disabled = true; sb.rpc('issue_galindo_id', { contact:iss.dataset.issue }).then(function(r){
+      if(r.error){ alert('No ID issued: ' + r.error.message); iss.disabled = false; return; } loadContacts(); }); return; }
+    if(cp){ var cc = contacts.filter(function(x){ return x.id === cp.dataset.copy; })[0];
+      copyText(memberLink(cc)).then(function(){ cp.textContent = 'Copied ✓'; setTimeout(function(){ cp.textContent = 'Copy link'; }, 1500); }); return; }
     var b = e.target.closest('[data-optout]'); if(!b) return;
     var c = contacts.filter(function(x){ return x.id === b.dataset.optout; })[0];
     if(!c || !confirm('Opt ' + c.first_name + ' out of marketing? Only do this if they asked to be removed.')) return;
@@ -303,11 +366,199 @@
     });
   });
   $('c-csv').addEventListener('click', function(){
-    var cols = ['created_at','first_name','last_name','mobile','email','consent','favourite','interests','sources','notes'];
+    var cols = ['created_at','first_name','last_name','mobile','email','consent','favourite','interests','sources','notes','galindo_id','tier','member_link'];
     var cell = function(v){ var t = Array.isArray(v) ? v.join('; ') : String(v == null ? '' : v); if(/^[=+\-@\t\r]/.test(t)) t = "'" + t; return '"' + t.replace(/"/g, '""') + '"'; };
-    var csv = cols.join(',') + '\n' + filtered().map(function(c){ return cols.map(function(k){ return cell(c[k]); }).join(','); }).join('\n');
+    var csv = cols.join(',') + '\n' + filtered().map(function(c){ return cols.map(function(k){ return cell(k === 'member_link' ? (c.galindo_id ? memberLink(c) : '') : c[k]); }).join(','); }).join('\n');
     var a = document.createElement('a'); a.href = URL.createObjectURL(new Blob(['﻿' + csv], { type:'text/csv' }));
     a.download = 'galindo-contacts-' + new Date().toISOString().slice(0, 10) + '.csv'; a.click();
+  });
+  /* ---------- Galindo IDs ---------- */
+  var TIER = { reposado:'Reposado', anejo:'Añejo', extra:'Extra Añejo ‘V’' };
+  var MSG_KEY = 'galindo_admin_id_msg';
+  var MSG_DEFAULT = "Hi {first}! Thank you for coming to the Galindo launch at Mexicola. It was a special night and we're so glad you were there.\n\n" +
+    "As a thank-you, here's your own Galindo ID, your members' card. It unlocks our members' prices and you can order bottles to collect or have delivered:\n{link}\n\n" +
+    "It's personal to you, so please keep it to yourself. Watch the Galindo film here: https://tequilaheroes.com/#film\n\n¡Salud!\nThe Galindo team";
+  function msgTemplate(){ try{ return localStorage.getItem(MSG_KEY) || MSG_DEFAULT; }catch(e){ return MSG_DEFAULT; } }
+  function memberLink(c){ return 'https://tequilaheroes.com/order/?id=' + c.galindo_id; }
+  function waLink(c){ return 'https://wa.me/' + c.mobile_norm + '?text=' + encodeURIComponent(msgTemplate().replace(/\{first\}/g, c.first_name).replace(/\{link\}/g, memberLink(c))); }
+  function copyText(t){ return navigator.clipboard ? navigator.clipboard.writeText(t) : Promise.resolve(window.prompt('Copy this link:', t)); }
+  $('c-list').addEventListener('change', function(e){
+    var sel = e.target.closest('[data-tier]'); if(!sel) return;
+    sb.from('contacts').update({ tier:sel.value }).eq('id', sel.dataset.tier).then(function(r){
+      if(r.error){ alert('Tier not changed: ' + r.error.message); loadContacts(); return; }
+      contacts.filter(function(x){ return x.id === sel.dataset.tier; })[0].tier = sel.value;
+    });
+  });
+  $('c-issue').addEventListener('click', function(){
+    var n = contacts.filter(function(c){ return c.consent && !c.galindo_id; }).length;
+    if(!n){ alert('Everyone who opted in already has a Galindo ID.'); return; }
+    if(!confirm('Give a Galindo ID to ' + n + ' opted-in contact' + (n === 1 ? '' : 's') + '? Nothing is sent: you send each one from their WhatsApp ID button.')) return;
+    sb.rpc('issue_galindo_ids_opted_in').then(function(r){ if(r.error){ alert('Not done: ' + r.error.message); return; } loadContacts(); });
+  });
+  $('c-msg-edit').addEventListener('click', function(){ $('c-msg').value = msgTemplate(); $('c-msg-card').hidden = false; });
+  $('c-msg-done').addEventListener('click', function(){ try{ localStorage.setItem(MSG_KEY, $('c-msg').value); }catch(e){} $('c-msg-card').hidden = true; renderContacts(); });
+  $('c-msg-reset').addEventListener('click', function(){ try{ localStorage.removeItem(MSG_KEY); }catch(e){} $('c-msg').value = MSG_DEFAULT; });
+
+  /* ---------- orders ---------- */
+  var orders = [], prices = [];
+  var STATUS = { 'new':'New', confirmed:'Confirmed', paid:'Paid', done:'Done', cancelled:'Cancelled' };
+  var NEXT = { 'new':['confirmed', 'Confirmed'], confirmed:['paid', 'Mark paid'], paid:['done', collectLabel] };
+  function collectLabel(o){ return o.fulfilment === 'deliver' ? 'Delivered' : 'Collected'; }
+  function loadOrders(){
+    Promise.all([sb.from('orders').select('*').order('created_at', { ascending:false }).limit(2000), sb.from('price_list').select('*').order('sort')]).then(function(r){
+      if(r[0].error){ $('o-list').innerHTML = '<div class="empty">Could not load orders: ' + esc(r[0].error.message) + '</div>'; return; }
+      orders = r[0].data; prices = r[1].data || []; renderOrders(); renderPrices();
+    });
+  }
+  function shownOrders(){ var f = $('o-filter').value; return orders.filter(function(o){ return !f ? true : f === 'open' ? ['done', 'cancelled'].indexOf(o.status) < 0 : o.status === f; }); }
+  function orderItems(o){ return (o.items || []).map(function(i){ return i.qty + '× ' + String(i.name).replace('Galindo ', ''); }).join(', '); }
+  function renderOrders(){
+    var list = shownOrders(), fresh = orders.filter(function(o){ return o.status === 'new'; }).length;
+    $('o-badge').hidden = !fresh; $('o-badge').textContent = fresh;
+    var open = orders.filter(function(o){ return ['done', 'cancelled'].indexOf(o.status) < 0; });
+    $('o-stat').innerHTML = '<b>' + open.length + '</b> open · ' + rand(open.reduce(function(t, o){ return t + Number(o.total); }, 0));
+    $('o-list').innerHTML = list.length ? list.map(function(o){
+      var nx = NEXT[o.status], mob = String(o.mobile || '').replace(/\D/g, '').replace(/^0(\d{9})$/, '27$1');
+      return '<div class="item"><div><div class="t">' + esc(o.ref) + ' · ' + esc([o.first_name, o.last_name].filter(Boolean).join(' ')) + '</div>' +
+        '<div class="s">' + esc(orderItems(o)) + '</div>' +
+        '<div class="s">' + (o.fulfilment === 'deliver' ? 'Deliver to: ' + esc(o.address) : 'Collect') + '</div>' +
+        (o.note ? '<div class="s">“' + esc(o.note) + '”</div>' : '') +
+        '<div class="s">' + esc([o.mobile, o.email, o.galindo_id].filter(Boolean).join(' · ')) + '</div>' +
+        '<div><span class="pill' + (o.status === 'new' ? ' off' : o.status === 'done' ? ' yes' : '') + '">' + STATUS[o.status] + '</span></div></div>' +
+        '<div style="text-align:right"><div class="t">' + rand(o.total) + '</div><div class="s">' + hm(o.created_at) + '</div><div class="acts">' +
+        (mob ? '<a class="link" style="color:var(--agave);font-weight:600;font-size:14px" target="_blank" rel="noopener" href="https://wa.me/' + mob + '?text=' +
+          encodeURIComponent('Hi ' + o.first_name + ', thanks for your Galindo order ' + o.ref + ' (' + orderItems(o) + ', ' + rand(o.total) + '). ') + '">WhatsApp</a>' : '') +
+        (nx ? '<button class="link" type="button" data-ost="' + o.id + '" data-to="' + nx[0] + '">' + (typeof nx[1] === 'function' ? nx[1](o) : nx[1]) + '</button>' : '') +
+        (['done', 'cancelled'].indexOf(o.status) < 0 ? '<button class="link danger" type="button" data-ost="' + o.id + '" data-to="cancelled">Cancel</button>' : '') +
+        '</div></div></div>';
+    }).join('') : '<div class="empty">' + (orders.length ? 'No orders here.' : 'No orders yet. They arrive here when members order on tequilaheroes.com/order/.') + '</div>';
+  }
+  $('o-filter').addEventListener('change', renderOrders);
+  $('o-list').addEventListener('click', function(e){
+    var b = e.target.closest('[data-ost]'); if(!b) return;
+    var o = orders.filter(function(x){ return x.id === b.dataset.ost; })[0];
+    if(b.dataset.to === 'cancelled' && !confirm('Cancel order ' + o.ref + '?')) return;
+    b.disabled = true;
+    sb.from('orders').update({ status:b.dataset.to }).eq('id', o.id).then(function(r){
+      if(r.error){ alert('Not changed: ' + r.error.message); b.disabled = false; return; }
+      o.status = b.dataset.to; renderOrders();
+    });
+  });
+  function renderPrices(){
+    $('p-list').innerHTML = prices.map(function(p){
+      return '<div class="item"><div><div class="t">' + esc(p.name) + '</div><div class="s">' + esc(p.note || '') + '</div></div>' +
+        '<div style="display:flex;gap:6px;align-items:center"><span class="s">R</span><input type="number" min="1" step="1" value="' + Number(p.price) + '" data-price="' + esc(p.key) + '" style="width:100px;padding:7px 9px">' +
+        '<label class="checks" style="margin:0"><label><input type="checkbox" data-active="' + esc(p.key) + '"' + (p.active ? ' checked' : '') + '> On sale</label></label></div></div>';
+    }).join('');
+  }
+  $('p-list').addEventListener('change', function(e){
+    var i = e.target, key = i.dataset.price || i.dataset.active; if(!key) return;
+    var row = i.dataset.price ? { price:Number(i.value) } : { active:i.checked };
+    if(row.price !== undefined && !(row.price > 0)){ alert('Price must be more than R0.'); renderPrices(); return; }
+    sb.from('price_list').update(row).eq('key', key).then(function(r){ if(r.error){ alert('Not saved: ' + r.error.message); } loadOrders(); });
+  });
+  $('o-csv').addEventListener('click', function(){
+    var cols = ['ref','created_at','status','first_name','last_name','mobile','email','galindo_id','items','total','fulfilment','address','note'];
+    var csv = cols.join(',') + '\n' + shownOrders().map(function(o){ return cols.map(function(k){ return csvCell(k === 'items' ? orderItems(o) : o[k]); }).join(','); }).join('\n');
+    var a = document.createElement('a'); a.href = URL.createObjectURL(new Blob(['\ufeff' + csv], { type:'text/csv' }));
+    a.download = 'galindo-orders-' + new Date().toISOString().slice(0, 10) + '.csv'; a.click();
+  });
+
+  function csvCell(v){ var t = Array.isArray(v) ? v.join('; ') : String(v == null ? '' : v); if(/^[=+\-@\t\r]/.test(t)) t = "'" + t; return '"' + t.replace(/"/g, '""') + '"'; }
+
+  /* ---------- sales (till imports) ---------- */
+  var sales = [], imports = [];
+  function rand(n){ return 'R' + Number(n || 0).toLocaleString('en-ZA', { maximumFractionDigits:2 }); }
+  function hm(t){ return new Date(t).toLocaleString('en-ZA', { day:'numeric', month:'short', hour:'2-digit', minute:'2-digit' }); }
+  function itemsText(s){ return (s.items || []).map(function(i){ return i.qty + '× ' + String(i.name || '').replace('Galindo ', ''); }).join(', '); }
+  function loadSales(){
+    Promise.all([
+      sb.from('sales').select('*').order('sold_at', { ascending:false }).limit(5000),
+      sb.from('till_imports').select('id,event,imported_at,exported_at,sales_new,products:payload->products,uses:payload->uses').order('imported_at', { ascending:false }).limit(200)
+    ]).then(function(r){
+      if(r[0].error){ $('x-list').innerHTML = '<div class="empty">Could not load sales: ' + esc(r[0].error.message) + '</div>'; return; }
+      sales = r[0].data; imports = r[1].data || [];
+      var names = []; sales.concat(imports).forEach(function(x){ if(names.indexOf(x.event) < 0) names.push(x.event); });
+      var cur = $('x-event').value;
+      $('x-event').innerHTML = (names.length > 1 ? '<option value="">All events</option>' : '') + names.map(function(n){ return '<option>' + esc(n) + '</option>'; }).join('');
+      if(cur && names.indexOf(cur) >= 0) $('x-event').value = cur;
+      $('x-names').innerHTML = names.map(function(n){ return '<option value="' + esc(n) + '">'; }).join('');
+      renderSales();
+    });
+  }
+  function eventSales(){ var ev = $('x-event').value; return sales.filter(function(s){ return !ev || s.event === ev; }); }
+  function renderSales(){
+    var all = eventSales(), live = all.filter(function(s){ return !s.voided; }), ev = $('x-event').value;
+    var rev = 0, units = 0, by = {};
+    live.forEach(function(s){ rev += Number(s.total); (s.items || []).forEach(function(i){
+      var k = i.name || i.productId; by[k] = by[k] || { qty:0, rev:0 }; by[k].qty += i.qty; by[k].rev += i.qty * i.price; units += i.qty; }); });
+    $('x-rev').textContent = rand(rev); $('x-n').textContent = live.length; $('x-units').textContent = units;
+    // stock left = products in the newest import for this event (only meaningful for one event)
+    var last = ev ? imports.filter(function(i){ return i.event === ev; })[0] : null, left = {}, tasted = {};
+    if(last){ (last.products || []).forEach(function(p){ left[p.name] = p.stock; });
+      (last.uses || []).forEach(function(u){ var p = (last.products || []).filter(function(x){ return x.id === u.productId; })[0]; if(p) tasted[p.name] = (tasted[p.name] || 0) + (u.qty || 1); }); }
+    var names = Object.keys(by); Object.keys(left).forEach(function(n){ if(names.indexOf(n) < 0) names.push(n); });
+    $('x-prod').innerHTML = names.length ? names.map(function(n){ var b = by[n] || { qty:0, rev:0 };
+      return '<div class="item"><div><div class="t">' + esc(n) + '</div><div class="s">' + b.qty + ' sold' + (tasted[n] ? ' · ' + tasted[n] + ' tasting' : '') +
+        (n in left ? ' · ' + left[n] + ' left on the till' : '') + '</div></div><div class="t">' + rand(b.rev) + '</div></div>'; }).join('')
+      : '<div class="empty">' + (imports.length ? 'No sales for this event.' : 'No till data yet. Tap “Import till file”.') + '</div>';
+    var dels = live.filter(function(s){ return !s.handed_over; });
+    $('x-delwrap').hidden = !dels.length;
+    $('x-del').innerHTML = dels.map(function(s){
+      return '<div class="item"><div><div class="t">' + esc([s.first_name, s.last_name].filter(Boolean).join(' ') || '(no name)') + '</div>' +
+        '<div class="s">' + esc([s.mobile, s.email].filter(Boolean).join(' · ')) + '</div><div class="s">' + esc(itemsText(s)) + (s.note ? ' · “' + esc(s.note) + '”' : '') + '</div></div>' +
+        '<div style="text-align:right"><div class="s">' + hm(s.sold_at) + '</div><button class="link" type="button" data-deliver="' + esc(s.id) + '">Mark delivered</button></div></div>';
+    }).join('');
+    $('x-list').innerHTML = all.length ? all.map(function(s){
+      var who = [s.first_name, s.last_name].filter(Boolean).join(' ');
+      return '<div class="item' + (s.voided ? ' void' : '') + '"><div><div class="t">' + esc(itemsText(s)) + '</div>' +
+        '<div class="s">' + hm(s.sold_at) + ' · slip ' + esc(s.slip || '—') + (who ? ' · ' + esc(who) : '') + (ev ? '' : ' · ' + esc(s.event)) + '</div>' +
+        '<div>' + (s.voided ? '<span class="pill off">Voided</span>' : '') + (!s.handed_over && !s.voided ? '<span class="pill off">To deliver</span>' : '') +
+        (s.delivered_at ? '<span class="pill yes">Delivered ' + day(s.delivered_at) + '</span>' : '') + (s.consent ? '<span class="pill yes">Opted in</span>' : '') + '</div></div>' +
+        '<div class="t">' + rand(s.total) + '</div></div>';
+    }).join('') : '';
+  }
+  $('x-event').addEventListener('change', renderSales);
+  $('x-open').addEventListener('click', function(){
+    $('x-form').hidden = false; $('x-open').hidden = true; $('x-note').textContent = ''; $('x-note').className = 'note';
+    if(!$('x-name').value) $('x-name').value = $('x-event').value; $('x-name').focus();
+  });
+  $('x-cancel').addEventListener('click', function(){ $('x-form').hidden = true; $('x-open').hidden = false; $('x-file').value = ''; });
+  $('x-form').addEventListener('submit', function(e){
+    e.preventDefault();
+    var f = $('x-file').files[0], n = $('x-note'), ev = $('x-name').value.trim();
+    if(!f || !ev) return;
+    n.className = 'note'; n.textContent = 'Reading the file…'; $('x-go').disabled = true;
+    f.text().then(function(txt){
+      var file; try{ file = JSON.parse(txt); }catch(err){ file = null; }
+      if(!file || file.format !== 'galindo-till') throw new Error('That isn’t a till export. On the till: Tonight → Export data.');
+      n.textContent = 'Importing ' + (file.sales || []).length + ' sales…';
+      return sb.rpc('import_till', { p:{ event:ev, file:file } });
+    }).then(function(r){
+      $('x-go').disabled = false;
+      if(r.error) throw new Error(r.error.message);
+      var d = r.data || {};
+      if(!d.ok) throw new Error({ 'not-team':'Your login isn’t on the team list.', 'not-till-file':'That isn’t a till export.', 'too-big':'That file is too big.', 'no-event':'Give the event a name.' }[d.reason] || ('Not imported (' + d.reason + ').'));
+      n.className = 'note ok';
+      n.textContent = '✓ ' + d.sales_new + ' new sale' + (d.sales_new === 1 ? '' : 's') + ' added' + (d.sales_seen > d.sales_new ? ', ' + (d.sales_seen - d.sales_new) + ' already here' : '') +
+        (d.buyers_added ? ' · ' + d.buyers_added + ' buyer' + (d.buyers_added === 1 ? '' : 's') + ' saved to Contacts' : '') + '.';
+      $('x-file').value = ''; $('x-event').value = ev; loadSales(); loadContacts();
+    }).catch(function(err){ $('x-go').disabled = false; n.className = 'note'; n.textContent = err.message; });
+  });
+  $('x-del').addEventListener('click', function(e){
+    var b = e.target.closest('[data-deliver]'); if(!b) return;
+    var s = sales.filter(function(x){ return x.id === b.dataset.deliver; })[0];
+    if(!s || !confirm('Mark ' + itemsText(s) + ' for ' + (s.first_name || 'this buyer') + ' as delivered?')) return;
+    sb.from('sales').update({ handed_over:true, delivered_at:new Date().toISOString() }).eq('id', s.id).then(function(r){
+      if(r.error){ alert('Not changed: ' + r.error.message); return; }
+      s.handed_over = true; s.delivered_at = new Date().toISOString(); renderSales();
+    });
+  });
+  $('x-csv').addEventListener('click', function(){
+    var cols = ['event','sold_at','slip','items','total','payment','voided','handed_over','delivered_at','first_name','last_name','mobile','email','consent','note'];
+    var csv = cols.join(',') + '\n' + eventSales().map(function(s){ return cols.map(function(k){ return csvCell(k === 'items' ? itemsText(s) : s[k]); }).join(','); }).join('\n');
+    var a = document.createElement('a'); a.href = URL.createObjectURL(new Blob(['\ufeff' + csv], { type:'text/csv' }));
+    a.download = 'galindo-sales-' + new Date().toISOString().slice(0, 10) + '.csv'; a.click();
   });
 </script>
 </body>
