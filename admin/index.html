@@ -205,6 +205,7 @@
         <button type="button" id="c-csv">Export CSV</button>
       </div>
       <div class="bar">
+        <button type="button" class="gold" id="c-welcome">Send a welcome link</button>
         <button type="button" id="c-issue">Give Galindo IDs to everyone opted in</button>
         <button type="button" id="c-msg-edit" class="link">Edit the WhatsApp message</button>
       </div>
@@ -279,6 +280,17 @@
         <div class="formbtns"><button class="gold" type="submit" id="t-save">Save</button><button type="button" id="t-cancel">Cancel</button></div>
         <div class="note" id="t-note"></div>
       </form>
+      <div class="handover" id="w-sheet" hidden>
+        <form class="wrap" id="w-form" autocomplete="off" style="max-width:480px;padding-top:max(36px, env(safe-area-inset-top,0px))">
+          <div class="brand" style="font-size:30px">Send a welcome link</div>
+          <p class="muted" style="margin:6px 0 0;font-size:14px">For someone who wants to know more. WhatsApp (or email) opens with the message ready; you press send. They're saved to Contacts as "asked for info", not opted in: they sign up themselves from the link.</p>
+          <label for="w-first">Their name <span style="text-transform:none;letter-spacing:0">(optional)</span></label><input id="w-first" maxlength="60" autocomplete="off">
+          <label for="w-to">Cell number or email</label><input id="w-to" maxlength="120" autocomplete="off" inputmode="email" placeholder="082 123 4567 or name@email.com">
+          <button class="gold bigbtn" type="submit" id="w-go">Send</button>
+          <div class="note" id="w-note"></div>
+          <button type="button" class="link" id="w-close" style="display:block;margin:10px auto 0">Close</button>
+        </form>
+      </div>
       <div class="handover" id="t-hand" hidden>
         <div class="wrap" style="max-width:480px;padding-top:max(36px, env(safe-area-inset-top,0px))">
           <div class="brand" style="text-align:center;font-size:36px">Galindo</div>
@@ -317,6 +329,7 @@
             <div class="bar" style="margin:8px 0 0"><input id="t-gid" placeholder="or type their GAL number" autocapitalize="characters" autocomplete="off" style="flex:1;text-transform:uppercase"><button type="button" id="t-gidgo">Use card</button></div>
             <div class="s" style="margin-top:4px">Members' prices need a Galindo card with the mates rate. Anyone else pays retail.</div>
             <button type="button" id="t-handgo" style="width:100%;margin-top:10px">New buyer? Hand them the phone to type their details</button>
+            <button type="button" class="link" id="t-welcome" style="display:block;margin:8px auto 0">Just wants to know more? Send a welcome link</button>
           </div>
           <div id="t-whoslot"></div>
         </div>
@@ -394,7 +407,7 @@
   var $ = function(id){ return document.getElementById(id); };
   var KIND = { restaurant:'Restaurant', bar:'Bar', bottle_store:'Bottle store', hotel:'Hotel', online:'Online', other:'Other' };
   var PROD = { reposado:'Reposado', anejo:'Añejo', extra:'Extra Añejo ‘V’' };
-  var SRC = { thanks:'Thank-you page', booth:'Photo booth', warmup:'Warm-up page', door:'Door iPad', till:'Till', whatsapp:'WhatsApp', import:'Import' };
+  var SRC = { thanks:'Thank-you page', booth:'Photo booth', warmup:'Warm-up page', door:'Door iPad', till:'Till', whatsapp:'WhatsApp', import:'Import', welcome:'Asked for info' };
   var stockists = [], contacts = [], editing = null;
   function esc(s){ return String(s == null ? '' : s).replace(/[&<>"']/g, function(c){ return '&#' + c.charCodeAt(0) + ';'; }); }
   function day(t){ return t ? new Date(t).toLocaleDateString('en-ZA', { day:'numeric', month:'short', year:'numeric' }) : ''; }
@@ -1287,6 +1300,46 @@
         }, 250);
       }, function(){ $('t-scanmsg').textContent = 'Couldn\'t load the scanner. Type their GAL number instead.'; });
     }, function(){ $('t-scanmsg').textContent = 'Camera blocked. Allow the camera for this site, or type their GAL number.'; });
+  });
+
+  /* ---------- welcome link: someone wants to know more (Contacts + Till) ---------- */
+  function welcomeTo(v){
+    v = String(v || '').trim();
+    if(v.indexOf('@') >= 0) return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v) ? { email:v.toLowerCase() } : null;
+    var d = v.replace(/\D/g, '').replace(/^0(\d{9})$/, '27$1').replace(/^([6-8]\d{8})$/, '27$1');
+    return d.length >= 9 && d.length <= 15 ? { mobile:d } : null;
+  }
+  function welcomeText(first, gid){
+    return 'Hi' + (first ? ' ' + first : '') + '! Lovely to meet you. Here\'s Galindo, our 100% blue agave tequila: https://tequilaheroes.com\n\n' +
+      (gid ? 'Your Galindo ID (your members\' card): ' + memberLink({ galindo_id:gid }) + '\n\n'
+           : 'Want to hear about new releases and events? Sign up here and you\'ll get your own Galindo ID, our members\' card: https://tequilaheroes.com/thanks/\n\n') +
+      '¡Salud!\nThe Galindo team';
+  }
+  function openWelcome(){
+    hidePriv(); $('w-first').value = ''; $('w-to').value = ''; $('w-note').textContent = ''; $('w-note').className = 'note'; $('w-go').textContent = 'Send';
+    $('w-sheet').hidden = false; window.scrollTo(0, 0); $('w-to').focus();
+  }
+  $('c-welcome').addEventListener('click', openWelcome);
+  $('t-welcome').addEventListener('click', openWelcome);
+  $('w-close').addEventListener('click', function(){ $('w-sheet').hidden = true; });
+  $('w-to').addEventListener('input', function(){ var t = welcomeTo(this.value); $('w-go').textContent = t ? (t.email ? 'Send by email' : 'Send on WhatsApp') : 'Send'; });
+  $('w-form').addEventListener('submit', function(e){
+    e.preventDefault();
+    var n = $('w-note'), raw = $('w-to').value.trim(), to = welcomeTo(raw), first = $('w-first').value.trim();
+    n.className = 'note'; n.textContent = '';
+    if(!to){ n.textContent = 'Type a cell number (082 123 4567) or an email address.'; $('w-to').focus(); return; }
+    // someone we already know: use their name, and send their own card link if they have one
+    var known = contacts.filter(function(c){ return to.mobile ? c.mobile_norm === to.mobile : c.email_norm === to.email; })[0];
+    var name = first || (known && known.first_name !== '(asked for info)' ? known.first_name : ''), msg = welcomeText(name, known && known.galindo_id);
+    // open WhatsApp / mail straight from the tap (phones block it if it waits for the network), then save
+    if(to.mobile) window.open('https://wa.me/' + to.mobile + '?text=' + encodeURIComponent(msg), '_blank');
+    else location.href = 'mailto:' + to.email + '?subject=' + encodeURIComponent('Welcome to Galindo') + '&body=' + encodeURIComponent(msg);
+    n.textContent = 'Saving to Contacts…';
+    sb.rpc('send_welcome', { p:{ first:first, contact:raw } }).then(function(r){
+      if(r.error || !r.data.ok){ n.textContent = 'Message opened, but not saved to Contacts: ' + (r.error ? r.error.message : r.data.reason); return; }
+      n.className = 'note ok'; n.textContent = '✓ ' + (r.data.existing ? 'Already in Contacts (' + r.data.first + '), noted.' : 'Saved to Contacts as "asked for info".') + ' Send the message, then close.';
+      loadContacts();
+    }, function(){ n.textContent = 'Message opened, but no signal to save to Contacts.'; });
   });
 
   /* ---------- privacy: the phone may be handed to a customer ---------- */
