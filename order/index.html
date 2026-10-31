@@ -91,6 +91,20 @@
   .chip{flex:1;font-family:var(--sans);font-size:15px;font-weight:600;color:var(--muted);background:var(--surface-2);border:1px solid var(--line);border-radius:30px;padding:12px 10px;cursor:pointer}
   .chip[aria-pressed="true"]{color:#201600;background:var(--gold);border-color:var(--gold)}
   .two{display:flex;gap:10px}.two .field{flex:1;min-width:0}
+  .cbnote{margin-top:20px;background:var(--bg);border:1px solid var(--line);border-radius:12px;padding:12px 14px;font-family:var(--sans);font-size:13.5px;color:var(--muted);line-height:1.5}
+  .cbnote b{color:var(--fg)}
+  .editbar{margin-top:16px;font-family:var(--sans);font-size:14px;color:var(--gold);text-align:center}
+  .olist{display:flex;flex-direction:column;gap:10px;margin-top:14px}
+  .orow{background:var(--bg);border:1px solid var(--line);border-radius:12px;padding:12px 14px;font-family:var(--sans)}
+  .orow .top{display:flex;justify-content:space-between;gap:10px;align-items:baseline}
+  .orow .r{font-weight:700;letter-spacing:.06em;color:var(--fg)} .orow .t{font-weight:700;color:var(--gold-bright)}
+  .orow .i{font-size:13.5px;color:var(--muted);margin-top:3px}
+  .orow .st{display:inline-block;font-size:11.5px;font-weight:700;letter-spacing:.04em;border:1px solid var(--line-2);border-radius:20px;padding:3px 9px;margin-top:8px;color:var(--gold-bright)}
+  .orow .st.ok{color:var(--agave);border-color:var(--agave-dim)} .orow .st.x{color:var(--faint)}
+  .orow .acts{display:flex;flex-wrap:wrap;gap:4px 14px;margin-top:6px}
+  .orow .acts a,.orow .acts button{font-family:var(--sans);font-size:13.5px;font-weight:600;color:var(--gold);background:none;border:none;padding:4px 0;text-decoration:underline;text-underline-offset:3px;cursor:pointer}
+  .orow .acts .pay{color:#201600;background:linear-gradient(180deg,var(--gold-bright),var(--gold));text-decoration:none;border-radius:10px;padding:8px 14px}
+  .orow .acts .danger{color:var(--marigold)}
   .total{display:flex;justify-content:space-between;align-items:baseline;margin-top:20px;padding-top:14px;border-top:1px solid var(--line-2)}
   .total span{font-family:var(--sans);font-size:12px;letter-spacing:.16em;text-transform:uppercase;color:var(--faint);font-weight:600}
   .total b{font-family:var(--serif);font-size:30px;color:var(--gold-bright)}
@@ -161,6 +175,14 @@
     <div class="cardhint">This is your members' card. Bookmark this page or add it to your Home Screen, and show the QR at Galindo events.</div>
   </section>
 
+  <section class="wrap" id="myorders" hidden>
+    <div class="panel">
+      <div class="ptitle">Your orders</div>
+      <div class="psub">You can change or cancel an order until we've sent it to Creative Beverages.</div>
+      <div class="olist" id="olist"></div>
+    </div>
+  </section>
+
   <section class="wrap" id="photos" hidden>
     <div class="panel">
       <div class="ptitle" id="ph-title">Launch night photos</div>
@@ -201,21 +223,18 @@
         </div>
         <p class="small" id="collect-note" style="text-align:left;margin-top:10px">Collection in Cape Town. We'll confirm where and when on WhatsApp.</p>
 
-        <div class="qlabel">How would you like to pay?</div>
-        <div class="chips" id="pay">
-          <button class="chip" type="button" data-v="eft" aria-pressed="true">EFT</button>
-          <button class="chip" type="button" data-v="card" aria-pressed="false" id="pay-card">Card on collection</button>
-        </div>
+        <div class="cbnote"><b>How paying works.</b> Galindo is sold through <b>Creative Beverages</b>, our licensed distributor. Once we've confirmed stock, they send you the invoice and you pay them directly. We look after collection or delivery.</div>
         <div class="field"><label for="o-mobile">Your mobile <span class="opt">(the one we have for you)</span></label><input id="o-mobile" type="tel" inputmode="tel" autocomplete="tel" placeholder="072 000 0000"></div>
         <div class="field"><label for="o-note">Anything else? <span class="opt">(optional)</span></label><input id="o-note" maxlength="500" placeholder="e.g. it's a gift, needs to arrive before Friday"></div>
 
+        <div class="editbar" id="editbar" hidden>Changing order <b id="edit-ref"></b> · <button class="linkbtn" type="button" id="edit-stop" style="padding:0">stop editing</button></div>
         <button class="cta" type="submit" id="o-go">Place my order</button>
         <div class="note" id="o-note-msg"></div>
         <p class="small" id="pay-note"></p>
       </form>
       <div class="done" id="o-done" hidden>
         <div class="tick"><svg viewBox="0 0 24 24"><path d="M5 13l4 4L19 7"/></svg></div>
-        <div class="ptitle">Order in. ¡Gracias!</div>
+        <div class="ptitle" id="d-title">Order in. ¡Gracias!</div>
         <div class="ref" id="d-ref"></div>
         <p class="psub" id="d-sum" style="margin-bottom:14px"></p>
         <a class="wa-link" id="d-wa" target="_blank" rel="noopener noreferrer"><svg viewBox="0 0 24 24"><path d="M12 2a10 10 0 0 0-8.6 15.1L2 22l5-1.3A10 10 0 1 0 12 2zm5.3 14.1c-.2.6-1.3 1.2-1.8 1.2-.5.1-1 .1-3.3-.8-2.8-1.1-4.5-4-4.7-4.2-.1-.2-1.1-1.5-1.1-2.8s.7-2 1-2.3c.2-.3.5-.3.7-.3h.5c.2 0 .4 0 .6.5l.8 2c.1.2.1.4 0 .5l-.4.6-.3.4c-.1.1-.3.3-.1.6.2.3.7 1.2 1.6 2 1.1 1 2 1.3 2.3 1.4.3.1.5.1.6-.1l.9-1.1c.2-.3.4-.2.7-.1l1.9.9c.3.1.5.2.5.3.1.2.1.7-.1 1.3z"/></svg>Message us about it</a>
@@ -258,7 +277,7 @@
   var STORE = 'galindo_member_id';
 
   var $ = function(id){ return document.getElementById(id); };
-  var member = null, qty = {}, ful = 'collect', pay = 'eft';
+  var member = null, qty = {}, ful = 'collect', editing = '', myOrders = [];
   function rand(n){ return 'R' + Number(n || 0).toLocaleString('en-ZA', { maximumFractionDigits:2 }); }
   function esc(s){ return String(s == null ? '' : s).replace(/[&<>"']/g, function(c){ return '&#' + c.charCodeAt(0) + ';'; }); }
   function rpc(fn, body){
@@ -288,7 +307,7 @@
       member = r; store(r.id);
       var url = location.origin + location.pathname + '?id=' + encodeURIComponent(r.id);
       if(location.search.indexOf(r.id) < 0) history.replaceState(null, '', url);
-      renderMember(url); loadPhotos();
+      renderMember(url); loadPhotos(); loadOrders();
     }).catch(function(){ $('enter-go').disabled = false; showEnter("We couldn't reach the members' list. Check your signal and try again."); });
   }
 
@@ -299,7 +318,7 @@
     $('c-since').textContent = member.since ? 'Member since ' + new Date(member.since).toLocaleDateString('en-ZA', { month:'long', year:'numeric' }) : '';
     $('c-qr').innerHTML = '';
     if(window.QRCode) new QRCode($('c-qr'), { text:url, width:168, height:168, colorDark:'#0D0C0A', colorLight:'#ffffff', correctLevel:QRCode.CorrectLevel.M });
-    $('hello').textContent = 'Hola ' + member.first + '. Choose your bottles; we confirm everything on WhatsApp.';
+    $('hello').textContent = 'Hola ' + member.first + '. Choose your bottles; we confirm stock on WhatsApp.';
     [].forEach.call(document.querySelectorAll('.tierrow'), function(row){ var me = row.dataset.t === t; row.classList.toggle('me', me); row.querySelector('.you').hidden = !me; });
     $('ordersec').hidden = !member.mates; $('locked').hidden = !!member.mates;
     $('ask-mates').href = 'https://wa.me/' + WA_NUMBER + '?text=' + encodeURIComponent("Hi! I'm " + member.first + " (" + member.id + "). Could you switch on members' prices for me please?");
@@ -325,12 +344,8 @@
     qty[b.dataset.k] = Math.max(0, Math.min(120, (qty[b.dataset.k] || 0) + parseInt(b.dataset.d, 10))); renderTotal();
   });
   function payNote(){
-    var when = ful === 'deliver' ? ' and delivery' : ' and a collection time';
-    $('pay-card').textContent = ful === 'deliver' ? 'Card on delivery' : 'Card on collection';
     $('collect-note').hidden = ful !== 'collect';
-    $('pay-note').textContent = "No payment now. We'll WhatsApp you to confirm stock" + when +
-      (pay === 'eft' ? ", with our bank details and your order number as the reference. Bottles go out once it clears."
-                     : ", and you pay by card when " + (ful === 'deliver' ? 'we deliver.' : 'you collect.')) + ' 18+ only.';
+    $('pay-note').textContent = "No payment now. We share your name, contact details and order with Creative Beverages so they can invoice you. 18+ only.";
   }
   function chipGroup(id, set){
     $(id).addEventListener('click', function(e){
@@ -340,13 +355,13 @@
     });
   }
   chipGroup('ful', function(v){ ful = v; $('addr-wrap').hidden = v !== 'deliver'; if(v === 'deliver') $('o-street').focus(); });
-  chipGroup('pay', function(v){ pay = v; });
   payNote();
 
   var REASON = { 'mobile-mismatch':"That mobile doesn't match the one we have for you. Use the number you gave us, or message us.",
     'bad-mobile':'That mobile number looks wrong.', address:'Add your street address and suburb.', 'postal-code':'Add your 4-digit postal code.', empty:'Choose at least one bottle.',
     'too-many':"That's a big order! Message us and we'll sort it out directly.", 'slow-down':'Too many tries just now. Give it a few minutes.',
-    unknown:"We don't recognise your ID any more. Message us." };
+    unknown:"We don't recognise your ID any more. Message us.", 'not-mates':"Members' prices aren't switched on for your ID yet. Message us.",
+    locked:"That order has already gone to Creative Beverages, so it can't be changed here. Message us.", 'no-order':"We can't find that order." };
   $('order').addEventListener('submit', function(e){
     e.preventDefault();
     var n = $('o-note-msg'), any = Object.keys(qty).some(function(k){ return qty[k] > 0; }), mob = $('o-mobile').value.trim();
@@ -354,19 +369,20 @@
     if(mob.replace(/\D/g, '').length < 9){ n.textContent = 'Add your mobile so we can confirm.'; $('o-mobile').focus(); return; }
     if(ful === 'deliver' && ($('o-street').value.trim().length < 4 || !($('o-suburb').value.trim() || $('o-city').value.trim()))){ n.textContent = REASON.address; $('o-street').focus(); return; }
     if(ful === 'deliver' && !/^\d{4}$/.test($('o-pc').value.trim())){ n.textContent = REASON['postal-code']; $('o-pc').focus(); return; }
-    n.textContent = ''; $('o-go').disabled = true; $('o-go').textContent = 'Placing your order…';
-    rpc('place_order', { p:{ gid:member.id, mobile:mob, items:qty, fulfilment:ful, payment:pay, street:$('o-street').value.trim(), suburb:$('o-suburb').value.trim(),
+    n.textContent = ''; $('o-go').disabled = true; $('o-go').textContent = editing ? 'Saving…' : 'Placing your order…';
+    rpc('place_order', { p:{ gid:member.id, mobile:mob, items:qty, fulfilment:ful, ref:editing || undefined, street:$('o-street').value.trim(), suburb:$('o-suburb').value.trim(),
       city:$('o-city').value.trim(), postal_code:$('o-pc').value.trim(), note:$('o-note').value.trim() } })
       .then(function(r){
         if(!r || !r.ok){ n.textContent = REASON[r && r.reason] || "That didn't go through. Try again, or message us."; return; }
         var lines = member.prices.filter(function(p){ return qty[p.key] > 0; }).map(function(p){ return qty[p.key] + '× ' + p.name.replace('Galindo ', ''); });
-        $('d-ref').textContent = r.ref;
-        $('d-sum').textContent = lines.join(', ') + ' · ' + rand(r.total) + ' · ' + (ful === 'deliver' ? 'delivery' : 'collection') + ' · ' + (pay === 'eft' ? 'EFT' : 'card') + '. We’ll WhatsApp you shortly to confirm' + (pay === 'eft' ? ', with bank details. Use ' + r.ref + ' as your payment reference.' : '.');
-        $('d-wa').href = 'https://wa.me/' + WA_NUMBER + '?text=' + encodeURIComponent('Hi! I just placed Galindo order ' + r.ref + ' (' + lines.join(', ') + ', ' + rand(r.total) + ', ' + (ful === 'deliver' ? 'delivery' : 'collect') + ', ' + (pay === 'eft' ? 'EFT' : 'card') + '). ' + member.first + ', ' + member.id);
+        $('d-ref').textContent = r.ref; $('d-title').textContent = r.edited ? 'Order changed.' : 'Order in. ¡Gracias!';
+        $('d-sum').textContent = lines.join(', ') + ' · ' + rand(r.total) + ' · ' + (ful === 'deliver' ? 'delivery' : 'collection') + '. We’ll WhatsApp you to confirm stock, then Creative Beverages sends you the invoice.';
+        $('d-wa').href = 'https://wa.me/' + WA_NUMBER + '?text=' + encodeURIComponent('Hi! I just ' + (r.edited ? 'changed' : 'placed') + ' Galindo order ' + r.ref + ' (' + lines.join(', ') + ', ' + rand(r.total) + ', ' + (ful === 'deliver' ? 'delivery' : 'collect') + '). ' + member.first + ', ' + member.id);
+        stopEditing(); loadOrders();
         $('order').hidden = true; $('o-done').hidden = false; $('o-done').scrollIntoView({ behavior:'smooth', block:'center' });
       })
       .catch(function(){ n.textContent = "We couldn't reach the order system. Check your signal and try again."; })
-      .then(function(){ $('o-go').disabled = false; $('o-go').textContent = 'Place my order'; });
+      .then(function(){ $('o-go').disabled = false; $('o-go').textContent = editing ? 'Save changes' : 'Place my order'; });
   });
   /* ---------- photos (URLs only come back for a valid ID; views + saves are logged against it) ---------- */
   var photos = [], album = '', cur = 0;
@@ -400,6 +416,54 @@
       var a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = p.file; document.body.appendChild(a); a.click(); a.remove();
       b.textContent = 'Saved ✓';
     }).catch(function(e){ b.textContent = (e && e.name === 'AbortError') ? 'Save photo' : 'Press and hold the photo to save'; });
+  });
+
+  /* ---------- your orders: status, change / cancel while still 'new' ---------- */
+  var OST = { 'new':['Received', ''], sent:['With Creative Beverages', ''], invoiced:['Invoice sent: please pay', ''], paid:['Paid ✓', 'ok'], done:['', 'ok'], cancelled:['Cancelled', 'x'] };
+  function itemsLine(o){ return (o.items || []).map(function(i){ return i.qty + '× ' + String(i.name).replace('Galindo ', ''); }).join(', '); }
+  function loadOrders(){
+    rpc('member_orders', { gid:member.id }).then(function(r){
+      myOrders = (r && r.ok && r.orders) || [];
+      $('myorders').hidden = !myOrders.length;
+      $('olist').innerHTML = myOrders.map(function(o){
+        var st = OST[o.status] || [o.status, ''], label = o.status === 'done' ? (o.fulfilment === 'deliver' ? 'Delivered ✓' : 'Collected ✓') : st[0];
+        if(o.status === 'cancelled' && o.cancelled_by === 'customer') label = 'Cancelled by you';
+        var acts = '';
+        if(o.status === 'new') acts = '<button type="button" data-edit="' + esc(o.ref) + '">Change</button><button type="button" class="danger" data-cancel="' + esc(o.ref) + '">Cancel order</button>';
+        else if(o.status !== 'cancelled' && o.status !== 'done'){
+          if(o.pay_url && o.status !== 'paid') acts += '<a class="pay" href="' + esc(o.pay_url) + '" target="_blank" rel="noopener">Pay now · ' + rand(o.total) + '</a>';
+          acts += '<a target="_blank" rel="noopener noreferrer" href="https://wa.me/' + WA_NUMBER + '?text=' + encodeURIComponent('Hi! About my Galindo order ' + o.ref + ': ') + '">Need to change something? Message us</a>';
+        }
+        return '<div class="orow"><div class="top"><span class="r">' + esc(o.ref) + '</span><span class="t">' + rand(o.total) + '</span></div>' +
+          '<div class="i">' + esc(itemsLine(o)) + ' · ' + (o.fulfilment === 'deliver' ? 'delivery' : 'collect') + ' · ' + new Date(o.created_at).toLocaleDateString('en-ZA', { day:'numeric', month:'short' }) + '</div>' +
+          (o.cb_invoice ? '<div class="i">Creative Beverages invoice ' + esc(o.cb_invoice) + '</div>' : '') +
+          '<span class="st ' + st[1] + '">' + esc(label) + '</span>' + (acts ? '<div class="acts">' + acts + '</div>' : '') + '</div>';
+      }).join('');
+    }).catch(function(){});
+  }
+  function stopEditing(){ editing = ''; $('editbar').hidden = true; $('o-go').textContent = 'Place my order'; }
+  $('edit-stop').addEventListener('click', function(){ stopEditing(); renderMember(location.href); });
+  $('olist').addEventListener('click', function(e){
+    var ed = e.target.closest('[data-edit]'), ca = e.target.closest('[data-cancel]');
+    if(ed){
+      var o = myOrders.filter(function(x){ return x.ref === ed.dataset.edit; })[0]; if(!o) return;
+      renderMember(location.href);
+      Object.keys(qty).forEach(function(k){ qty[k] = 0; }); (o.items || []).forEach(function(i){ if(i.key in qty) qty[i.key] = i.qty; }); renderTotal();
+      var chip = document.querySelector('#ful [data-v="' + o.fulfilment + '"]'); if(chip) chip.click();
+      editing = o.ref; $('edit-ref').textContent = o.ref; $('editbar').hidden = false; $('o-go').textContent = 'Save changes';
+      $('o-note-msg').textContent = o.fulfilment === 'deliver' ? 'Pop your delivery address in again, then save.' : '';
+      $('orderpanel').scrollIntoView({ behavior:'smooth', block:'start' });
+    }
+    if(ca){
+      var mob = $('o-mobile').value.trim() || window.prompt('To cancel ' + ca.dataset.cancel + ', type the mobile number we have for you:');
+      if(!mob) return;
+      ca.disabled = true;
+      rpc('cancel_order', { gid:member.id, mobile:mob, ref:ca.dataset.cancel }).then(function(r){
+        if(!r || !r.ok){ alert(REASON[r && r.reason] || "That didn't go through. Message us."); ca.disabled = false; return; }
+        if(editing === ca.dataset.cancel) stopEditing();
+        loadOrders();
+      }).catch(function(){ ca.disabled = false; alert("We couldn't reach the order system. Try again."); });
+    }
   });
 
   $('d-again').addEventListener('click', function(){ renderMember(location.href); $('o-note').value = ''; });
