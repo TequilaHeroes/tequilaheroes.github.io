@@ -83,6 +83,26 @@
   select.mini{width:auto;font-size:13px;padding:4px 8px;border-radius:8px}
   .msgbox{width:100%;min-height:150px;font-size:14px}
   @media(max-width:560px){.row{flex-direction:column;gap:0}}
+
+  /* till: phone-first */
+  .sync{font-size:12.5px;font-weight:600;border-radius:20px;padding:5px 11px;border:1px solid var(--line-2);color:var(--agave);background:none;cursor:pointer}
+  .sync.wait{color:var(--marigold);border-color:var(--marigold)}
+  .prods{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:4px 0 12px}
+  .prod{display:flex;flex-direction:column;align-items:flex-start;gap:2px;text-align:left;min-height:96px;padding:12px;border-radius:14px;background:linear-gradient(180deg,var(--surface-2),var(--surface));border:1px solid var(--line-2)}
+  .prod b{font-size:16px;line-height:1.15;color:var(--fg)} .prod .pr{font-size:18px;color:var(--gold-bright)} .prod .lf{font-size:12px;color:var(--muted);font-weight:500}
+  .prod.low .lf{color:var(--marigold)}
+  .prod:active{transform:scale(.97);border-color:var(--gold)}
+  @media(max-width:420px){.prods{grid-template-columns:1fr 1fr 1fr;gap:6px}.prod{padding:10px 8px;min-height:88px}.prod b{font-size:14px}}
+  .cart .ln{display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--line)}
+  .cart .ln .n{flex:1} .cart .ln button{width:40px;height:40px;padding:0;font-size:20px;border-radius:10px}
+  .cart .ln .q{min-width:24px;text-align:center;font-weight:700}
+  .seg{display:flex;flex-wrap:wrap;gap:6px;margin-top:12px}.seg button{flex:1 1 28%;padding:13px 6px}
+  .seg button[aria-pressed="true"]{border-color:var(--gold);color:var(--gold-bright);background:#2a2010}
+  .bigbtn{width:100%;font-size:18px;padding:16px;margin-top:14px}
+  details.buyer summary{cursor:pointer;color:var(--gold);font-size:14px;margin-top:14px}
+  .tot{display:flex;justify-content:space-between;font-size:20px;font-weight:700;padding-top:10px}
+  .qrbox{background:#fff;display:inline-block;padding:10px;border-radius:10px;margin-top:8px}
+  .item.hit{border-color:var(--gold);box-shadow:0 0 0 2px rgba(216,180,94,.35)}
 </style>
 </head>
 <body>
@@ -116,6 +136,7 @@
       <button type="button" role="tab" aria-selected="true" data-tab="stockists">Stockists</button>
       <button type="button" role="tab" aria-selected="false" data-tab="contacts">Contacts</button>
       <button type="button" role="tab" aria-selected="false" data-tab="orders">Orders <span id="o-badge" class="pill" hidden></span></button>
+      <button type="button" role="tab" aria-selected="false" data-tab="till">Till</button>
       <button type="button" role="tab" aria-selected="false" data-tab="sales">Sales</button>
       <span class="refresh"><span id="r-at"></span><button type="button" id="r-go" title="Load the latest">↻ Refresh</button></span>
     </div>
@@ -198,7 +219,7 @@
       </div>
       <div class="list" id="o-list"></div>
       <div class="team-only">
-      <h4>Members' prices <span style="text-transform:none;letter-spacing:0">(what Galindo ID holders pay; changes apply to new orders)</span></h4>
+      <h4>Prices <span style="text-transform:none;letter-spacing:0">(members' = Galindo ID with the mates rate; retail = direct sales to anyone else, blank = members only)</span></h4>
       <div class="list" id="p-list"></div>
       <h4>Phone alerts <span style="text-transform:none;letter-spacing:0">(a ping when a member orders, changes or cancels)</span></h4>
       <div class="list"><div class="item" style="display:block">
@@ -226,12 +247,116 @@
       <div class="tiles"><div class="tile"><b id="x-rev">R0</b><span>Takings</span></div><div class="tile"><b id="x-n">0</b><span>Sales</span></div><div class="tile"><b id="x-units">0</b><span>Bottles</span></div></div>
       <h4>By product</h4><div class="list" id="x-prod"></div>
       <div id="x-delwrap" hidden><h4>To deliver</h4><div class="list" id="x-del"></div></div>
+      <div id="x-cbwrap" hidden><h4>Creative Beverages</h4><div class="list"><div class="item" style="display:block"><div class="s" id="x-cb"></div></div></div></div>
       <h4>Every sale <span style="text-transform:none;letter-spacing:0">(check slips against the iKhokha report)</span></h4><div class="list" id="x-list"></div>
+    </section>
+
+    <!-- till: ring up event sales on any team phone; saved straight to Supabase, queued on the phone if there's no signal -->
+    <section id="t-till" hidden>
+      <div class="bar">
+        <select id="t-event" style="flex:1;min-width:160px"></select>
+        <button type="button" id="t-new">+ Event</button>
+        <button type="button" class="sync" id="t-sync">● Live</button>
+      </div>
+      <form class="card" id="t-form" hidden style="margin-bottom:14px">
+        <h3 id="t-form-h">New event</h3>
+        <div class="row">
+          <div><label for="t-name">Event name</label><input id="t-name" maxlength="80" required placeholder="e.g. Mexicola tasting · 14 Nov"></div>
+          <div><label for="t-date">Date</label><input id="t-date" type="date"></div>
+        </div>
+        <label>Opening stock <span class="faint" style="text-transform:none;letter-spacing:0">(bottles brought to the event; blank = not counted)</span></label>
+        <div class="row" id="t-stock"></div>
+        <label>Event prices <span class="faint" style="text-transform:none;letter-spacing:0">(blank = members' prices from Orders)</span></label>
+        <div class="row" id="t-prices"></div>
+        <div class="checks" style="margin-top:14px"><label><input type="checkbox" id="t-qr"> Guests can order from the event QR</label></div>
+        <div class="formbtns"><button class="gold" type="submit" id="t-save">Save</button><button type="button" id="t-cancel">Cancel</button></div>
+        <div class="note" id="t-note"></div>
+      </form>
+      <div id="t-scanner" hidden style="position:fixed;inset:0;background:rgba(0,0,0,.94);z-index:50;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;padding:16px">
+        <video id="t-video" playsinline muted style="width:min(92vw,420px);max-height:60vh;border-radius:14px;border:2px solid var(--gold);background:#000"></video>
+        <div class="muted" id="t-scanmsg" style="text-align:center">Point at the QR on their Galindo card</div>
+        <button type="button" id="t-scanx">Cancel</button>
+      </div>
+      <div id="t-main" hidden>
+        <div class="tiles"><div class="tile"><b id="t-rev">R0</b><span>Takings</span></div><div class="tile"><b id="t-units">0</b><span>Bottles sold</span></div><div class="tile"><b id="t-n">0</b><span>Sales</span></div></div>
+        <div class="stat" id="t-pays" style="margin:-4px 0 10px"></div>
+        <div id="t-closed" class="card" hidden style="margin-bottom:12px;border-color:var(--marigold)">This event is closed. Sales can still be saved (late ones from a phone that was offline), but check with whoever closed it.</div>
+        <div class="card" id="t-who" hidden style="margin-bottom:12px">
+          <label style="margin-top:0">Who's buying? <span style="text-transform:none;letter-spacing:0">(needed for every direct sale)</span></label>
+          <div id="t-picked" hidden></div>
+          <div id="t-find">
+            <div class="bar" style="margin:0"><input type="search" id="t-q" placeholder="Search name, mobile, email…" autocomplete="off" style="flex:1"><button type="button" class="gold" id="t-scan">Scan card</button></div>
+            <div class="list" id="t-hits" style="margin-top:8px"></div>
+            <div class="bar" style="margin:8px 0 0"><input id="t-gid" placeholder="or type their GAL number" autocapitalize="characters" autocomplete="off" style="flex:1;text-transform:uppercase"><button type="button" id="t-gidgo">Use card</button></div>
+            <div class="s" style="margin-top:4px">Members' prices need a Galindo card with the mates rate. Anyone else pays retail.</div>
+          </div>
+          <div id="t-whoslot"></div>
+        </div>
+        <div class="prods" id="t-prods"></div>
+        <div class="card cart" id="t-cart" hidden>
+          <div id="t-lines"></div>
+          <div class="tot"><span>Total</span><span id="t-total">R0</span></div>
+          <div class="seg" id="t-pay">
+            <button type="button" data-pay="card" aria-pressed="true">Card</button>
+            <button type="button" data-pay="cash" aria-pressed="false">Cash</button>
+            <button type="button" data-pay="eft" aria-pressed="false">EFT to CB</button>
+            <button type="button" data-pay="link" aria-pressed="false">Pay link</button>
+            <button type="button" data-pay="other" aria-pressed="false">Other</button>
+          </div>
+          <div class="s" id="t-payhint" style="margin-top:8px"></div>
+          <div id="t-slipwrap"><label for="t-slip" id="t-sliplab">Auth no. on the iKhokha slip</label><input id="t-slip" inputmode="numeric" maxlength="40" autocomplete="off" placeholder="e.g. 870644"></div>
+          <div id="t-otherwrap" hidden><label for="t-other">What was it?</label><input id="t-other" maxlength="200" placeholder="e.g. EFT to CB, swap for stock"></div>
+          <div class="checks" style="margin-top:14px"><label><input type="checkbox" id="t-handed" checked> Bottles handed over now</label></div>
+          <details class="buyer" id="t-buyer"><summary id="t-buyersum">Buyer details (optional)</summary>
+            <div id="t-newbuyer">
+            <div class="row"><div><label for="t-first">First name</label><input id="t-first" maxlength="60" autocomplete="off"></div><div><label for="t-last">Surname</label><input id="t-last" maxlength="60" autocomplete="off"></div></div>
+            <div class="row"><div><label for="t-mobile">Mobile</label><input id="t-mobile" type="tel" maxlength="30" autocomplete="off"></div><div><label for="t-email">Email</label><input id="t-email" type="email" maxlength="120" autocomplete="off"></div></div>
+            </div>
+            <label for="t-snote">Note</label><input id="t-snote" maxlength="300" placeholder="e.g. deliver to the office on Monday">
+            <div class="checks" style="margin-top:12px"><label><input type="checkbox" id="t-consent"> Happy to hear from Galindo (they said yes)</label></div>
+          </details>
+          <span id="t-buyerhome"></span>
+          <button class="gold bigbtn" type="button" id="t-go">Save sale</button>
+          <button class="link" type="button" id="t-clear">Clear</button>
+          <div class="note" id="t-msg"></div>
+        </div>
+        <div class="note ok" id="t-done" style="text-align:center;font-size:16px"></div>
+
+        <div id="t-qrwrap" hidden>
+          <h4>Guest orders <span style="text-transform:none;letter-spacing:0">(from the event QR: take payment, then hand over)</span></h4>
+          <div class="bar"><input id="t-pick" maxlength="8" autocapitalize="characters" autocomplete="off" placeholder="Pickup code" style="flex:1;text-transform:uppercase"><button type="button" id="t-pickgo">Find</button></div>
+          <div class="list" id="t-qrlist"></div>
+        </div>
+        <h4><span id="t-listh">Sales tonight</span> <span style="text-transform:none;letter-spacing:0">(newest first, from every phone)</span></h4>
+        <div class="list" id="t-list"></div>
+
+        <h4 id="t-closeh">Close out for Creative Beverages</h4>
+        <div class="card" id="t-close">
+          <div class="s" id="t-sum" style="white-space:pre-line;font-size:14px"></div>
+          <div class="formbtns"><button type="button" id="t-copy">Copy summary for CB</button><button type="button" id="t-edit">Edit event</button></div>
+          <div class="row">
+            <div><label for="t-cash">Cash counted (R)</label><input id="t-cash" type="number" min="0" step="1" inputmode="decimal"></div>
+            <div><label for="t-cashto">Cash handed to</label><input id="t-cashto" maxlength="80" placeholder="e.g. Koobie (CB)"></div>
+          </div>
+          <label for="t-inv" id="t-invlab">CB invoice no. for this event</label><input id="t-inv" maxlength="40" placeholder="From Creative Beverages">
+          <label for="t-enotes">Notes</label><textarea id="t-enotes" maxlength="1000" placeholder="Breakages, tasting bottles, anything CB should know"></textarea>
+          <div class="formbtns"><button type="button" class="gold" id="t-csave">Save</button><button type="button" id="t-shut">Close event</button></div>
+          <div class="note" id="t-cnote"></div>
+          <div id="t-guestqr" hidden style="margin-top:16px">
+            <label style="margin-top:0">Guest ordering QR</label>
+            <div class="s">Print it or show it at the stand. Guests order on their phone and show you their pickup code.</div>
+            <div class="s"><a id="t-glink" target="_blank" rel="noopener" style="color:var(--gold)"></a></div>
+            <div class="qrbox" id="t-gqr"></div>
+          </div>
+        </div>
+        <div class="formbtns"><label class="checks" style="margin:0;font-size:13px">This phone is called</label><input id="t-device" maxlength="40" style="width:auto;flex:1;min-width:120px;padding:7px 10px;font-size:14px"></div>
+      </div>
     </section>
   </div>
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 <script>
   var SUPABASE_URL = "https://yfopoeuncfpfizghqczr.supabase.co", SUPABASE_KEY = "sb_publishable_aCL5Ko6acTk_pBSJ-zXvzA_UNSAyOcl";
   var sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
@@ -271,14 +396,14 @@
   document.querySelector('.tabs').addEventListener('click', function(e){
     var b = e.target.closest('button[data-tab]'); if(!b) return;
     [].forEach.call(this.querySelectorAll('button[data-tab]'), function(x){ x.setAttribute('aria-selected', String(x === b)); });
-    ['stockists', 'contacts', 'orders', 'sales'].forEach(function(t){ $('t-' + t).hidden = b.dataset.tab !== t; });
+    ['stockists', 'contacts', 'orders', 'till', 'sales'].forEach(function(t){ $('t-' + t).hidden = b.dataset.tab !== t; });
   });
 
   /* ---------- refresh: button, every minute while the page is open, and on coming back to it ---------- */
   var teamOk = false;
   var partner = false;   // Creative Beverages login: Orders tab only, orders sent to them
   function refreshAll(){
-    teamOk = true; loadOrders(); if(!partner){ loadStockists(); loadContacts(); loadSales(); }
+    teamOk = true; loadOrders(); if(!partner){ loadStockists(); loadContacts(); loadSales(); loadTill(); collectFromHash(); }
     $('r-at').textContent = 'Updated ' + new Date().toLocaleTimeString('en-ZA', { hour:'2-digit', minute:'2-digit', second:'2-digit' });
   }
   function busy(){ return !$('s-form').hidden || !$('x-form').hidden || !$('c-msg-card').hidden || (document.activeElement && /INPUT|SELECT|TEXTAREA/.test(document.activeElement.tagName)); }
@@ -551,13 +676,15 @@
   function renderPrices(){
     $('p-list').innerHTML = prices.map(function(p){
       return '<div class="item"><div><div class="t">' + esc(p.name) + '</div><div class="s">' + esc(p.note || '') + '</div></div>' +
-        '<div style="display:flex;gap:6px;align-items:center"><span class="s">R</span><input type="number" min="1" step="1" value="' + Number(p.price) + '" data-price="' + esc(p.key) + '" style="width:100px;padding:7px 9px">' +
+        '<div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;justify-content:flex-end"><span class="s">Members R</span><input type="number" min="1" step="1" value="' + Number(p.price) + '" data-price="' + esc(p.key) + '" style="width:90px;padding:7px 9px">' +
+        '<span class="s">Retail R</span><input type="number" min="1" step="1" value="' + (p.retail == null ? '' : Number(p.retail)) + '" placeholder="members only" data-retail="' + esc(p.key) + '" style="width:110px;padding:7px 9px">' +
         '<label class="checks" style="margin:0"><label><input type="checkbox" data-active="' + esc(p.key) + '"' + (p.active ? ' checked' : '') + '> On sale</label></label></div></div>';
     }).join('');
   }
   $('p-list').addEventListener('change', function(e){
-    var i = e.target, key = i.dataset.price || i.dataset.active; if(!key) return;
-    var row = i.dataset.price ? { price:Number(i.value) } : { active:i.checked };
+    var i = e.target, key = i.dataset.price || i.dataset.active || i.dataset.retail; if(!key) return;
+    var row = i.dataset.price ? { price:Number(i.value) } : i.dataset.retail ? { retail:i.value === '' ? null : Number(i.value) } : { active:i.checked };
+    if(row.retail !== undefined && row.retail !== null && !(row.retail > 0)){ alert('Retail price must be more than R0, or blank for members only.'); renderPrices(); return; }
     if(row.price !== undefined && !(row.price > 0)){ alert('Price must be more than R0.'); renderPrices(); return; }
     sb.from('price_list').update(row).eq('key', key).then(function(r){ if(r.error){ alert('Not saved: ' + r.error.message); } loadOrders(); });
   });
@@ -592,19 +719,27 @@
   }
   function eventSales(){ var ev = $('x-event').value; return sales.filter(function(s){ return !ev || s.event === ev; }); }
   function renderSales(){
-    var all = eventSales(), live = all.filter(function(s){ return !s.voided; }), ev = $('x-event').value;
+    // guest QR orders count once they're paid
+    var all = eventSales().filter(function(s){ return s.paid !== false || s.voided; }), live = all.filter(function(s){ return !s.voided; }), ev = $('x-event').value;
     var rev = 0, units = 0, by = {};
     live.forEach(function(s){ rev += Number(s.total); (s.items || []).forEach(function(i){
       var k = i.name || i.productId; by[k] = by[k] || { qty:0, rev:0 }; by[k].qty += i.qty; by[k].rev += i.qty * i.price; units += i.qty; }); });
     $('x-rev').textContent = rand(rev); $('x-n').textContent = live.length; $('x-units').textContent = units;
     // stock left = products in the newest import for this event (only meaningful for one event)
     var last = ev ? imports.filter(function(i){ return i.event === ev; })[0] : null, left = {}, tasted = {};
+    var te = ev ? tEvents.filter(function(e){ return e.name === ev; })[0] : null;
+    if(te) (prices.length ? prices : []).forEach(function(p){ if(te.stock[p.key] != null){ var sold = 0;
+      live.forEach(function(s){ (s.items || []).forEach(function(i){ if(i.productId === p.key) sold += i.qty; }); }); left[p.name] = te.stock[p.key] - sold; } });
+    $('x-cbwrap').hidden = !te;
+    if(te) $('x-cb').innerHTML = (te.status === 'closed' ? 'Closed ' + day(te.closed_at) + (te.closed_by ? ' by ' + esc(who(te.closed_by)) : '') : '<span style="color:var(--marigold)">Still open</span>') +
+      ' · CB invoice ' + (te.cb_invoice ? '<b style="color:var(--fg)">' + esc(te.cb_invoice) + '</b>' : '<span style="color:var(--marigold)">not yet</span>') +
+      (te.cash_counted != null ? ' · cash ' + rand(te.cash_counted) + (te.cash_handed_to ? ' to ' + esc(te.cash_handed_to) : '') : '') + (te.notes ? '<br>“' + esc(te.notes) + '”' : '');
     if(last){ (last.products || []).forEach(function(p){ left[p.name] = p.stock; });
       (last.uses || []).forEach(function(u){ var p = (last.products || []).filter(function(x){ return x.id === u.productId; })[0]; if(p) tasted[p.name] = (tasted[p.name] || 0) + (u.qty || 1); }); }
     var names = Object.keys(by); Object.keys(left).forEach(function(n){ if(names.indexOf(n) < 0) names.push(n); });
     $('x-prod').innerHTML = names.length ? names.map(function(n){ var b = by[n] || { qty:0, rev:0 };
       return '<div class="item"><div><div class="t">' + esc(n) + '</div><div class="s">' + b.qty + ' sold' + (tasted[n] ? ' · ' + tasted[n] + ' tasting' : '') +
-        (n in left ? ' · ' + left[n] + ' left on the till' : '') + '</div></div><div class="t">' + rand(b.rev) + '</div></div>'; }).join('')
+        (n in left ? ' · ' + left[n] + (te ? ' left' : ' left on the till') : '') + '</div></div><div class="t">' + rand(b.rev) + '</div></div>'; }).join('')
       : '<div class="empty">' + (imports.length ? 'No sales for this event.' : 'No till data yet. Tap “Import till file”.') + '</div>';
     var dels = live.filter(function(s){ return !s.handed_over; });
     $('x-delwrap').hidden = !dels.length;
@@ -614,9 +749,11 @@
         '<div style="text-align:right"><div class="s">' + hm(s.sold_at) + '</div><button class="link" type="button" data-deliver="' + esc(s.id) + '">Mark delivered</button></div></div>';
     }).join('');
     $('x-list').innerHTML = all.length ? all.map(function(s){
-      var who = [s.first_name, s.last_name].filter(Boolean).join(' ');
+      var buyer = [s.first_name, s.last_name].filter(Boolean).join(' ');
       return '<div class="item' + (s.voided ? ' void' : '') + '"><div><div class="t">' + esc(itemsText(s)) + '</div>' +
-        '<div class="s">' + hm(s.sold_at) + ' · slip ' + esc(s.slip || '—') + (who ? ' · ' + esc(who) : '') + (ev ? '' : ' · ' + esc(s.event)) + '</div>' +
+        '<div class="s">' + hm(s.sold_at) + ' · ' + esc(s.payment || 'Card') + (s.slip ? ' slip ' + esc(s.slip) : (s.payment || 'Card') === 'Card' ? ' slip —' : '') + (buyer ? ' · ' + esc(buyer) : '') + (ev ? '' : ' · ' + esc(s.event)) + '</div>' +
+        '<div class="s">' + esc(s.channel === 'qr' ? 'Guest QR order ' + (s.pickup || '') : s.channel === 'till' ? 'Till · ' + [who(s.sold_by), s.device].filter(Boolean).join(' · ') : 'iPad till') +
+          (s.voided && s.void_reason ? ' · voided: ' + esc(s.void_reason) + (s.voided_by ? ' (' + esc(who(s.voided_by)) + ')' : '') : '') + '</div>' +
         '<div>' + (s.voided ? '<span class="pill off">Voided</span>' : '') + (!s.handed_over && !s.voided ? '<span class="pill off">To deliver</span>' : '') +
         (s.delivered_at ? '<span class="pill yes">Delivered ' + day(s.delivered_at) + '</span>' : '') + (s.consent ? '<span class="pill yes">Opted in</span>' : '') + '</div></div>' +
         '<div class="t">' + rand(s.total) + '</div></div>';
@@ -653,17 +790,452 @@
     var b = e.target.closest('[data-deliver]'); if(!b) return;
     var s = sales.filter(function(x){ return x.id === b.dataset.deliver; })[0];
     if(!s || !confirm('Mark ' + itemsText(s) + ' for ' + (s.first_name || 'this buyer') + ' as delivered?')) return;
-    sb.from('sales').update({ handed_over:true, delivered_at:new Date().toISOString() }).eq('id', s.id).then(function(r){
-      if(r.error){ alert('Not changed: ' + r.error.message); return; }
+    sb.rpc('till_update', { p:{ id:s.id, action:'hand', done:true } }).then(function(r){
+      if(r.error || !r.data.ok){ alert('Not changed: ' + (r.error ? r.error.message : r.data.reason)); return; }
       s.handed_over = true; s.delivered_at = new Date().toISOString(); renderSales();
     });
   });
   $('x-csv').addEventListener('click', function(){
-    var cols = ['event','sold_at','slip','items','total','payment','voided','handed_over','delivered_at','first_name','last_name','mobile','email','consent','note'];
+    var cols = ['event','sold_at','channel','sold_by','device','pickup','galindo_id','price_basis','cb_invoice','slip','items','total','payment','paid','voided','void_reason','voided_by','handed_over','delivered_at','first_name','last_name','mobile','email','consent','note'];
     var csv = cols.join(',') + '\n' + eventSales().map(function(s){ return cols.map(function(k){ return csvCell(k === 'items' ? itemsText(s) : s[k]); }).join(','); }).join('\n');
     var a = document.createElement('a'); a.href = URL.createObjectURL(new Blob(['\ufeff' + csv], { type:'text/csv' }));
     a.download = 'galindo-sales-' + new Date().toISOString().slice(0, 10) + '.csv'; a.click();
   });
+
+  /* ---------- till: every team phone rings up sales into public.sales (till_sale); no signal = queued on the phone ---------- */
+  var TQ_KEY = 'galindo_till_queue', TEV_KEY = 'galindo_till_event', TDEV_KEY = 'galindo_till_device', TBOARD_KEY = 'galindo_till_board';
+  var PAYS = { card:'Card', cash:'Cash', eft:'EFT', link:'Pay link', other:'Other' };
+  var tEvents = [], tBoard = null, tSales = [], cart = {}, tPay = 'card', tFlushing = false, tProblem = '', tHit = null;
+  var tBuyer = null;   // direct sale: the buyer from a Galindo card {gid, first, last, mobile, email, tier, mates}
+  // direct sales (anywhere, not at an event) go into a monthly book; the database makes it, the name must match
+  var MON = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+  function directName(d){ d = d || new Date(); return 'Direct sales · ' + MON[d.getMonth()] + ' ' + d.getFullYear(); }
+  function isDirect(){ var e = curEvent(); return e ? e.kind === 'direct' : /^Direct sales · /.test(tEv()); }
+  function payKey(label){ var l = String(label || 'card').toLowerCase(); return l === 'pay link' ? 'link' : l; }
+  // what a bottle costs on this sale: event price at events; direct = members' price for a mate, else retail (null = members only)
+  function priceOf(x){
+    if(!isDirect()) return Number(x.price);
+    var v = tBuyer && tBuyer.mates ? x.members : x.retail; return v == null ? null : Number(v);
+  }
+  function store(k, v){ try{ if(v === undefined) return localStorage.getItem(k); if(v === null) localStorage.removeItem(k); else localStorage.setItem(k, v); }catch(e){ return null; } }
+  function queue(){ try{ return JSON.parse(store(TQ_KEY) || '[]'); }catch(e){ return []; } }
+  function setQueue(q){ store(TQ_KEY, JSON.stringify(q)); renderSync(); }
+  function rid(){ var a = new Uint8Array(10); crypto.getRandomValues(a); return Array.prototype.map.call(a, function(b){ return (b % 36).toString(36); }).join(''); }
+  function tEv(){ return $('t-event').value; }
+  function short(n){ return String(n || '').replace('Galindo ', ''); }
+  function who(e){ return String(e || '').split('@')[0].replace(/eachus$/, ''); }
+  function curEvent(){ return tEvents.filter(function(e){ return e.name === tEv(); })[0]; }
+  // the till redraws every few seconds; only touch the DOM when something changed, so a tap mid-redraw isn't lost
+  function setHTML(el, h){ if(el._h !== h){ el.innerHTML = h; el._h = h; } }
+
+  function loadTill(){
+    sb.from('till_events').select('*').order('created_at', { ascending:false }).limit(100).then(function(r){
+      if(r.error) return;   // offline: keep what we have
+      tEvents = r.data || [];
+      var cur = tEv() || store(TEV_KEY) || directName(), dn = directName();
+      var names = [dn].concat(tEvents.filter(function(e){ return e.status === 'open' && e.name !== dn; }).map(function(e){ return e.name; }),
+                              tEvents.filter(function(e){ return e.status !== 'open' && e.name !== dn; }).map(function(e){ return e.name; }));
+      $('t-event').innerHTML = names.map(function(n){ var e = tEvents.filter(function(x){ return x.name === n; })[0];
+        return '<option value="' + esc(n) + '">' + esc(n === dn ? 'Direct sale (anywhere) · ' + n.replace('Direct sales · ', '') : n) + (e && e.status === 'closed' ? ' (closed)' : '') + '</option>'; }).join('');
+      $('t-event').value = names.indexOf(cur) >= 0 ? cur : dn;
+      $('t-main').hidden = false;
+      loadBoard();
+      renderSales();
+    }).catch(function(){});
+  }
+  function loadBoard(){
+    var ev = tEv(); if(!ev) return;
+    store(TEV_KEY, ev);
+    Promise.all([sb.rpc('till_board', { p_event:ev }), sb.from('sales').select('*').eq('event', ev).order('sold_at', { ascending:false }).limit(500)]).then(function(r){
+      if(ev !== tEv()) return;
+      if(!r[0].error && r[0].data && r[0].data.ok){ tBoard = r[0].data; tBoard._ev = ev; store(TBOARD_KEY, JSON.stringify(tBoard)); }
+      if(!r[1].error) tSales = r[1].data || [];
+      renderTill();
+    }).catch(function(){ renderTill(); renderSync(); });
+  }
+  // offline on first open: use the last board this phone saw
+  try{ tBoard = JSON.parse(store(TBOARD_KEY) || 'null'); }catch(e){}
+
+  function queuedFor(ev){ return queue().filter(function(s){ return s.event === ev; }); }
+  function renderTill(){
+    var ev = tEv(), b = tBoard && tBoard._ev === ev ? tBoard : null, q = queuedFor(ev), e = curEvent() || (b && b.event) || {}, direct = isDirect();
+    renderWho(direct);
+    $('t-listh').textContent = direct ? 'Direct sales this month' : 'Sales tonight';
+    $('t-closeh').textContent = direct ? 'Month end for Creative Beverages' : 'Close out for Creative Beverages';
+    $('t-invlab').textContent = direct ? 'CB invoice no. for this month' : 'CB invoice no. for this event';
+    $('t-edit').hidden = direct;
+    // a fresh phone with no board for a direct book: any direct board this phone has seen has the prices
+    if(!b && direct && tBoard && /^Direct sales · /.test(tBoard._ev || '')) b = { products:tBoard.products.map(function(x){ return Object.assign({}, x, { sold:0, held:0 }); }), payments:{}, cash_by:{}, takings:0, bottles:0, sales:0, to_hand:0 };
+    var qRev = 0, qUnits = 0, qBy = {};
+    q.forEach(function(s){ s.items.forEach(function(i){ qBy[i.key] = (qBy[i.key] || 0) + i.qty; qUnits += i.qty; qRev += i.qty * (i.price || 0); }); });
+    $('t-rev').textContent = rand((b ? Number(b.takings) : 0) + qRev);
+    $('t-units').textContent = (b ? b.bottles : 0) + qUnits;
+    $('t-n').textContent = (b ? b.sales : 0) + q.length;
+    $('t-closed').hidden = e.status !== 'closed';
+    var p = b ? b.payments : {};
+    $('t-pays').innerHTML = Object.keys(PAYS).filter(function(k){ return p[k]; }).map(function(k){ return PAYS[k] + ' <b>' + rand(p[k].total) + '</b> (' + p[k].n + ')'; }).join(' · ') +
+      (b && b.no_slip ? ' · <span style="color:var(--marigold)">' + b.no_slip + ' card sale' + (b.no_slip === 1 ? '' : 's') + ' without a slip no.</span>' : '');
+    var prods = b ? b.products.filter(function(x){ return x.on_sale; }) : [];
+    setHTML($('t-prods'), prods.length ? prods.map(function(x){
+      var left = x.opening == null ? null : x.opening - x.sold - x.held - (qBy[x.key] || 0) - (cart[x.key] || 0), pr = priceOf(x);
+      return '<button type="button" class="prod' + (left != null && left <= 3 || pr == null ? ' low' : '') + '" data-add="' + x.key + '"><b>' + esc(short(x.name)) + '</b>' +
+        '<span class="pr">' + (pr == null ? '<span style="font-size:13px">Members only</span>' : rand(pr)) + '</span><span class="lf">' + (left == null ? x.sold + ' sold' : left + ' left' + (x.held ? ' · ' + x.held + ' held' : '')) + '</span></button>';
+    }).join('') : '<div class="empty" style="grid-column:1/-1">' + (navigator.onLine ? 'Loading…' : 'No signal yet: open the Till once with signal so this phone knows the prices.') + '</div>');
+    renderCart();
+    // guest QR orders still to sort out
+    var qr = tSales.filter(function(s){ return s.channel === 'qr' && !s.voided && !s.handed_over; });
+    $('t-qrwrap').hidden = !e.qr_open && !qr.length;
+    setHTML($('t-qrlist'), qr.length ? qr.map(function(s){ return saleRow(s, true); }).join('') : '<div class="empty">No guest orders waiting.</div>');
+    setHTML($('t-list'), q.map(function(s){
+      return '<div class="item"><div><div class="t">' + esc(s.items.map(function(i){ return i.qty + '× ' + short(i.name); }).join(', ')) + '</div>' +
+        '<div class="s">' + hm(s.time) + ' · ' + PAYS[s.payment] + (s.slip ? ' ' + esc(s.slip) : '') + (s.buyer ? ' · ' + esc(s.buyer) : '') + '</div><div><span class="pill off">Waiting to sync</span>' + (s.err ? '<span class="pill off">' + esc(s.err) + '</span>' : '') + '</div></div>' +
+        '<div class="t">' + rand(s.items.reduce(function(t, i){ return t + i.qty * (i.price || 0); }, 0)) + '</div></div>';
+    }).join('') + (tSales.filter(function(s){ return s.channel !== 'qr' || s.paid; }).slice(0, 80).map(function(s){ return saleRow(s, false); }).join('') ||
+      (q.length ? '' : '<div class="empty">' + (direct ? 'No direct sales yet this month.' : 'No sales yet tonight.') + '</div>')));
+    // close-out
+    var lines = b ? b.products.filter(function(x){ return x.sold; }).map(function(x){ return x.sold + ' × ' + x.name + ' @ ' + rand(x.price) + ' = ' + rand(x.revenue); }) : [];
+    var cards = tSales.filter(function(s){ return !s.voided && s.paid && (s.payment || 'Card') === 'Card'; });
+    $('t-sum').textContent = direct ? directSummary(ev, b) : summaryText(ev, b, lines, cards);
+    if(!busyTill()){ $('t-cash').value = e.cash_counted == null ? '' : Number(e.cash_counted); $('t-cashto').value = e.cash_handed_to || ''; $('t-inv').value = e.cb_invoice || ''; $('t-enotes').value = e.notes || ''; }
+    $('t-shut').textContent = (e.status === 'closed' ? 'Reopen ' : 'Close ') + (direct ? 'month' : 'event');
+    $('t-shut').hidden = direct && !e.name;   // the month's book exists once its first sale is saved
+    $('t-guestqr').hidden = !e.qr_open || !e.qr_code;
+    if(e.qr_open && e.qr_code){
+      var url = 'https://tequilaheroes.com/bar/?e=' + e.qr_code;
+      if($('t-glink').textContent !== url){ $('t-glink').textContent = url; $('t-glink').href = url; $('t-gqr').innerHTML = '';
+        if(window.QRCode) new QRCode($('t-gqr'), { text:url, width:180, height:180, colorDark:'#0D0C0A', colorLight:'#ffffff', correctLevel:QRCode.CorrectLevel.M }); }
+    }
+    if(tHit){ var h = document.querySelector('[data-sale="' + tHit + '"]'); if(h){ h.classList.add('hit'); h.scrollIntoView({ block:'center' }); tHit = null; } }
+  }
+  function summaryText(ev, b, lines, cards){
+    if(!b) return '';
+    var p = b.payments, e = b.event || {};
+    return 'Galindo sales · ' + ev + (e.starts_on ? ' (' + e.starts_on + ')' : '') + '\n' +
+      (lines.join('\n') || 'No sales yet') + '\n' +
+      'Total ' + rand(b.takings) + ' · ' + b.bottles + ' bottles · ' + b.sales + ' sales\n' +
+      Object.keys(PAYS).filter(function(k){ return p[k]; }).map(function(k){ return PAYS[k] + ' ' + rand(p[k].total) + ' (' + p[k].n + ')'; }).join(' · ') + '\n' +
+      (cards.length ? 'Card slips (iKhokha auth no.): ' + cards.map(function(s){ return (s.slip || '?') + ' ' + rand(s.total); }).join(', ') + '\n' : '') +
+      (e.cash_counted != null ? 'Cash counted ' + rand(e.cash_counted) + (e.cash_handed_to ? ', handed to ' + e.cash_handed_to : '') + '\n' : '') +
+      (b.to_hand ? b.to_hand + ' sale' + (b.to_hand === 1 ? '' : 's') + ' still to deliver\n' : '') +
+      (e.cb_invoice ? 'CB invoice ' + e.cb_invoice : '');
+  }
+  // month end: CB invoices named buyers, so list every sale
+  function directSummary(ev, b){
+    if(!b) return '';
+    var p = b.payments || {}, e = b.event || {}, live = tSales.filter(function(s){ return !s.voided && s.paid; }).slice().reverse();
+    return 'Galindo direct sales · ' + ev.replace('Direct sales · ', '') + '\n' +
+      (live.map(function(s){ return day(s.sold_at) + ' · ' + [s.first_name, s.last_name].filter(Boolean).join(' ') + (s.galindo_id ? ' (' + s.galindo_id + ')' : '') +
+        (s.mobile ? ' ' + s.mobile : '') + ' · ' + itemsText(s) + ' · ' + rand(s.total) + (s.price_basis === 'members' ? ' members' : '') + ' · ' + (s.payment || 'Card') +
+        (s.slip ? ' ' + s.slip : '') + (s.cb_invoice ? ' · CB inv ' + s.cb_invoice : '') + ' · sold by ' + who(s.sold_by); }).join('\n') || 'No sales yet') + '\n' +
+      'Total ' + rand(b.takings) + ' · ' + b.bottles + ' bottles · ' + b.sales + ' sales\n' +
+      Object.keys(PAYS).filter(function(k){ return p[k]; }).map(function(k){ return PAYS[k] + ' ' + rand(p[k].total) + ' (' + p[k].n + ')'; }).join(' · ') + '\n' +
+      (Object.keys(b.cash_by || {}).length ? 'Cash held: ' + Object.keys(b.cash_by).map(function(k){ return who(k) + ' ' + rand(b.cash_by[k]); }).join(', ') + '\n' : '') +
+      (e.cash_counted != null ? 'Cash handed over ' + rand(e.cash_counted) + (e.cash_handed_to ? ' to ' + e.cash_handed_to : '') + '\n' : '') +
+      (e.cb_invoice ? 'CB invoice ' + e.cb_invoice : '');
+  }
+  function saleRow(s, guest){
+    var name = [s.first_name, s.last_name].filter(Boolean).join(' '), acts = [];
+    if(guest){
+      if(!s.paid){ acts.push('<button class="link" type="button" data-tact="pay-card">Paid by card</button>', '<button class="link" type="button" data-tact="pay-cash">Paid cash</button>'); }
+      else acts.push('<button class="link" type="button" data-tact="hand">Handed over</button>');
+      acts.push('<button class="link danger" type="button" data-tact="void">Cancel</button>');
+    } else {
+      if(s.voided) acts.push('<button class="link" type="button" data-tact="unvoid">Undo void</button>');
+      else {
+        if(!s.handed_over) acts.push('<button class="link" type="button" data-tact="hand">Handed over</button>');
+        acts.push('<button class="link" type="button" data-tact="fix">Fix</button>');
+        if(isDirect()) acts.push('<button class="link" type="button" data-tact="inv">' + (s.cb_invoice ? 'CB inv ' + esc(s.cb_invoice) : 'CB invoice') + '</button>');
+        acts.push('<button class="link danger" type="button" data-tact="void">Void</button>');
+      }
+    }
+    return '<div class="item' + (s.voided ? ' void' : '') + '" data-sale="' + esc(s.id) + '"><div><div class="t">' + (guest ? '<span class="gidtag">' + esc(s.pickup) + '</span> · ' : '') + esc(itemsText(s)) + '</div>' +
+      '<div class="s">' + hm(s.sold_at) + (s.paid ? ' · ' + esc(s.payment || 'Card') + (s.slip ? ' ' + esc(s.slip) : (s.payment || 'Card') === 'Card' ? ' <span style="color:var(--marigold)">no slip</span>' : '') : '') +
+        (name ? ' · ' + esc(name) : '') + (s.galindo_id ? ' · ' + esc(s.galindo_id) : '') + (s.price_basis === 'members' ? ' · members' : s.price_basis === 'retail' ? ' · retail' : '') +
+        (guest && s.mobile ? ' · ' + esc(s.mobile) : '') + '</div>' +
+      '<div class="s">' + esc(s.channel === 'qr' ? 'Guest QR order' : s.channel === 'import' ? 'iPad till' : [who(s.sold_by), s.device].filter(Boolean).join(' · ')) + (s.note ? ' · “' + esc(s.note) + '”' : '') + '</div>' +
+      '<div>' + (s.voided ? '<span class="pill off">Voided' + (s.voided_by ? ' by ' + esc(who(s.voided_by)) : '') + '</span>' + (s.void_reason ? '<span class="pill">' + esc(s.void_reason) + '</span>' : '') : '') +
+        (guest && !s.paid ? '<span class="pill off">Not paid yet</span>' : '') + (guest && s.paid ? '<span class="pill yes">Paid</span>' : '') +
+        (!guest && !s.voided && !s.handed_over ? '<span class="pill off">To deliver</span>' : '') + '</div></div>' +
+      '<div style="text-align:right"><div class="t">' + rand(s.total) + '</div><div class="acts">' + acts.join('') + '</div></div></div>';
+  }
+  function renderCart(){
+    var b = tBoard, keys = Object.keys(cart).filter(function(k){ return cart[k] > 0; }), tot = 0;
+    $('t-cart').hidden = !keys.length;
+    setHTML($('t-lines'), keys.map(function(k){
+      var x = (b && b.products || []).filter(function(p){ return p.key === k; })[0] || { name:k, price:0 }, pr = priceOf(x); tot += cart[k] * (pr || 0);
+      return '<div class="ln"><span class="n">' + esc(short(x.name)) + '<br><span class="s">' + (pr == null ? '<span style="color:var(--marigold)">members only</span>' : rand(pr)) + '</span></span>' +
+        '<button type="button" data-dec="' + k + '">−</button><span class="q">' + cart[k] + '</span><button type="button" data-add="' + k + '">+</button></div>';
+    }).join(''));
+    $('t-total').textContent = rand(tot); $('t-go').textContent = 'Save sale · ' + rand(tot);
+    [].forEach.call($('t-pay').querySelectorAll('button'), function(x){ x.setAttribute('aria-pressed', String(x.dataset.pay === tPay)); });
+    $('t-slipwrap').hidden = ['card', 'eft', 'link'].indexOf(tPay) < 0; $('t-otherwrap').hidden = tPay !== 'other';
+    $('t-sliplab').textContent = { card:'Auth no. on the iKhokha slip', eft:'EFT reference (optional)', link:'Pay link / iKhokha ref (optional)' }[tPay] || '';
+    $('t-payhint').textContent = { cash:'You hold the cash until it goes to Creative Beverages; the month-end summary shows who holds what.',
+      eft:'They pay Creative Beverages directly by EFT. Mark it delivered/handed over once CB confirms if you\'re unsure.',
+      link:'Send them Creative Beverages\' iKhokha pay link on WhatsApp.' }[tPay] || '';
+  }
+  function busyTill(){ var a = document.activeElement; return a && $('t-close').contains(a); }
+
+  $('t-event').addEventListener('change', function(){ cart = {}; tSales = []; loadBoard(); });
+  $('t-main').addEventListener('click', function(e){
+    var a = e.target.closest('[data-add]'), d = e.target.closest('[data-dec]');
+    if(a){
+      var px = tBoard && tBoard.products.filter(function(p){ return p.key === a.dataset.add; })[0];
+      if(px && priceOf(px) == null && !(isDirect() && tBuyer && tBuyer.mates == null)){ $('t-done').className = 'note'; $('t-done').textContent = short(px.name) + ' is members only: scan a Galindo card with the mates rate.'; return; }
+      cart[a.dataset.add] = (cart[a.dataset.add] || 0) + 1; $('t-done').className = 'note ok'; $('t-done').textContent = ''; renderTill(); return; }
+    if(d){ cart[d.dataset.dec] = Math.max(0, (cart[d.dataset.dec] || 0) - 1); renderTill(); return; }
+  });
+  $('t-pay').addEventListener('click', function(e){ var b = e.target.closest('[data-pay]'); if(!b) return; tPay = b.dataset.pay; renderCart(); });
+  $('t-clear').addEventListener('click', function(){ cart = {}; renderTill(); });
+  $('t-go').addEventListener('click', function(){
+    var m = $('t-msg'); m.textContent = '';
+    var items = Object.keys(cart).filter(function(k){ return cart[k] > 0; }).map(function(k){
+      var x = tBoard.products.filter(function(p){ return p.key === k; })[0]; return { key:k, qty:cart[k], name:x.name, price:priceOf(x) }; });
+    if(!items.length) return;
+    var slip = $('t-slip').value.trim(), first = $('t-first').value.trim(), mob = $('t-mobile').value.trim(), em = $('t-email').value.trim(), direct = isDirect();
+    if(tBuyer){ first = ''; mob = ''; em = ''; }
+    if(direct && !tBuyer && !(first && (mob || em))){ m.textContent = 'Who\'s buying? Search for them, scan their Galindo card, or fill in name + mobile.'; $('t-q').focus(); return; }
+    var mo = items.filter(function(i){ return i.price == null; })[0];
+    if(mo && !(tBuyer && tBuyer.mates == null)){ m.textContent = short(mo.name) + ' is members only: scan a Galindo card with the mates rate.'; return; }
+    if(tPay === 'card' && !slip){ m.textContent = 'Type the auth no. from the iKhokha slip (Creative Beverages needs it to match the payment).'; $('t-slip').focus(); return; }
+    if(tPay === 'other' && !$('t-other').value.trim()){ m.textContent = 'Say how they paid.'; $('t-other').focus(); return; }
+    if((mob || em) && !first){ m.textContent = 'Add their first name too, or clear the mobile/email.'; return; }
+    var note = [tPay === 'other' ? $('t-other').value.trim() : '', $('t-snote').value.trim()].filter(Boolean).join(' · ');
+    var s = { id:'t' + Date.now().toString(36) + rid(), event:tEv(), direct:direct, time:Date.now(), items:items, payment:tPay, slip:['card', 'eft', 'link'].indexOf(tPay) >= 0 ? slip : '',
+      handed_over:$('t-handed').checked, device:store(TDEV_KEY) || '', first:first, last:tBuyer ? '' : $('t-last').value.trim(), mobile:mob, email:em,
+      galindo_id:tBuyer ? tBuyer.gid : '', buyer:tBuyer ? [tBuyer.first, tBuyer.last].filter(Boolean).join(' ') : [first, $('t-last').value.trim()].filter(Boolean).join(' '),
+      consent:$('t-consent').checked, note:note };
+    items.forEach(function(i){ if(i.price == null) i.price = 0; });   // card not checked yet (no signal): the database prices it
+    var q = queue(); q.push(s); setQueue(q);
+    var tot = items.reduce(function(t, i){ return t + i.qty * i.price; }, 0);
+    cart = {}; ['t-slip', 't-other', 't-first', 't-last', 't-mobile', 't-email', 't-snote'].forEach(function(id){ $(id).value = ''; });
+    $('t-consent').checked = false; $('t-handed').checked = true; $('t-buyer').open = false; tPay = 'card'; tBuyer = null; $('t-q').value = ''; $('t-gid').value = '';
+    $('t-done').textContent = '✓ Saved ' + rand(tot) + (navigator.onLine ? '' : ' on this phone (sends when there\'s signal)');
+    renderTill(); flush();
+  });
+
+  // sends queued sales one at a time; a sale stays queued until the database says it has it
+  function flush(){
+    if(tFlushing) return; var q = queue(); if(!q.length){ renderSync(); return; }
+    tFlushing = true; var s = q[0];
+    sb.rpc('till_sale', { p:s }).then(function(r){
+      tFlushing = false;
+      if(r.error){ tProblem = navigator.onLine ? r.error.message : ''; renderSync(); return; }   // no signal / server down: try again later
+      var q2 = queue(), d = r.data || {};
+      if(d.ok){ q2 = q2.filter(function(x){ return x.id !== s.id; }); tProblem = ''; setQueue(q2); if(q2.length) flush(); else { loadBoard(); if(s.first) loadContacts(); } return; }
+      // the database refused it (event deleted, not on the team…): keep it, flag it, move it to the back
+      s.err = { 'not-team':'Your login isn\'t on the team', 'no-event':'Event not found', 'no-items':'No bottles', 'bad-payment':'Bad payment type',
+        'need-buyer':'No buyer', 'bad-card':'Galindo card not found', 'members-only':'Members only: card has no mates rate' }[d.reason] || d.reason;
+      q2 = q2.filter(function(x){ return x.id !== s.id; }); q2.push(s); tProblem = s.err; setQueue(q2); renderTill();
+    }, function(){ tFlushing = false; renderSync(); });
+  }
+  function renderSync(){
+    var n = queue().length, b = $('t-sync');
+    b.className = 'sync' + (n || tProblem || !navigator.onLine ? ' wait' : '');
+    b.textContent = n ? '⟳ ' + n + ' waiting to sync' + (tProblem ? ' · ' + tProblem : '') : !navigator.onLine ? '○ No signal' : tProblem ? '! ' + tProblem : '● Live';
+  }
+  $('t-sync').addEventListener('click', function(){
+    var q = queue(), bad = q.filter(function(s){ return s.err; });
+    if(bad.length && confirm(bad.length + ' sale' + (bad.length === 1 ? '' : 's') + ' can\'t be saved (' + bad[0].err + '). Show the details to copy them somewhere safe?')){
+      window.prompt('Copy this and send it to Bradley:', JSON.stringify(bad));
+      if(confirm('Remove ' + (bad.length === 1 ? 'it' : 'them') + ' from this phone now?')) setQueue(q.filter(function(s){ return !s.err; }));
+    }
+    flush(); loadTill();
+  });
+  window.addEventListener('online', function(){ flush(); renderSync(); });
+  window.addEventListener('offline', renderSync);
+  // live: Realtime pushes changes to sales / events; polling every 5 s is the fallback
+  var tLiveTimer = null;
+  function tillLive(){ clearTimeout(tLiveTimer); tLiveTimer = setTimeout(function(){ if(teamOk && !partner) loadBoard(); }, 400); }
+  if(sb.channel){
+    sb.channel('till-live').on('postgres_changes', { event:'*', schema:'public', table:'sales' }, tillLive)
+      .on('postgres_changes', { event:'*', schema:'public', table:'till_events' }, function(){ if(teamOk && !partner) loadTill(); }).subscribe();
+  }
+  setInterval(function(){
+    if(!teamOk || partner) return; flush();
+    if(!document.hidden && !$('t-till').hidden) loadBoard();
+  }, 5000);
+
+  // void / fix / pay / hand over
+  $('t-main').addEventListener('click', function(e){
+    var b = e.target.closest('[data-tact]'); if(!b) return;
+    var s = tSales.filter(function(x){ return x.id === b.closest('[data-sale]').dataset.sale; })[0]; if(!s) return;
+    var act = b.dataset.tact, p = { id:s.id };
+    if(act === 'void'){ var why = window.prompt((s.channel === 'qr' ? 'Cancel ' : 'Void ') + itemsText(s) + ' (' + rand(s.total) + ')? Say why:', ''); if(!why || !why.trim()) return; p.action = 'void'; p.reason = why.trim(); }
+    else if(act === 'inv'){ var inv = window.prompt('Creative Beverages invoice no. for this sale (blank = on the month\'s invoice):', s.cb_invoice || ''); if(inv === null) return; p.action = 'fix'; p.cb_invoice = inv.trim(); }
+    else if(act === 'unvoid'){ if(!confirm('Undo the void on ' + itemsText(s) + '?')) return; p.action = 'unvoid'; }
+    else if(act === 'hand'){ p.action = 'hand'; p.done = true; }
+    else if(act === 'pay-card'){ var sl = window.prompt('Auth no. on the iKhokha slip for ' + rand(s.total) + ':', ''); if(!sl || !sl.trim()) return; p.action = 'pay'; p.payment = 'card'; p.slip = sl.trim(); }
+    else if(act === 'pay-cash'){ if(!confirm('Took ' + rand(s.total) + ' cash for ' + (s.pickup || '') + '?')) return; p.action = 'pay'; p.payment = 'cash'; }
+    else if(act === 'fix'){
+      var pay = window.prompt('Payment: card, cash, eft, link or other', payKey(s.payment)); if(pay === null) return; pay = pay.trim().toLowerCase();
+      if(!PAYS[pay]){ alert('Type card, cash, eft, link or other.'); return; }
+      var slip = ['card', 'eft', 'link'].indexOf(pay) >= 0 ? window.prompt(pay === 'card' ? 'Auth no. on the iKhokha slip:' : 'Reference (optional):', s.slip || '') : ''; if(slip === null) return;
+      var note = window.prompt('Note (optional):', s.note || ''); if(note === null) return;
+      p.action = 'fix'; p.payment = pay; p.slip = slip; p.note = note;
+    }
+    b.disabled = true;
+    sb.rpc('till_update', { p:p }).then(function(r){
+      b.disabled = false;
+      if(r.error || !r.data.ok){ alert('Not changed: ' + (r.error ? r.error.message : r.data.reason) + (navigator.onLine ? '' : ' (no signal)')); return; }
+      loadBoard();
+      if(act === 'pay-card' || act === 'pay-cash'){ if(confirm('Paid. Hand the bottles over now?')) sb.rpc('till_update', { p:{ id:s.id, action:'hand', done:true } }).then(loadBoard); }
+    });
+  });
+  function findPickup(code){
+    code = String(code || '').trim().toUpperCase(); if(!code) return;
+    var s = tSales.filter(function(x){ return x.pickup === code; })[0];
+    if(s){ tHit = s.id; renderTill(); if(s.voided) alert(code + ' was cancelled.'); else if(s.handed_over) alert(code + ' was already handed over.'); return; }
+    // it may belong to another event
+    sb.from('sales').select('*').eq('pickup', code).limit(1).then(function(r){
+      var x = r.data && r.data[0];
+      if(!x){ alert('No guest order ' + code + '. Check the code.'); return; }
+      if(x.event !== tEv()){ $('t-event').value = x.event; tHit = x.id; loadBoard(); }
+    });
+  }
+  $('t-pickgo').addEventListener('click', function(){ findPickup($('t-pick').value); $('t-pick').value = ''; });
+  $('t-pick').addEventListener('keydown', function(e){ if(e.key === 'Enter'){ e.preventDefault(); $('t-pickgo').click(); } });
+
+  // events: new / edit / close-out
+  var tEditing = null;
+  function openEvent(ev){
+    tEditing = ev || null; ev = ev || { stock:{}, prices:{}, qr_open:false };
+    $('t-form-h').textContent = tEditing ? 'Edit ' + ev.name : 'New event';
+    $('t-name').value = ev.name || ''; $('t-name').disabled = !!tEditing; $('t-date').value = ev.starts_on || new Date(Date.now() - new Date().getTimezoneOffset() * 60000).toISOString().slice(0, 10);
+    var keys = prices.length ? prices : [{ key:'reposado', name:'Reposado' }, { key:'anejo', name:'Añejo' }, { key:'extra', name:'Extra Añejo ‘V’' }];
+    $('t-stock').innerHTML = keys.map(function(p){ return '<div><label style="margin-top:4px">' + esc(short(p.name)) + '</label><input type="number" min="0" step="1" inputmode="numeric" data-stock="' + p.key + '" value="' + (ev.stock[p.key] == null ? '' : ev.stock[p.key]) + '"></div>'; }).join('');
+    $('t-prices').innerHTML = keys.map(function(p){ return '<div><label style="margin-top:4px">' + esc(short(p.name)) + '</label><input type="number" min="1" step="1" inputmode="numeric" data-eprice="' + p.key + '" placeholder="' + (p.price ? Number(p.price) : '') + '" value="' + (ev.prices[p.key] == null ? '' : ev.prices[p.key]) + '"></div>'; }).join('');
+    $('t-qr').checked = !!ev.qr_open; $('t-note').textContent = '';
+    $('t-form').hidden = false; $('t-new').hidden = true; (tEditing ? $('t-date') : $('t-name')).focus();
+  }
+  $('t-new').addEventListener('click', function(){ openEvent(null); });
+  $('t-edit').addEventListener('click', function(){ openEvent(curEvent()); window.scrollTo(0, 0); });
+  $('t-cancel').addEventListener('click', function(){ $('t-form').hidden = true; $('t-new').hidden = false; });
+  $('t-form').addEventListener('submit', function(e){
+    e.preventDefault();
+    var stock = {}, pr = {};
+    [].forEach.call($('t-stock').querySelectorAll('input'), function(i){ if(i.value !== '') stock[i.dataset.stock] = Math.max(0, parseInt(i.value, 10) || 0); });
+    [].forEach.call($('t-prices').querySelectorAll('input'), function(i){ if(Number(i.value) > 0) pr[i.dataset.eprice] = Number(i.value); });
+    var row = { starts_on:$('t-date').value || null, stock:stock, prices:pr, qr_open:$('t-qr').checked }, name = $('t-name').value.trim();
+    if(!tEditing){ if(!name){ $('t-note').textContent = 'Name the event.'; return; } row.name = name; }
+    $('t-save').disabled = true;
+    (tEditing ? sb.from('till_events').update(row).eq('name', tEditing.name) : sb.from('till_events').insert(row)).then(function(r){
+      $('t-save').disabled = false;
+      if(r.error){ $('t-note').textContent = /duplicate|unique/i.test(r.error.message) ? 'There\'s already an event with that name.' : 'Not saved: ' + r.error.message; return; }
+      $('t-form').hidden = true; $('t-new').hidden = false; if(!tEditing){ store(TEV_KEY, name); $('t-event').innerHTML = '<option>' + esc(name) + '</option>'; }
+      loadTill();
+    });
+  });
+  function saveClose(extra){
+    var e = curEvent(); if(!e) return;
+    var cash = $('t-cash').value, row = Object.assign({ cash_counted:cash === '' ? null : Number(cash), cash_handed_to:$('t-cashto').value.trim() || null,
+      cb_invoice:$('t-inv').value.trim() || null, notes:$('t-enotes').value.trim() || null }, extra || {});
+    var n = $('t-cnote'); n.className = 'note'; n.textContent = 'Saving…';
+    sb.from('till_events').update(row).eq('name', e.name).then(function(r){
+      if(r.error){ n.textContent = 'Not saved: ' + r.error.message; return; }
+      n.className = 'note ok'; n.textContent = '✓ Saved'; document.activeElement.blur && document.activeElement.blur(); loadTill(); loadSales();
+    });
+  }
+  $('t-csave').addEventListener('click', function(){ saveClose(); });
+  $('t-shut').addEventListener('click', function(){
+    var e = curEvent(); if(!e) return;
+    if(e.status === 'closed'){ if(confirm('Reopen ' + e.name + '?')) saveClose({ status:'open' }); return; }
+    if(queue().length && !confirm(queue().length + ' sale(s) on this phone haven\'t synced yet. Close anyway?')) return;
+    if(confirm('Close ' + e.name + '? Guest ordering stops. Send Creative Beverages the summary (Copy summary for CB) and add their invoice no. when it comes.')) saveClose({ status:'closed' });
+  });
+  $('t-copy').addEventListener('click', function(){ var b = this; copyText($('t-sum').textContent).then(function(){ b.textContent = 'Copied ✓'; setTimeout(function(){ b.textContent = 'Copy summary for CB'; }, 1500); }); });
+  $('t-device').value = store(TDEV_KEY) || '';
+  $('t-device').addEventListener('change', function(){ store(TDEV_KEY, this.value.trim()); });
+  /* ---------- direct sale: who's buying (contact search, Galindo card scan / typed number) ---------- */
+  function renderWho(direct){
+    $('t-who').hidden = !direct;
+    // the buyer fields live in the "who" card for direct sales, in the cart (optional) at events
+    var home = direct ? $('t-whoslot') : $('t-buyerhome');
+    if($('t-buyer').parentNode !== home.parentNode || $('t-buyer').nextSibling !== home){ home.parentNode.insertBefore($('t-buyer'), home); }
+    $('t-buyersum').textContent = direct ? (tBuyer ? 'Note / marketing' : 'New buyer (not on the list)') : 'Buyer details (optional)';
+    $('t-newbuyer').hidden = !!tBuyer;
+    $('t-find').hidden = !!tBuyer; $('t-picked').hidden = !tBuyer;
+    if(tBuyer) setHTML($('t-picked'), '<div class="item" style="align-items:center"><div><div class="t">' + esc([tBuyer.first, tBuyer.last].filter(Boolean).join(' ') || tBuyer.gid) + '</div>' +
+      '<div class="s"><span class="gidtag">' + esc(tBuyer.gid) + '</span>' + (tBuyer.tier ? ' · ' + esc(TIER[tBuyer.tier] || tBuyer.tier) + ' tier' : '') + '</div>' +
+      '<div>' + (tBuyer.mates ? '<span class="pill yes">Members\' prices</span>' : tBuyer.mates === false ? '<span class="pill off">No mates rate: retail prices</span>' : '<span class="pill off">Card checked when it syncs</span>') + '</div></div>' +
+      '<button class="link" type="button" id="t-unpick">Change</button></div>');
+  }
+  function searchBuyers(){
+    var q = $('t-q').value.trim().toLowerCase(), qd = q.replace(/\D/g, '');
+    if(q.length < 2){ setHTML($('t-hits'), ''); return; }
+    var hits = contacts.filter(function(c){
+      return [c.first_name, c.last_name, c.email, c.galindo_id].join(' ').toLowerCase().indexOf(q) >= 0 || (qd.length >= 4 && String(c.mobile_norm || '').indexOf(qd.replace(/^0/, '')) >= 0);
+    }).slice(0, 6);
+    setHTML($('t-hits'), hits.length ? hits.map(function(c){
+      return '<div class="item click" data-pick="' + c.id + '"><div><div class="t">' + esc([c.first_name, c.last_name].filter(Boolean).join(' ')) + '</div>' +
+        '<div class="s">' + esc([c.mobile, c.email].filter(Boolean).join(' · ')) + '</div></div>' +
+        '<div class="s" style="text-align:right">' + (c.galindo_id ? '<span class="gidtag">' + esc(c.galindo_id) + '</span><br>' + (c.mates ? 'members' : 'retail') : 'retail') + '</div></div>';
+    }).join('') : '<div class="s">Nobody on the list matches. Fill in their details below.</div>');
+  }
+  $('t-q').addEventListener('input', searchBuyers);
+  $('t-hits').addEventListener('click', function(e){
+    var it = e.target.closest('[data-pick]'); if(!it) return;
+    var c = contacts.filter(function(x){ return x.id === it.dataset.pick; })[0]; if(!c) return;
+    $('t-q').value = ''; setHTML($('t-hits'), '');
+    if(c.galindo_id){ tBuyer = { gid:c.galindo_id, first:c.first_name, last:c.last_name, tier:c.tier, mates:!!c.mates }; }
+    else { tBuyer = null; $('t-first').value = c.first_name || ''; $('t-last').value = c.last_name || ''; $('t-mobile').value = c.mobile || ''; $('t-email').value = c.email || ''; $('t-buyer').open = true; }
+    renderTill();
+  });
+  $('t-who').addEventListener('click', function(e){ if(e.target.id === 't-unpick'){ tBuyer = null; renderTill(); $('t-q').focus(); } });
+  function normGid(t){ var m = /GAL-?\s*([2-9A-HJ-NP-Z]{4})[-\s]?([2-9A-HJ-NP-Z]{4})/i.exec(String(t || '').toUpperCase()); return m ? 'GAL-' + m[1] + '-' + m[2] : null; }
+  function useCard(raw){
+    var gid = normGid(raw);
+    if(!gid){ alert('That isn\'t a Galindo ID. It looks like GAL-XXXX-XXXX.'); return; }
+    var local = contacts.filter(function(c){ return c.galindo_id === gid; })[0];
+    sb.rpc('member_lookup', { gid:gid }).then(function(r){
+      if(r.error){   // no signal: use what this phone knows, the database checks it when the sale syncs
+        tBuyer = local ? { gid:gid, first:local.first_name, last:local.last_name, tier:local.tier, mates:!!local.mates } : { gid:gid, mates:null };
+      } else if(!r.data.ok){ alert('No member with Galindo ID ' + gid + '.'); return; }
+      else tBuyer = { gid:r.data.galindo_id, first:r.data.first, last:r.data.last, tier:r.data.tier, mates:!!r.data.mates };
+      $('t-gid').value = ''; renderTill();
+    }, function(){ tBuyer = { gid:gid, mates:null }; renderTill(); });
+  }
+  $('t-gidgo').addEventListener('click', function(){ useCard($('t-gid').value); });
+  $('t-gid').addEventListener('keydown', function(e){ if(e.key === 'Enter'){ e.preventDefault(); useCard(this.value); } });
+  // camera scan of the QR on their members' card (it holds tequilaheroes.com/order/?id=GAL-…)
+  var scanStream = null, scanTimer = null;
+  function loadJsQR(){
+    return window.jsQR ? Promise.resolve() : new Promise(function(ok, no){
+      var sc = document.createElement('script'); sc.src = 'https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js'; sc.onload = ok; sc.onerror = no; document.head.appendChild(sc); });
+  }
+  function closeScanner(){
+    clearInterval(scanTimer); scanTimer = null;
+    if(scanStream) scanStream.getTracks().forEach(function(t){ t.stop(); }); scanStream = null;
+    $('t-scanner').hidden = true;
+  }
+  $('t-scanx').addEventListener('click', closeScanner);
+  $('t-scan').addEventListener('click', function(){
+    $('t-scanner').hidden = false; $('t-scanmsg').textContent = 'Point at the QR on their Galindo card';
+    if(!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia){ $('t-scanmsg').textContent = 'No camera here. Type their GAL number instead.'; return; }
+    navigator.mediaDevices.getUserMedia({ video:{ facingMode:'environment' }, audio:false }).then(function(st){
+      scanStream = st; var v = $('t-video'); v.srcObject = st; v.play();
+      var det = 'BarcodeDetector' in window ? new window.BarcodeDetector({ formats:['qr_code'] }) : null;
+      var cv = document.createElement('canvas'), cx = cv.getContext('2d', { willReadFrequently:true });
+      (det ? Promise.resolve() : loadJsQR()).then(function(){
+        scanTimer = setInterval(function(){
+          if(v.readyState < 2) return;
+          var got = function(t){ if(!scanTimer) return; if(normGid(t)){ closeScanner(); useCard(t); } else $('t-scanmsg').textContent = 'That QR isn\'t a Galindo card.'; };
+          if(det){ det.detect(v).then(function(c){ if(c[0]) got(c[0].rawValue); }).catch(function(){}); return; }
+          var w = Math.min(640, v.videoWidth), h = Math.round(v.videoHeight * w / v.videoWidth); cv.width = w; cv.height = h; cx.drawImage(v, 0, 0, w, h);
+          var r = window.jsQR(cx.getImageData(0, 0, w, h).data, w, h, { inversionAttempts:'dontInvert' }); if(r) got(r.data);
+        }, 250);
+      }, function(){ $('t-scanmsg').textContent = 'Couldn\'t load the scanner. Type their GAL number instead.'; });
+    }, function(){ $('t-scanmsg').textContent = 'Camera blocked. Allow the camera for this site, or type their GAL number.'; });
+  });
+
+  // a guest's pickup QR opens tequilaheroes.com/admin/#collect=CODE
+  function collectFromHash(){
+    var m = location.hash.match(/collect=([A-Za-z0-9]{4,8})/); if(!m || !teamOk || partner) return;
+    document.querySelector('[data-tab="till"]').click(); history.replaceState(null, '', location.pathname);
+    var go = function(){ if(tEvents.length) findPickup(m[1]); else setTimeout(go, 500); }; go();
+  }
+  window.addEventListener('hashchange', collectFromHash);
+  renderSync();
 </script>
 </body>
 </html>

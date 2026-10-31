@@ -1,0 +1,193 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<link rel="icon" type="image/svg+xml" href="/favicon.svg?v=2">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png?v=2">
+<meta name="robots" content="noindex,nofollow">
+<meta name="theme-color" content="#0D0C0A">
+<title>Galindo · Order at the event</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@600&family=EB+Garamond&family=Archivo:wght@500;600;700&display=swap">
+<style>
+  /* Guest ordering at an event (the QR on the stand). Prices, stock and the total come from the database (bar_menu,
+     bar_order); the guest gets a pickup code, pays at the stand (Creative Beverages' card machine or cash) and collects. */
+  :root{
+    color-scheme:dark;
+    --bg:#0D0C0A; --surface:#17120D; --surface-2:#1F1812; --line:#352B20; --line-2:#4A3B29;
+    --fg:#F4ECDC; --muted:#AD9D84; --faint:#7A6E5A; --gold:#D8B45E; --gold-bright:#E7C877; --agave:#8BB26A; --marigold:#E0812B;
+    --serif:'Cormorant Garamond', Georgia, serif; --body:'EB Garamond', Georgia, serif; --sans:'Archivo', system-ui, -apple-system, sans-serif;
+  }
+  *{box-sizing:border-box}
+  [hidden]{display:none!important}
+  html,body{margin:0}
+  body{background:radial-gradient(125% 62% at 50% 0%, #241804 0%, rgba(28,20,9,0) 58%), var(--bg);color:var(--fg);font-family:var(--body);font-size:18px;line-height:1.55;-webkit-font-smoothing:antialiased;min-height:100vh}
+  .wrap{max-width:520px;margin:0 auto;padding:0 max(16px, env(safe-area-inset-left,0px)) 48px}
+  header{text-align:center;padding:30px 0 8px}
+  .eyebrow{font-family:var(--sans);font-size:11px;letter-spacing:.32em;text-transform:uppercase;color:var(--gold);font-weight:600}
+  h1{font-family:var(--serif);font-size:34px;line-height:1.1;margin:8px 0 0;font-weight:600}
+  .muted{color:var(--muted)} .small{font-size:15px}
+  .panel{background:linear-gradient(180deg,var(--surface-2),var(--surface));border:1px solid var(--line-2);border-radius:20px;padding:20px 18px;margin-top:18px}
+  .prod{display:flex;align-items:center;gap:12px;padding:14px 0;border-bottom:1px solid var(--line)}
+  .prod:last-child{border-bottom:none}
+  .prod .n{flex:1;min-width:0} .prod .n b{font-family:var(--serif);font-size:22px;font-weight:600;display:block;line-height:1.1}
+  .prod .n span{font-family:var(--sans);font-size:13px;color:var(--muted)}
+  .prod .p{font-family:var(--sans);font-weight:700;color:var(--gold-bright)}
+  .step{display:flex;align-items:center;gap:6px}
+  .step button{width:40px;height:40px;border-radius:50%;border:1px solid var(--line-2);background:var(--surface-2);color:var(--fg);font-size:20px;cursor:pointer;font-family:var(--sans)}
+  .step .q{min-width:24px;text-align:center;font-family:var(--sans);font-weight:700}
+  label{display:block;font-family:var(--sans);font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--faint);font-weight:600;margin:14px 2px 6px}
+  input[type=text],input[type=tel],input[type=email]{width:100%;font-family:var(--body);font-size:17px;color:var(--fg);background:var(--bg);border:1px solid var(--line);border-radius:12px;padding:12px 14px}
+  input:focus{outline:none;border-color:var(--gold)}
+  .tick{display:flex;gap:10px;align-items:flex-start;text-transform:none;letter-spacing:0;font-family:var(--body);font-size:16px;color:var(--fg);font-weight:400;margin-top:14px}
+  .tick input{width:20px;height:20px;margin-top:3px;accent-color:var(--gold);flex:none}
+  .row{display:flex;gap:10px}.row>*{flex:1;min-width:0}
+  .go{width:100%;margin-top:18px;font-family:var(--sans);font-weight:700;font-size:18px;padding:16px;border-radius:14px;border:1px solid var(--gold);background:linear-gradient(180deg,var(--gold-bright),var(--gold));color:#201600;cursor:pointer}
+  .go:disabled{opacity:.5}
+  .ghost{background:none;border:1px solid var(--line-2);color:var(--gold);font-family:var(--sans);font-weight:600;border-radius:12px;padding:11px 16px;cursor:pointer;margin-top:12px}
+  .note{min-height:1.2em;margin-top:10px;font-family:var(--sans);font-size:14px;color:var(--marigold)}
+  .tot{display:flex;justify-content:space-between;font-family:var(--sans);font-weight:700;font-size:18px;padding-top:12px}
+  .code{font-family:var(--sans);font-weight:700;font-size:54px;letter-spacing:.14em;color:var(--gold-bright);text-align:center;margin:6px 0}
+  .qr{background:#fff;border-radius:14px;padding:12px;width:max-content;margin:8px auto 0}
+  .state{text-align:center;font-family:var(--sans);font-weight:700;font-size:16px;border-radius:30px;padding:10px;margin-top:14px;border:1px solid var(--marigold);color:var(--marigold)}
+  .state.paid{border-color:var(--agave);color:var(--agave)}
+  .fine{font-family:var(--sans);font-size:12.5px;color:var(--faint);text-align:center;margin-top:22px}
+  @media(max-width:420px){.row{flex-direction:column;gap:0}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="eyebrow">Galindo Tequila</div>
+    <h1 id="h">Order at the event</h1>
+    <div class="muted small" id="sub"></div>
+  </header>
+
+  <div class="panel" id="v-msg" hidden><p id="msg" style="margin:0;text-align:center"></p></div>
+
+  <form id="v-order" hidden autocomplete="on">
+    <div class="panel">
+      <div id="prods"></div>
+      <div class="tot"><span>Total</span><span id="total">R0</span></div>
+    </div>
+    <div class="panel">
+      <div class="row">
+        <div><label for="f-first">First name</label><input type="text" id="f-first" maxlength="60" autocomplete="given-name" required></div>
+        <div><label for="f-last">Surname</label><input type="text" id="f-last" maxlength="60" autocomplete="family-name"></div>
+      </div>
+      <label for="f-mobile">Mobile</label><input type="tel" id="f-mobile" maxlength="30" autocomplete="tel" required placeholder="082 123 4567">
+      <label for="f-email">Email <span style="text-transform:none;letter-spacing:0">(optional)</span></label><input type="email" id="f-email" maxlength="120" autocomplete="email">
+      <label class="tick"><input type="checkbox" id="f-18" required> I'm 18 or older.</label>
+      <label class="tick"><input type="checkbox" id="f-consent"> Let me know about Galindo releases and events (you can opt out any time).</label>
+      <button class="go" type="submit" id="go">Place order</button>
+      <div class="note" id="note"></div>
+    </div>
+    <p class="fine">Sold and invoiced by Creative Beverages, Galindo's licensed distributor. You pay at the Galindo stand by card or cash. Not for sale to persons under the age of 18.</p>
+  </form>
+
+  <div id="v-done" hidden>
+    <div class="panel" style="text-align:center">
+      <div class="eyebrow">Your pickup code</div>
+      <div class="code" id="d-code"></div>
+      <div class="qr" id="d-qr"></div>
+      <div class="state" id="d-state">Show this at the Galindo stand and pay there</div>
+      <p class="small muted" id="d-items" style="margin:14px 0 0"></p>
+    </div>
+    <div style="text-align:center"><button class="ghost" type="button" id="again">Place another order</button></div>
+    <p class="fine">Pay at the Galindo stand by card (Creative Beverages' machine) or cash. Bottles are set aside for you until the end of the event.</p>
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<script>
+  var SUPABASE_URL = "https://yfopoeuncfpfizghqczr.supabase.co";
+  var SUPABASE_KEY = "sb_publishable_aCL5Ko6acTk_pBSJ-zXvzA_UNSAyOcl";   /* publishable key: only the public functions */
+  var $ = function(id){ return document.getElementById(id); };
+  var code = (new URLSearchParams(location.search).get('e') || '').toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 12);
+  var KEY = 'galindo_bar_' + code, menu = null, qty = {}, poll = null;
+  function rand(n){ return 'R' + Number(n || 0).toLocaleString('en-ZA', { maximumFractionDigits:2 }); }
+  function esc(s){ return String(s == null ? '' : s).replace(/[&<>"']/g, function(c){ return '&#' + c.charCodeAt(0) + ';'; }); }
+  function rpc(fn, body){
+    var ctl = window.AbortController ? new AbortController() : null, t = setTimeout(function(){ if(ctl) ctl.abort(); }, 12000);
+    return fetch(SUPABASE_URL + '/rest/v1/rpc/' + fn, { method:'POST', signal: ctl ? ctl.signal : undefined,
+      headers:{ 'Content-Type':'application/json', apikey:SUPABASE_KEY, Authorization:'Bearer ' + SUPABASE_KEY }, body:JSON.stringify(body) })
+      .then(function(r){ clearTimeout(t); return r.json(); });
+  }
+  function saved(){ try{ return JSON.parse(localStorage.getItem(KEY) || 'null'); }catch(e){ return null; } }
+  function save(v){ try{ v ? localStorage.setItem(KEY, JSON.stringify(v)) : localStorage.removeItem(KEY); }catch(e){} }
+  function rid(){ var a = new Uint8Array(12); crypto.getRandomValues(a); return Array.prototype.map.call(a, function(b){ return (b % 36).toString(36); }).join(''); }
+  function say(t){ $('v-msg').hidden = false; $('msg').textContent = t; $('v-order').hidden = true; $('v-done').hidden = true; }
+  function itemsText(items){ return (items || []).map(function(i){ return i.qty + ' × ' + String(i.name).replace('Galindo ', ''); }).join(', '); }
+
+  function start(){
+    if(!code){ say('Scan the QR code at the Galindo stand to order.'); return; }
+    var o = saved();
+    if(o && o.pickup){ showDone(o); return; }
+    rpc('bar_menu', { code:code }).then(function(m){
+      if(!m || !m.ok){ say('Ordering from your phone is closed right now. Come and see us at the Galindo stand.'); return; }
+      menu = m; $('sub').textContent = m.event; renderMenu(); $('v-order').hidden = false; $('v-msg').hidden = true;
+    }).catch(function(){ say('No connection. Check your signal and reload, or order at the Galindo stand.'); });
+  }
+  function renderMenu(){
+    var t = 0;
+    $('prods').innerHTML = menu.items.map(function(i){
+      var q = qty[i.key] || 0, out = i.left != null && i.left <= 0; t += q * Number(i.price);
+      return '<div class="prod"><div class="n"><b>' + esc(String(i.name).replace('Galindo ', '')) + '</b><span>' + esc(i.note || '') +
+        (out ? ' · sold out' : i.left != null && i.left <= 5 ? ' · ' + i.left + ' left' : '') + '</span><div class="p">' + rand(i.price) + '</div></div>' +
+        (out ? '' : '<div class="step"><button type="button" data-k="' + i.key + '" data-d="-1" aria-label="One less">−</button><span class="q">' + q + '</span>' +
+          '<button type="button" data-k="' + i.key + '" data-d="1" aria-label="One more">+</button></div>') + '</div>';
+    }).join('');
+    $('total').textContent = rand(t);
+  }
+  $('prods').addEventListener('click', function(e){
+    var b = e.target.closest('[data-k]'); if(!b) return;
+    var i = menu.items.filter(function(x){ return x.key === b.dataset.k; })[0], max = Math.min(12, i.left == null ? 12 : i.left);
+    qty[i.key] = Math.max(0, Math.min(max, (qty[i.key] || 0) + Number(b.dataset.d))); renderMenu();
+  });
+  var orderId = rid();
+  $('v-order').addEventListener('submit', function(e){
+    e.preventDefault();
+    var n = $('note'), items = Object.keys(qty).filter(function(k){ return qty[k] > 0; }).map(function(k){ return { key:k, qty:qty[k] }; });
+    n.textContent = '';
+    if(!items.length){ n.textContent = 'Choose at least one bottle.'; return; }
+    $('go').disabled = true; $('go').textContent = 'Placing your order…';
+    rpc('bar_order', { p:{ code:code, id:orderId, items:items, first:$('f-first').value.trim(), last:$('f-last').value.trim(),
+      mobile:$('f-mobile').value.trim(), email:$('f-email').value.trim(), consent:$('f-consent').checked } }).then(function(r){
+      $('go').disabled = false; $('go').textContent = 'Place order';
+      if(!r || !r.ok){
+        n.textContent = { closed:'Ordering has just closed. Come to the stand.', missing:'Add your first name and a valid mobile number.', 'too-many':'You already have orders waiting. Collect those first.',
+          busy:'We\'re busy. Please order at the stand.', 'no-items':'Choose at least one bottle.', 'sold-out':'Not enough left of: ' + (r && r.what) + '. Change your order.' }[r && r.reason] || 'Something went wrong. Try again.';
+        if(r && r.reason === 'sold-out') rpc('bar_menu', { code:code }).then(function(m){ if(m && m.ok){ menu = m; renderMenu(); } });
+        return;
+      }
+      var o = { pickup:r.pickup, total:r.total, items:r.items, first:$('f-first').value.trim() };
+      save(o); showDone(o);
+    }).catch(function(){ $('go').disabled = false; $('go').textContent = 'Place order'; n.textContent = 'No connection. Check your signal and try again.'; });
+  });
+  function showDone(o){
+    $('v-order').hidden = true; $('v-msg').hidden = true; $('v-done').hidden = false;
+    $('d-code').textContent = o.pickup; $('d-items').textContent = itemsText(o.items) + ' · ' + rand(o.total);
+    $('d-qr').innerHTML = '';
+    if(window.QRCode) new QRCode($('d-qr'), { text:'https://tequilaheroes.com/admin/#collect=' + o.pickup, width:170, height:170, colorDark:'#0D0C0A', colorLight:'#ffffff', correctLevel:QRCode.CorrectLevel.M });
+    check(o); clearInterval(poll); poll = setInterval(function(){ if(!document.hidden) check(o); }, 8000);
+  }
+  function check(o){
+    rpc('bar_status', { code:code, pickup:o.pickup }).then(function(r){
+      if(!r || !r.ok) return;
+      var st = $('d-state');
+      st.className = 'state' + (r.state === 'paid' || r.state === 'collected' ? ' paid' : '');
+      st.textContent = { waiting:'Show this at the Galindo stand and pay there', paid:'Paid ✓ Collect your bottles at the stand', collected:'Collected ✓ Enjoy, and ¡salud!', cancelled:'This order was cancelled. Ask at the stand.' }[r.state];
+      if(r.state === 'collected' || r.state === 'cancelled') clearInterval(poll);
+    }).catch(function(){});
+  }
+  $('again').addEventListener('click', function(){
+    var o = saved();
+    if(o && !confirm('Start a new order? Keep a screenshot of code ' + o.pickup + ' if you haven\'t collected it yet.')) return;
+    save(null); clearInterval(poll); qty = {}; orderId = rid(); location.reload();
+  });
+  start();
+</script>
+</body>
+</html>
