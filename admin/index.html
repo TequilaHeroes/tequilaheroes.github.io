@@ -311,6 +311,8 @@
             <div id="t-newbuyer">
             <div class="row"><div><label for="t-first">First name</label><input id="t-first" maxlength="60" autocomplete="off"></div><div><label for="t-last">Surname</label><input id="t-last" maxlength="60" autocomplete="off"></div></div>
             <div class="row"><div><label for="t-mobile">Mobile</label><input id="t-mobile" type="tel" maxlength="30" autocomplete="off"></div><div><label for="t-email">Email</label><input id="t-email" type="email" maxlength="120" autocomplete="off"></div></div>
+            <div id="t-joinwrap" hidden><button type="button" id="t-join" style="width:100%;margin-top:12px">A mate? Sign them up + give a Galindo card</button>
+              <div class="s" style="margin-top:4px">They get their members' card now (with the mates rate) and pay members' prices on this sale.</div></div>
             </div>
             <label for="t-snote">Note</label><input id="t-snote" maxlength="300" placeholder="e.g. deliver to the office on Monday">
             <div class="checks" style="margin-top:12px"><label><input type="checkbox" id="t-consent"> Happy to hear from Galindo (they said yes)</label></div>
@@ -378,6 +380,9 @@
       var ok = team || partner; $('not-team').hidden = ok; $('team-ui').hidden = !ok;
       document.body.classList.toggle('partner', partner);
       if(partner){ $('who').textContent = session.user.email + ' · Creative Beverages'; document.querySelector('[data-tab="orders"]').click(); }
+      // speed: open straight on the tab this phone last used (a till phone opens on the Till), or tequilaheroes.com/admin/#till
+      if(team){ var lt = /^#till/.test(location.hash) ? 'till' : (function(){ try{ return localStorage.getItem('galindo_admin_tab'); }catch(e){ return null; } })();
+        var tb = lt && document.querySelector('[data-tab="' + lt + '"]'); if(tb) tb.click(); }
       if(ok) refreshAll();
     });
   }
@@ -397,6 +402,7 @@
     var b = e.target.closest('button[data-tab]'); if(!b) return;
     [].forEach.call(this.querySelectorAll('button[data-tab]'), function(x){ x.setAttribute('aria-selected', String(x === b)); });
     ['stockists', 'contacts', 'orders', 'till', 'sales'].forEach(function(t){ $('t-' + t).hidden = b.dataset.tab !== t; });
+    if(!partner) try{ localStorage.setItem('galindo_admin_tab', b.dataset.tab); }catch(err){}
   });
 
   /* ---------- refresh: button, every minute while the page is open, and on coming back to it ---------- */
@@ -806,7 +812,7 @@
   var TQ_KEY = 'galindo_till_queue', TEV_KEY = 'galindo_till_event', TDEV_KEY = 'galindo_till_device', TBOARD_KEY = 'galindo_till_board';
   var PAYS = { card:'Card', cash:'Cash', eft:'EFT', link:'Pay link', other:'Other' };
   var tEvents = [], tBoard = null, tSales = [], cart = {}, tPay = 'card', tFlushing = false, tProblem = '', tHit = null;
-  var tBuyer = null;   // direct sale: the buyer from a Galindo card {gid, first, last, mobile, email, tier, mates}
+  var tBuyer = null, tPayInit = false;   // direct sale: the buyer from a Galindo card {gid, first, last, mobile, email, tier, mates}
   // direct sales (anywhere, not at an event) go into a monthly book; the database makes it, the name must match
   var MON = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
   function directName(d){ d = d || new Date(); return 'Direct sales · ' + MON[d.getMonth()] + ' ' + d.getFullYear(); }
@@ -837,7 +843,7 @@
                               tEvents.filter(function(e){ return e.status !== 'open' && e.name !== dn; }).map(function(e){ return e.name; }));
       $('t-event').innerHTML = names.map(function(n){ var e = tEvents.filter(function(x){ return x.name === n; })[0];
         return '<option value="' + esc(n) + '">' + esc(n === dn ? 'Direct sale (anywhere) · ' + n.replace('Direct sales · ', '') : n) + (e && e.status === 'closed' ? ' (closed)' : '') + '</option>'; }).join('');
-      $('t-event').value = names.indexOf(cur) >= 0 ? cur : dn;
+      $('t-event').value = names.indexOf(cur) >= 0 ? cur : dn; if(!tPayInit){ tPayInit = true; tPay = defaultPay(); }
       $('t-main').hidden = false;
       loadBoard();
       renderSales();
@@ -976,7 +982,7 @@
   }
   function busyTill(){ var a = document.activeElement; return a && $('t-close').contains(a); }
 
-  $('t-event').addEventListener('change', function(){ cart = {}; tSales = []; loadBoard(); });
+  $('t-event').addEventListener('change', function(){ cart = {}; tSales = []; tPay = defaultPay(); loadBoard(); });
   $('t-main').addEventListener('click', function(e){
     var a = e.target.closest('[data-add]'), d = e.target.closest('[data-dec]');
     if(a){
@@ -985,7 +991,9 @@
       cart[a.dataset.add] = (cart[a.dataset.add] || 0) + 1; $('t-done').className = 'note ok'; $('t-done').textContent = ''; renderTill(); return; }
     if(d){ cart[d.dataset.dec] = Math.max(0, (cart[d.dataset.dec] || 0) - 1); renderTill(); return; }
   });
-  $('t-pay').addEventListener('click', function(e){ var b = e.target.closest('[data-pay]'); if(!b) return; tPay = b.dataset.pay; renderCart(); });
+  function payKeyStore(){ return 'galindo_till_pay_' + (isDirect() ? 'direct' : 'event'); }
+  function defaultPay(){ var v = store(payKeyStore()); return PAYS[v] ? v : isDirect() ? 'cash' : 'card'; }
+  $('t-pay').addEventListener('click', function(e){ var b = e.target.closest('[data-pay]'); if(!b) return; tPay = b.dataset.pay; store(payKeyStore(), tPay); renderCart(); });
   $('t-clear').addEventListener('click', function(){ cart = {}; renderTill(); });
   $('t-go').addEventListener('click', function(){
     var m = $('t-msg'); m.textContent = '';
@@ -1009,7 +1017,7 @@
     var q = queue(); q.push(s); setQueue(q);
     var tot = items.reduce(function(t, i){ return t + i.qty * i.price; }, 0);
     cart = {}; ['t-slip', 't-other', 't-first', 't-last', 't-mobile', 't-email', 't-snote'].forEach(function(id){ $(id).value = ''; });
-    $('t-consent').checked = false; $('t-handed').checked = true; $('t-buyer').open = false; tPay = 'card'; tBuyer = null; $('t-q').value = ''; $('t-gid').value = '';
+    $('t-consent').checked = false; $('t-handed').checked = true; $('t-buyer').open = false; tPay = defaultPay(); tBuyer = null; $('t-q').value = ''; $('t-gid').value = '';
     $('t-done').textContent = '✓ Saved ' + rand(tot) + (navigator.onLine ? '' : ' on this phone (sends when there\'s signal)');
     renderTill(); flush();
   });
@@ -1153,12 +1161,17 @@
     var home = direct ? $('t-whoslot') : $('t-buyerhome');
     if($('t-buyer').parentNode !== home.parentNode || $('t-buyer').nextSibling !== home){ home.parentNode.insertBefore($('t-buyer'), home); }
     $('t-buyersum').textContent = direct ? (tBuyer ? 'Note / marketing' : 'New buyer (not on the list)') : 'Buyer details (optional)';
-    $('t-newbuyer').hidden = !!tBuyer;
+    $('t-newbuyer').hidden = !!tBuyer; $('t-joinwrap').hidden = !direct;
     $('t-find').hidden = !!tBuyer; $('t-picked').hidden = !tBuyer;
     if(tBuyer) setHTML($('t-picked'), '<div class="item" style="align-items:center"><div><div class="t">' + esc([tBuyer.first, tBuyer.last].filter(Boolean).join(' ') || tBuyer.gid) + '</div>' +
       '<div class="s"><span class="gidtag">' + esc(tBuyer.gid) + '</span>' + (tBuyer.tier ? ' · ' + esc(TIER[tBuyer.tier] || tBuyer.tier) + ' tier' : '') + '</div>' +
       '<div>' + (tBuyer.mates ? '<span class="pill yes">Members\' prices</span>' : tBuyer.mates === false ? '<span class="pill off">No mates rate: retail prices</span>' : '<span class="pill off">Card checked when it syncs</span>') + '</div></div>' +
-      '<button class="link" type="button" id="t-unpick">Change</button></div>');
+      '<button class="link" type="button" id="t-unpick">Change</button></div>' +
+      (tBuyer.fresh ? '<div class="item" style="display:block;text-align:center"><div class="t">New Galindo card ✓</div><div class="s">Let them scan this with their phone camera to open their card:</div>' +
+        '<div class="qrbox" id="t-newqr"></div><div class="acts" style="justify-content:center;margin-top:8px">' +
+        (tBuyer.wa ? '<a class="link" style="color:var(--agave);font-weight:600;font-size:15px" target="_blank" rel="noopener" href="' + esc(tBuyer.wa) + '">WhatsApp them their card</a>' : '') + '</div></div>' : ''));
+    if(tBuyer && tBuyer.fresh && $('t-newqr') && !$('t-newqr').children.length && window.QRCode)
+      new QRCode($('t-newqr'), { text:memberLink({ galindo_id:tBuyer.gid }), width:170, height:170, colorDark:'#0D0C0A', colorLight:'#ffffff', correctLevel:QRCode.CorrectLevel.M });
   }
   function searchBuyers(){
     var q = $('t-q').value.trim().toLowerCase(), qd = q.replace(/\D/g, '');
@@ -1196,6 +1209,25 @@
     }, function(){ tBuyer = { gid:gid, mates:null }; renderTill(); });
   }
   $('t-gidgo').addEventListener('click', function(){ useCard($('t-gid').value); });
+  // a mate who isn't signed up yet: make them a contact + Galindo ID (mates rate) right here
+  $('t-join').addEventListener('click', function(){
+    var m = $('t-msg'), first = $('t-first').value.trim(), mob = $('t-mobile').value.trim(), b = this;
+    if(!first || !mob){ alert('Fill in at least their first name and mobile.'); (first ? $('t-mobile') : $('t-first')).focus(); return; }
+    b.disabled = true; b.textContent = 'Making their card…';
+    sb.rpc('till_new_member', { p:{ first:first, last:$('t-last').value.trim(), mobile:mob, email:$('t-email').value.trim(), consent:$('t-consent').checked } }).then(function(r){
+      b.disabled = false; b.textContent = 'A mate? Sign them up + give a Galindo card';
+      if(r.error){ alert(navigator.onLine ? 'Not done: ' + r.error.message : 'No signal: a new card needs signal. Sell at retail now, or try again in a moment.'); return; }
+      var d = r.data;
+      if(!d.ok){ alert({ 'bad-mobile':'That mobile number doesn\'t look right.', 'bad-email':'That email doesn\'t look right.', missing:'Add their first name and mobile.', 'not-team':'Your login isn\'t on the team.' }[d.reason] || 'Not done (' + d.reason + ').'); return; }
+      var mn = waNumber({ mobile:d.mobile });
+      tBuyer = { gid:d.galindo_id, first:d.first, last:d.last, tier:d.tier, mates:!!d.mates, fresh:true,
+        wa:mn ? 'https://wa.me/' + mn + '?text=' + encodeURIComponent('Hi ' + d.first + '! Here\'s your Galindo ID, your members\' card. It unlocks our members\' prices, and you can order bottles to collect or have delivered:\n' +
+          memberLink({ galindo_id:d.galindo_id }) + '\n\nIt\'s personal to you, so please keep it to yourself. ¡Salud!\nThe Galindo team') : '' };
+      ['t-first', 't-last', 't-mobile', 't-email'].forEach(function(id){ $(id).value = ''; });
+      if(d.merged) alert(d.first + ' was already in Contacts, so their existing record got the card.');
+      loadContacts(); renderTill();
+    }, function(){ b.disabled = false; b.textContent = 'A mate? Sign them up + give a Galindo card'; alert('No signal: a new card needs signal.'); });
+  });
   $('t-gid').addEventListener('keydown', function(e){ if(e.key === 'Enter'){ e.preventDefault(); useCard(this.value); } });
   // camera scan of the QR on their members' card (it holds tequilaheroes.com/order/?id=GAL-…)
   var scanStream = null, scanTimer = null;
