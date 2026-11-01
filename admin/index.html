@@ -1652,7 +1652,7 @@
       $('w-stat').textContent = 'Visits per ' + (by === 'hour' ? 'hour today' : 'day') + ' · updated ' + now.toLocaleTimeString('en-ZA', { hour:'2-digit', minute:'2-digit' }) + ' (Cloudflare can lag a few minutes)';
       wList('w-pages', d.pages, function(k){ return PAGE[k] || PAGE[k + '/'] || k; });
       wList('w-sources', d.sources, function(k){ return !k ? 'Direct / QR' : k.replace(/^(www|m|l|lm)\./, ''); });
-      wList('w-countries', d.countries, function(k){ return k || 'Unknown'; });
+      wList('w-countries', d.countries, function(k){ try { return k ? new Intl.DisplayNames(['en'], { type:'region' }).of(k) : 'Unknown'; } catch(e){ return k; } });
       wList('w-devices', d.devices, function(k){ return k ? k.charAt(0).toUpperCase() + k.slice(1) : 'Unknown'; });
     });
   }
