@@ -110,6 +110,7 @@
   .ph{position:relative;aspect-ratio:4/5;background:var(--surface-2);border:1px solid var(--line);border-radius:10px;overflow:hidden}
   .ph img{width:100%;height:100%;object-fit:cover;display:block}
   .ph button{position:absolute;top:4px;right:4px;width:32px;height:32px;padding:0;border-radius:50%;font-size:18px;line-height:1;background:rgba(0,0,0,.6);color:#fff;border-color:transparent}
+  .ph button.keep{right:auto;left:4px;background:var(--gold);color:#201600;font-weight:700}
   .ph.up{display:flex;align-items:center;justify-content:center;font-size:12px;color:var(--muted)}
   .qrbox{background:#fff;display:inline-block;padding:10px;border-radius:10px;margin-top:8px}
   .item.hit{border-color:var(--gold);box-shadow:0 0 0 2px rgba(216,180,94,.35)}
@@ -279,6 +280,11 @@
         <select id="p-album" style="flex:1;min-width:180px"></select>
         <label class="gold" for="p-file" id="p-add" role="button" style="display:inline-block;padding:11px 16px;border-radius:10px;border:1px solid var(--gold);background:linear-gradient(180deg,var(--gold-bright),var(--gold));color:#201600;font-weight:700;cursor:pointer">+ Add photos</label>
         <input id="p-file" type="file" accept="image/*" multiple hidden>
+      </div>
+      <div id="p-inwrap" hidden style="margin-bottom:18px">
+        <h4>Booth inbox <span class="pill" id="p-incount"></span></h4>
+        <p class="stat" style="margin:0 0 10px">Guests sent these from the photo booth. Nothing here is public: ✓ adds it to the album above, × bins it.</p>
+        <div class="phgrid" id="p-inbox"></div>
       </div>
       <p class="stat" id="p-stat" style="margin:0 0 10px"></p>
       <div class="phgrid" id="p-grid"></div>
@@ -1380,7 +1386,52 @@
       if(cur && albums.some(function(a){ return a.slug === cur; })) $('p-album').value = cur;
       if(!pBusy) renderAlbum();
     });
+    loadInbox();
   }
+  // booth inbox: private bucket, so thumbnails need signed links (kept per file so the grid doesn't flicker on refresh)
+  var inbox = [], signed = {};
+  function loadInbox(){
+    sb.storage.from('booth-inbox').list('', { limit:300, sortBy:{ column:'created_at', order:'asc' } }).then(function(r){
+      if(r.error) return;
+      inbox = (r.data || []).filter(function(o){ return /^booth-.*\.jpg$/.test(o.name); }).map(function(o){ return o.name; });
+      var need = inbox.filter(function(n){ return !signed[n]; });
+      return (need.length ? sb.storage.from('booth-inbox').createSignedUrls(need, 6 * 3600) : Promise.resolve({ data:[] })).then(function(s){
+        (s.data || []).forEach(function(x){ if(x.signedUrl) signed[x.path] = x.signedUrl; });
+        renderInbox();
+      });
+    });
+  }
+  function renderInbox(){
+    $('p-inwrap').hidden = !inbox.length; $('p-incount').textContent = inbox.length;
+    setHTML($('p-inbox'), inbox.map(function(n){
+      return '<div class="ph"><img src="' + esc(signed[n] || '') + '" alt="" loading="lazy">' +
+        '<button type="button" class="keep" data-keep="' + esc(n) + '" title="Add to the album">✓</button><button type="button" data-bin="' + esc(n) + '" title="Bin it">×</button></div>';
+    }).join(''));
+  }
+  $('p-inbox').addEventListener('click', function(e){
+    var b = e.target.closest('button[data-keep],button[data-bin]'), a = curAlbum(); if(!b || pBusy) return;
+    var n = b.dataset.keep || b.dataset.bin, card = b.parentNode;
+    if(b.dataset.bin && !confirm('Bin this booth photo? It will be deleted.')) return;
+    if(b.dataset.keep && !a) return;
+    [].forEach.call(card.querySelectorAll('button'), function(x){ x.disabled = true; }); card.style.opacity = '.4';
+    var keep = !b.dataset.bin ? sb.storage.from('booth-inbox').download(n).then(function(r){
+        if(r.error) throw r.error;
+        return sb.storage.from('member-photos').upload(a.folder + '/' + n, r.data, { contentType:'image/jpeg', cacheControl:'31536000', upsert:false });
+      }).then(function(r){
+        if(r.error && !/exists|duplicate/i.test(r.error.message || '')) throw r.error;
+        return sb.rpc('album_add', { p:{ slug:a.slug, files:[n] } });
+      }).then(function(r){
+        if(r.error || !r.data || !r.data.ok) throw (r.error || new Error(r.data && r.data.reason));
+        if(a.photos.indexOf(n) < 0) a.photos.push(n);
+      }) : Promise.resolve();
+    keep.then(function(){ return sb.storage.from('booth-inbox').remove([n]); }).then(function(){
+      inbox = inbox.filter(function(x){ return x !== n; }); delete signed[n]; renderInbox(); renderAlbum();
+      if(b.dataset.keep) $('p-stat').textContent = '✓ Added to ' + a.title + ' · ' + a.photos.length + ' photos';
+    }).catch(function(err){
+      card.style.opacity = ''; [].forEach.call(card.querySelectorAll('button'), function(x){ x.disabled = false; });
+      alert('Didn\'t work: ' + ((err && err.message) || err) + '. Try again with signal.');
+    });
+  });
   function curAlbum(){ var v = $('p-album').value; return albums.filter(function(a){ return a.slug === v; })[0]; }
   function photoUrl(a, f){ return sb.storage.from('member-photos').getPublicUrl(a.folder + '/' + f).data.publicUrl; }
   function renderAlbum(extra){
