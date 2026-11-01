@@ -248,8 +248,8 @@
     </div>
 
     <div class="order">
-      Want bottles for yourself, a gift, or by the case?
-      <br><a id="order" rel="noopener noreferrer" target="_blank">Order on WhatsApp →</a>
+      Want bottles for yourself, a gift, or by the case? Get your Galindo ID above, then order on your members' page.
+      <br><a id="order" href="/order/">Already a member? Order here →</a>
     </div>
   </div>
 </section>
@@ -342,7 +342,6 @@
       (d.favourite ? "Favourite: " + d.favourite + "\n" : "") + (d.interests ? "Interested in: " + d.interests + "\n" : "") + (d.note ? "Note: " + d.note + "\n" : "") +
       "Happy for Galindo to contact me.";
   }
-  $('order').href = "https://wa.me/" + WA_NUMBER + "?text=" + encodeURIComponent("Hi! I was at the Galindo launch and I'd love to order. Could you send me pricing & how to pay? Thanks!");
 
   $('signup').addEventListener('submit', function(e){
     e.preventDefault();
