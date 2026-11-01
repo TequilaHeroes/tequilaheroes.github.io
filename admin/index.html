@@ -88,10 +88,11 @@
   .sync{font-size:12.5px;font-weight:600;border-radius:20px;padding:5px 11px;border:1px solid var(--line-2);color:var(--agave);background:none;cursor:pointer}
   .sync.wait{color:var(--marigold);border-color:var(--marigold)}
   .prods{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:4px 0 12px}
-  .prod{display:flex;flex-direction:column;align-items:flex-start;gap:2px;text-align:left;min-height:96px;padding:12px;border-radius:14px;background:linear-gradient(180deg,var(--surface-2),var(--surface));border:1px solid var(--line-2)}
-  .prod b{font-size:16px;line-height:1.15;color:var(--fg)} .prod .pr{font-size:18px;color:var(--gold-bright)} .prod .lf{font-size:12px;color:var(--muted);font-weight:500}
-  .prod.low .lf{color:var(--marigold)}
-  .prod img{display:block;align-self:center;height:76px;width:auto;max-width:100%;object-fit:contain;border-radius:8px;background:#ECEAE6;margin-bottom:6px}
+  /* bottle buttons: warm cream cards so the bottle photos blend in instead of sitting on the dark page like white stickers */
+  .prod{display:flex;flex-direction:column;align-items:flex-start;gap:2px;text-align:left;min-height:96px;padding:12px;border-radius:14px;background:linear-gradient(180deg,#F4ECDD,#E7DAC3);border:1px solid #CDB896}
+  .prod b{font-size:16px;line-height:1.15;color:#2A1F12} .prod .pr{font-size:18px;color:#8A5C12} .prod .lf{font-size:12px;color:#6B5A42;font-weight:600}
+  .prod.low .lf, .prod.low .pr span{color:#B04E0C}
+  .prod img{display:block;align-self:center;height:76px;width:auto;max-width:100%;object-fit:contain;border-radius:8px;mix-blend-mode:multiply;margin-bottom:6px}
   .prod:active{transform:scale(.97);border-color:var(--gold)}
   @media(max-width:420px){.prods{grid-template-columns:1fr 1fr 1fr;gap:6px}.prod{padding:10px 8px;min-height:88px}.prod b{font-size:14px}}
   .cart .ln{display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--line)}
@@ -107,6 +108,9 @@
   /* privacy: sales, takings and month end stay folded away unless a team member opens them */
   body.tp-hide .t-priv{display:none!important}
   .privbtn{width:100%;margin:18px 0 8px;color:var(--muted);font-weight:500}
+  #t-who details.buyer > summary{list-style:none;display:block;text-align:center;margin-top:10px;padding:14px;border:1px solid var(--gold);border-radius:10px;background:#2a2010;color:var(--gold-bright);font-weight:700;font-size:16px}
+  #t-who details.buyer > summary::-webkit-details-marker{display:none}
+  #t-who details.buyer[open] > summary{background:none;border-color:var(--line-2);color:var(--muted);font-weight:600;font-size:14px;padding:10px}
   .handover{position:fixed;inset:0;z-index:60;overflow:auto;background:radial-gradient(120% 50% at 50% 0%, #1d1406 0%, rgba(0,0,0,0) 60%), var(--bg)}
   .handover .hold{width:100%;margin-top:26px;padding:16px;font-size:15px;color:var(--muted);user-select:none;-webkit-user-select:none;-webkit-touch-callout:none;position:relative;overflow:hidden}
   .handover .hold i{position:absolute;inset:0 auto 0 0;width:0;background:rgba(216,180,94,.25)}
@@ -327,12 +331,14 @@
           <div id="t-find">
             <div class="bar" style="margin:0"><input type="search" id="t-q" placeholder="Search name, mobile, email…" autocomplete="off" style="flex:1"><button type="button" class="gold" id="t-scan">Scan card</button></div>
             <div class="list" id="t-hits" style="margin-top:8px"></div>
+          </div>
+          <div id="t-whoslot"></div>
+          <div id="t-find2">
             <div class="bar" style="margin:8px 0 0"><input id="t-gid" placeholder="or type their GAL number" autocapitalize="characters" autocomplete="off" style="flex:1;text-transform:uppercase"><button type="button" id="t-gidgo">Use card</button></div>
             <div class="s" style="margin-top:4px">Members' prices need a Galindo card with the mates rate. Anyone else pays retail.</div>
             <button type="button" id="t-handgo" style="width:100%;margin-top:10px">New buyer? Hand them the phone to type their details</button>
             <button type="button" class="link" id="t-welcome" style="display:block;margin:8px auto 0">Just wants to know more? Send a welcome link</button>
           </div>
-          <div id="t-whoslot"></div>
         </div>
         <div class="prods" id="t-prods"></div>
         <div class="card cart" id="t-cart" hidden>
@@ -423,9 +429,8 @@
       var ok = team || partner; $('not-team').hidden = ok; $('team-ui').hidden = !ok;
       document.body.classList.toggle('partner', partner);
       if(partner){ $('who').textContent = session.user.email + ' · Creative Beverages'; document.querySelector('[data-tab="orders"]').click(); }
-      // speed: open straight on the tab this phone last used (a till phone opens on the Till), or tequilaheroes.com/admin/#till
-      if(team){ var lt = /^#till/.test(location.hash) ? 'till' : (function(){ try{ return localStorage.getItem('galindo_admin_tab'); }catch(e){ return null; } })();
-        var tb = lt && document.querySelector('[data-tab="' + lt + '"]'); if(tb) tb.click(); }
+      // speed: team logins always open on the Till
+      if(team) document.querySelector('[data-tab="till"]').click();
       if(ok) refreshAll();
     });
   }
@@ -445,7 +450,6 @@
     var b = e.target.closest('button[data-tab]'); if(!b) return;
     [].forEach.call(this.querySelectorAll('button[data-tab]'), function(x){ x.setAttribute('aria-selected', String(x === b)); });
     ['stockists', 'contacts', 'orders', 'till', 'sales'].forEach(function(t){ $('t-' + t).hidden = b.dataset.tab !== t; });
-    if(!partner) try{ localStorage.setItem('galindo_admin_tab', b.dataset.tab); }catch(err){}
   });
 
   /* ---------- refresh: button, every minute while the page is open, and on coming back to it ---------- */
@@ -1204,7 +1208,8 @@
     // the buyer fields live in the "who" card for direct sales, in the cart (optional) at events
     var home = direct ? $('t-whoslot') : $('t-buyerhome');
     if($('t-buyer').parentNode !== home.parentNode || $('t-buyer').nextSibling !== home){ home.parentNode.insertBefore($('t-buyer'), home); }
-    $('t-buyersum').textContent = direct ? (tBuyer ? 'Note / marketing' : 'New buyer (not on the list)') : 'Buyer details (optional)';
+    $('t-buyersum').textContent = direct ? (tBuyer ? 'Note / marketing' : $('t-buyer').open ? 'New buyer (not on the list)' : '+ New buyer (not on the list)') : 'Buyer details (optional)';
+    $('t-find2').hidden = !!tBuyer;
     $('t-newbuyer').hidden = !!tBuyer; $('t-joinwrap').hidden = !direct;
     $('t-find').hidden = !!tBuyer; $('t-picked').hidden = !tBuyer;
     if(tBuyer) setHTML($('t-picked'), '<div class="item" style="align-items:center"><div><div class="t">' + esc([tBuyer.first, tBuyer.last].filter(Boolean).join(' ') || tBuyer.gid) + '</div>' +
@@ -1230,6 +1235,7 @@
     }).join('') : '<div class="s">Nobody on the list matches. Fill in their details below.</div>');
   }
   $('t-q').addEventListener('input', searchBuyers);
+  $('t-buyer').addEventListener('toggle', function(){ if(isDirect()){ renderWho(true); if($('t-buyer').open && !tBuyer) $('t-first').focus(); } });
   $('t-hits').addEventListener('click', function(e){
     var it = e.target.closest('[data-pick]'); if(!it) return;
     var c = contacts.filter(function(x){ return x.id === it.dataset.pick; })[0]; if(!c) return;
