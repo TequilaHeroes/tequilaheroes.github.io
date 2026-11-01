@@ -1529,15 +1529,25 @@
   var lbX = null;
   $('lb-img').addEventListener('touchstart', function(e){ lbX = e.touches[0].clientX; }, { passive:true });
   $('lb-img').addEventListener('touchend', function(e){ if(lbX === null) return; var dx = e.changedTouches[0].clientX - lbX; lbX = null; if(Math.abs(dx) > 50) lbShow(lbI + (dx < 0 ? 1 : -1)); });
+  function copyNow(t){
+    var ta = document.createElement('textarea'), ok = false;
+    ta.value = t; ta.setAttribute('readonly', ''); ta.style.cssText = 'position:fixed;top:0;left:0;opacity:0;font-size:16px';
+    document.body.appendChild(ta); ta.select(); ta.setSelectionRange(0, t.length);
+    try { ok = document.execCommand('copy'); } catch(e){}
+    ta.remove(); if(document.activeElement && document.activeElement.blur) document.activeElement.blur();
+    if(!ok && navigator.clipboard) navigator.clipboard.writeText(t).catch(function(){});
+    return ok;
+  }
   $('lb-share').addEventListener('click', function(){
     var f = lbFile(), a = curAlbum(), b = this; if(!f) return;
     b.textContent = 'Getting it…';
-    // WhatsApp on iPhone often drops text sent alongside a photo, so the caption also goes on the clipboard to paste in
-    var copied = navigator.clipboard ? navigator.clipboard.writeText(SHARE_CAPTION).then(function(){ return true; }, function(){ return false; }) : Promise.resolve(false);
+    // WhatsApp on iPhone drops text sent alongside a photo, so the caption also goes on the clipboard to paste in.
+    // Copied the old way, right now inside the tap: the async clipboard API loses out once the share sheet takes focus.
+    var copied = copyNow(SHARE_CAPTION);
     lbGet(f).then(function(blob){
       var file = new File([blob], f, { type:'image/jpeg' });
       if(navigator.canShare && navigator.canShare({ files:[file] })){
-        copied.then(function(ok){ if(ok) $('lb-n').textContent = 'Caption copied: paste it in WhatsApp if it\'s not there'; });
+        if(copied) $('lb-n').textContent = 'Caption copied: in WhatsApp, tap the message box → Paste';
         return navigator.share({ files:[file], text:SHARE_CAPTION }).then(function(){ b.textContent = 'Shared ✓'; });
       }
       // laptop / no file sharing: open WhatsApp with the caption and the photo's link (the album bucket is public, so it opens without a login)
