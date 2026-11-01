@@ -111,6 +111,17 @@
   .ph img{width:100%;height:100%;object-fit:cover;display:block}
   .ph button{position:absolute;top:4px;right:4px;width:32px;height:32px;padding:0;border-radius:50%;font-size:18px;line-height:1;background:rgba(0,0,0,.6);color:#fff;border-color:transparent}
   .ph button.keep{right:auto;left:4px;background:var(--gold);color:#201600;font-weight:700}
+  #p-grid .ph img{cursor:zoom-in}
+  /* album photo viewer: big photo, ‹ Share on WhatsApp ›, close. No remove button in here, so nobody bins one by accident. */
+  .lb{position:fixed;inset:0;z-index:60;background:rgba(8,7,6,.96);display:flex;flex-direction:column;align-items:center;justify-content:center;padding:16px}
+  .lb[hidden]{display:none}
+  .lb img{max-width:100%;max-height:calc(100vh - 170px);border-radius:12px;box-shadow:0 20px 60px rgba(0,0,0,.6)}
+  .lb .bar{display:flex;gap:10px;align-items:center;justify-content:center;margin-top:14px;width:100%;max-width:520px}
+  .lb .bar button{font-weight:700;font-size:15px;border-radius:12px;padding:13px 16px;border:1px solid var(--line-2);background:var(--surface-2);color:var(--fg);cursor:pointer}
+  .lb .bar .share{flex:1;background:linear-gradient(180deg,var(--gold-bright),var(--gold));color:#201600;border:none}
+  .lb .close{position:absolute;top:max(14px, env(safe-area-inset-top));right:16px;background:none;border:none;color:var(--fg);font-size:32px;line-height:1;cursor:pointer;padding:6px 10px}
+  .lb .hint{font-size:12.5px;color:var(--faint);margin-top:10px;text-align:center}
+  .lb .hint button{background:none;border:none;color:var(--gold-bright);text-decoration:underline;font:inherit;padding:0;cursor:pointer}
   .ph.up{display:flex;align-items:center;justify-content:center;font-size:12px;color:var(--muted)}
   .qrbox{background:#fff;display:inline-block;padding:10px;border-radius:10px;margin-top:8px}
   .item.hit{border-color:var(--gold);box-shadow:0 0 0 2px rgba(216,180,94,.35)}
@@ -288,6 +299,12 @@
       </div>
       <p class="stat" id="p-stat" style="margin:0 0 10px"></p>
       <div class="phgrid" id="p-grid"></div>
+      <div class="lb" id="lb" hidden>
+        <button class="close" type="button" id="lb-x" aria-label="Close">×</button>
+        <img id="lb-img" alt="Album photo">
+        <div class="bar"><button type="button" id="lb-prev" aria-label="Previous">‹</button><button type="button" class="share" id="lb-share">Share on WhatsApp</button><button type="button" id="lb-next" aria-label="Next">›</button></div>
+        <div class="hint"><span id="lb-n"></span> · <button type="button" id="lb-save">Save to this phone</button></div>
+      </div>
     </section>
 
     <!-- till: ring up event sales on any team phone; saved straight to Supabase, queued on the phone if there's no signal -->
@@ -1486,8 +1503,55 @@
     }
     step();
   });
+  // tap a photo to see it big and share it. The real photo goes into the share sheet (WhatsApp sends the image itself);
+  // the photo is fetched as soon as it's shown so the share starts straight from the tap (iPhone refuses a slow one).
+  var lbI = 0, lbBlob = {};
+  function lbFile(){ var a = curAlbum(); return a && a.photos[lbI]; }
+  function lbGet(f){
+    var a = curAlbum();
+    return lbBlob[f] || (lbBlob[f] = fetch(photoUrl(a, f)).then(function(r){ if(!r.ok) throw new Error('photo ' + r.status); return r.blob(); })
+      .catch(function(e){ delete lbBlob[f]; throw e; }));
+  }
+  function lbShow(i){
+    var a = curAlbum(); if(!a || !a.photos.length){ $('lb').hidden = true; return; }
+    lbI = (i + a.photos.length) % a.photos.length; var f = a.photos[lbI];
+    $('lb-img').src = photoUrl(a, f); $('lb-n').textContent = (lbI + 1) + ' of ' + a.photos.length;
+    $('lb-share').textContent = 'Share on WhatsApp'; $('lb-save').textContent = 'Save to this phone'; $('lb').hidden = false;
+    lbGet(f).catch(function(){});
+  }
+  $('lb-x').addEventListener('click', function(){ $('lb').hidden = true; });
+  $('lb').addEventListener('click', function(e){ if(e.target.id === 'lb') $('lb').hidden = true; });
+  $('lb-prev').addEventListener('click', function(){ lbShow(lbI - 1); });
+  $('lb-next').addEventListener('click', function(){ lbShow(lbI + 1); });
+  document.addEventListener('keydown', function(e){ if($('lb').hidden) return; if(e.key === 'Escape') $('lb').hidden = true; if(e.key === 'ArrowLeft') lbShow(lbI - 1); if(e.key === 'ArrowRight') lbShow(lbI + 1); });
+  var lbX = null;
+  $('lb-img').addEventListener('touchstart', function(e){ lbX = e.touches[0].clientX; }, { passive:true });
+  $('lb-img').addEventListener('touchend', function(e){ if(lbX === null) return; var dx = e.changedTouches[0].clientX - lbX; lbX = null; if(Math.abs(dx) > 50) lbShow(lbI + (dx < 0 ? 1 : -1)); });
+  $('lb-share').addEventListener('click', function(){
+    var f = lbFile(), a = curAlbum(), b = this; if(!f) return;
+    b.textContent = 'Getting it…';
+    lbGet(f).then(function(blob){
+      var file = new File([blob], f, { type:'image/jpeg' });
+      if(navigator.canShare && navigator.canShare({ files:[file] })) return navigator.share({ files:[file] }).then(function(){ b.textContent = 'Shared ✓'; });
+      // laptop / no file sharing: open WhatsApp with the photo's link (the album bucket is public, so it opens without a login)
+      window.open('https://wa.me/?text=' + encodeURIComponent('Galindo · ' + a.title + ' ' + photoUrl(a, f)), '_blank', 'noopener');
+      b.textContent = 'Share on WhatsApp';
+    }).catch(function(e){ b.textContent = (e && e.name === 'AbortError') ? 'Share on WhatsApp' : 'Couldn\'t get it: try again with signal'; });
+  });
+  $('lb-save').addEventListener('click', function(){
+    var f = lbFile(), b = this; if(!f) return;
+    lbGet(f).then(function(blob){
+      var file = new File([blob], f, { type:'image/jpeg' });
+      // iPhone can't download to Photos: its share sheet has "Save Image"
+      if(/iPhone|iPad/.test(navigator.userAgent) && navigator.canShare && navigator.canShare({ files:[file] })) return navigator.share({ files:[file] });
+      var l = document.createElement('a'); l.href = URL.createObjectURL(blob); l.download = f; document.body.appendChild(l); l.click(); l.remove();
+      b.textContent = 'Saved ✓';
+    }).catch(function(e){ if(!(e && e.name === 'AbortError')) b.textContent = 'Press and hold the photo to save'; });
+  });
   $('p-grid').addEventListener('click', function(e){
-    var b = e.target.closest('button[data-rm]'), a = curAlbum(); if(!b || !a || pBusy) return;
+    var im = e.target.closest('.ph img'), a = curAlbum();
+    if(im && a && !pBusy){ var rm = im.parentNode.querySelector('button[data-rm]'); if(rm) lbShow(a.photos.indexOf(rm.dataset.rm)); return; }
+    var b = e.target.closest('button[data-rm]'); if(!b || !a || pBusy) return;
     if(!confirm('Take this photo out of "' + a.title + '"? Members won\'t see it any more.')) return;
     var f = b.dataset.rm; b.disabled = true;
     sb.rpc('album_remove', { p:{ slug:a.slug, file:f } }).then(function(r){
