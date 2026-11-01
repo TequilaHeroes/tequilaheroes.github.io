@@ -60,7 +60,8 @@
   .small{font-size:13px;color:var(--muted);background:none;border:none;cursor:pointer;font-family:var(--sans);font-weight:600;padding:10px}
 
   /* result */
-  .result img{width:100%;border-radius:18px;border:1px solid var(--line);display:block}
+  /* photo shrinks on short screens so the sent/failed line stays in view */
+  .result img{display:block;max-width:100%;width:auto;max-height:max(300px, calc(100svh - 340px));margin:0 auto;border-radius:18px;border:1px solid var(--line)}
   .actions{display:flex;flex-direction:column;gap:10px;margin-top:14px}
   .note{font-size:13px;color:var(--muted);text-align:center;line-height:1.45;margin-top:10px}
   .ok{color:var(--agave)}
@@ -88,9 +89,9 @@
   <img src="/galindo-logo.png" alt="Tequila Galindo">
   <div class="eyebrow">Photo Booth</div>
   <h1>Strike a pose,<br>amigo.</h1>
-  <p class="lead">Sombrero, moustache, shades: they find your face automatically. Snap, save it to your phone, and send it to the Galindo album if you like.</p>
+  <p class="lead">Sombrero, moustache, shades: they find your face automatically. Snap away: every photo goes to the Galindo album.</p>
   <button class="btn" id="go">Open the camera</button>
-  <p class="popia" style="margin-top:12px">Your photo stays on your phone unless you choose to send it to us. <a href="/privacy/">Privacy</a></p>
+  <p class="popia" style="margin-top:12px;max-width:30em">By opening the camera, you agree the photos you take here are sent to the Galindo team, who may share them with Galindo members and on our socials, and that everyone in them is happy with that. Ask us to take one down any time. <a href="/privacy/">Privacy</a></p>
   <div class="err" id="starterr" hidden></div>
   <p class="lead" style="font-size:12px;color:var(--faint)">Works best in Safari or Chrome. 18+ · Enjoy Galindo responsibly.</p>
 </section>
@@ -129,14 +130,12 @@
   </div>
   <div class="joined" id="joined" hidden></div>
   <img id="shot" alt="Your Galindo photo">
-  <div class="note" id="holdhint" hidden><b style="color:var(--fg)">To save to Photos:</b> press and hold the photo above, then tap <b style="color:var(--fg)">Save to Photos</b>.</div>
+  <div class="note" id="holdhint" style="margin-top:8px"><b style="color:var(--fg)">To save it:</b> press and hold the photo, then tap <b style="color:var(--fg)" id="holdword">Download image</b>.</div>
   <div class="actions">
-    <button class="btn" id="share">Save to my phone</button>
-    <button class="btn ghost" id="send">Send to the Galindo album</button>
-    <p class="popia" id="sendpopia">By sending, you agree Galindo may keep this photo and share it with Galindo members and on our socials, and that everyone in it is happy with that. Ask us to take it down any time. <a href="/privacy/">Privacy</a></p>
+    <div class="note" id="sendnote" style="margin-top:0"></div>
+    <button class="btn" id="send" hidden>Try sending again</button>
     <button class="small" id="again">Take another</button>
   </div>
-  <div class="note" id="sendnote"></div>
 </section>
 
 <script type="module">
@@ -160,7 +159,7 @@ let props = { hat: true, stache: true, shades: false, pour: false, lucha: false,
 let timer = false, busy = false, lastBlob = null, lastFile = '';
 const logo = new Image(); logo.src = '/galindo-logo.png';
 const IOS = /iP(hone|ad|od)/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
-if(IOS){ document.getElementById('holdhint').hidden = false; document.getElementById('share').textContent = 'Save to Photos'; }
+if(IOS) document.getElementById('holdword').textContent = 'Save to Photos';   // Android's long-press menu says Download image
 
 /* ---------- face tracking ---------- */
 async function loadLandmarker(){
@@ -437,32 +436,26 @@ async function snap(){
   lastBlob = await new Promise(r => view.toBlob(r, 'image/jpeg', 0.9));
   $('shot').src = URL.createObjectURL(lastBlob);
   $('booth').hidden = true; $('result').hidden = false; window.scrollTo(0, 0);
-  $('send').hidden = false; $('sendpopia').hidden = false; $('send').disabled = false;
   lastFile = ''; $('joincard').hidden = joined; $('joined').hidden = true; $('j-note').textContent = '';
-  $('send').textContent = 'Send to the Galindo album'; $('sendnote').textContent = ''; $('sendnote').className = 'note';
-  busy = false;                                                // nothing leaves the phone until the guest taps Send (POPIA)
+  busy = false;
+  sendShot();                                                  // agreed to on "Open the camera" (POPIA notice there)
 }
-async function shareShot(){
-  if(!lastBlob) return;
-  const file = new File([lastBlob], `galindo-${stamp()}.jpg`, { type:'image/jpeg' });
-  if(navigator.canShare && navigator.canShare({ files:[file] })){
-    try{ await navigator.share({ files:[file] }); return; }catch(e){ if(e.name === 'AbortError') return; }
-  }
-  const a = document.createElement('a'); a.href = URL.createObjectURL(lastBlob); a.download = file.name; document.body.appendChild(a); a.click(); a.remove();
-  $('sendnote').textContent = 'Saved! Or press and hold the photo to save it.';
-}
+// every photo goes to the private booth inbox; the team approves it before anyone else sees it
 async function sendShot(){
   if(!lastBlob) return;
-  const b = $('send'), note = $('sendnote'); b.hidden = true; $('sendpopia').hidden = true; b.disabled = true; note.textContent = 'Sending to the Galindo album…'; note.className = 'note';
+  const blob = lastBlob, b = $('send'), note = $('sendnote');
+  b.hidden = true; note.textContent = 'Sending to the Galindo album…'; note.className = 'note';
   try{
     const name = `booth-${stamp()}-${Math.random().toString(36).slice(2, 8).padEnd(6, '0')}.jpg`;
     const r = await fetch(`${SUPABASE_URL}/storage/v1/object/booth-inbox/${name}`, { method:'POST',
-      headers:{ apikey: SUPABASE_KEY, Authorization: 'Bearer ' + SUPABASE_KEY, 'Content-Type':'image/jpeg', 'x-upsert':'false' }, body: lastBlob });
+      headers:{ apikey: SUPABASE_KEY, Authorization: 'Bearer ' + SUPABASE_KEY, 'Content-Type':'image/jpeg', 'x-upsert':'false' }, body: blob });
     if(!r.ok) throw new Error('upload ' + r.status);
+    if(blob !== lastBlob) return;                              // they've already taken another one
     lastFile = name;
-    note.textContent = "✓ Sent! Once the team has had a look it goes into the Galindo album. Gracias!"; note.className = 'note ok';
+    note.textContent = '✓ Sent to the Galindo album. Gracias!'; note.className = 'note ok';
   }catch(e){
-    b.hidden = false; $('sendpopia').hidden = false; b.disabled = false; b.textContent = 'Try sending again'; note.textContent = "Couldn't send it just now (signal?). Save it to your phone and try again in a moment."; note.className = 'note bad';
+    if(blob !== lastBlob) return;
+    b.hidden = false; note.textContent = "Couldn't send it just now (signal?). Save it to your phone, then try again in a moment."; note.className = 'note bad';
   }
 }
 
@@ -500,7 +493,6 @@ $('quick').addEventListener('click', () => { timer = !timer; $('quick').textCont
 $('flip').addEventListener('click', async () => { if(source !== video) return; facing = facing === 'user' ? 'environment' : 'user'; smooth = [];
   try{ await startCamera(); }catch(e){ facing = 'user'; await startCamera(); } });
 $('again').addEventListener('click', () => { $('result').hidden = true; $('booth').hidden = false; });
-$('share').addEventListener('click', shareShot);
 $('send').addEventListener('click', sendShot);
 
 $('go').addEventListener('click', async () => {
