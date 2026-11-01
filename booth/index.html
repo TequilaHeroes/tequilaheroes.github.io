@@ -81,7 +81,7 @@
   <img src="/galindo-logo.png" alt="Tequila Galindo">
   <div class="eyebrow">Photo Booth</div>
   <h1>Strike a pose,<br>amigo.</h1>
-  <p class="lead">Sombrero, moustache, shades — they find your face automatically. Snap — it lands in the Galindo album, and one tap saves it to your phone.</p>
+  <p class="lead">Sombrero, moustache, shades: they find your face automatically. Snap and it lands in the Galindo album, and one tap saves it to your phone.</p>
   <button class="btn" id="go">Open the camera</button>
   <div class="err" id="starterr" hidden></div>
   <p class="lead" style="font-size:12px;color:var(--faint)">Works best in Safari or Chrome. 18+ · Enjoy Galindo responsibly.</p>
@@ -413,7 +413,7 @@ function render(){
     const h = $('hint');
     if(landmarker) h.textContent = !faces.length ? 'Get your face in the frame'
       : (props.pour && !smooth.some(g => g && g.open > 0.045)) ? 'Open wide! 😮'
-      : props.hero ? 'Tequila Heroes — give us your Blue Steel 😗' : '';
+      : props.hero ? 'Tequila Heroes · give us your Blue Steel 😗' : '';
   }
   requestAnimationFrame(render);
 }
@@ -442,7 +442,7 @@ async function shareShot(){
     try{ await navigator.share({ files:[file] }); return; }catch(e){ if(e.name === 'AbortError') return; }
   }
   const a = document.createElement('a'); a.href = URL.createObjectURL(lastBlob); a.download = file.name; document.body.appendChild(a); a.click(); a.remove();
-  $('sendnote').textContent = 'Saved — or press and hold the photo to save it.';
+  $('sendnote').textContent = 'Saved! Or press and hold the photo to save it.';
 }
 async function sendShot(){
   if(!lastBlob || !UPLOAD_URL) return;
@@ -453,9 +453,9 @@ async function sendShot(){
     const j = await r.json();
     if(!j.ok) throw new Error(j.reason || 'failed');
     lastFile = j.file || '';
-    note.textContent = "✓ In the Galindo album — gracias! Tap above to save it to your phone."; note.className = 'note ok';
+    note.textContent = "✓ In the Galindo album. Gracias! Tap above to save it to your phone."; note.className = 'note ok';
   }catch(e){
-    b.hidden = false; b.disabled = false; b.textContent = 'Try sending to the album again'; note.textContent = "Couldn't reach the album just now (signal?) — save it to your phone, and try again in a moment."; note.className = 'note bad';
+    b.hidden = false; b.disabled = false; b.textContent = 'Try sending to the album again'; note.textContent = "Couldn't reach the album just now (signal?). Save it to your phone and try again in a moment."; note.className = 'note bad';
   }
 }
 
@@ -481,9 +481,9 @@ async function joinList(){
       const j = await r.json(); if(!j.ok) throw new Error(j.reason || 'failed');
     }
     joined = true; $('joincard').hidden = true;
-    $('sendnote').textContent = '✓ You’re on the Galindo list, ' + first + ' — gracias!'; $('sendnote').className = 'note ok';
+    $('sendnote').textContent = '✓ You’re on the Galindo list, ' + first + '. Gracias!'; $('sendnote').className = 'note ok';
   }catch(e){
-    note.textContent = 'Couldn’t add you just now — try again in a moment.'; note.className = 'note bad';
+    note.textContent = 'Couldn’t add you just now. Try again in a moment.'; note.className = 'note bad';
   }finally{ b.disabled = false; b.textContent = 'Join the Galindo list'; }
 }
 
@@ -509,7 +509,7 @@ $('go').addEventListener('click', async () => {
     }
     $('start').hidden = true; $('booth').hidden = false;
     requestAnimationFrame(render);
-    loadLandmarker().then(l => { landmarker = l; }).catch(() => { $('hint').textContent = 'Props unavailable on this phone — you can still snap a framed photo.'; });
+    loadLandmarker().then(l => { landmarker = l; }).catch(() => { $('hint').textContent = 'Props unavailable on this phone, but you can still snap a framed photo.'; });
   }catch(e){
     $('go').disabled = false; $('go').textContent = 'Try again';
     err.hidden = false;

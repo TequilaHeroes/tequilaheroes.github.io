@@ -77,7 +77,7 @@
   .venue-line svg{width:15px;height:15px;stroke:var(--gold);fill:none;stroke-width:1.8;flex:none}
 
   section{padding:clamp(26px,4.5vh,40px) 0}
-  /* capture — the point of the page */
+  /* capture: the point of the page */
   .capture{background:linear-gradient(180deg,var(--surface-2),var(--surface));border:1px solid var(--line-2);border-radius:22px;
     padding:28px 22px;text-align:center;position:relative;overflow:hidden;margin-top:14px}
   .capture::before{content:"";position:absolute;inset:0 0 auto;height:3px;background:linear-gradient(90deg,transparent,var(--gold),transparent);opacity:.8}
@@ -124,7 +124,7 @@
     background:none;border:1px solid var(--agave-dim);border-radius:12px;padding:12px 20px;text-decoration:none;transition:border-color .15s,background .15s}
   .wa-link:active{transform:scale(.98)}
   .wa-link svg{width:18px;height:18px;fill:var(--agave);flex:none}
-  /* pours — the warm-up */
+  /* pours: the warm-up */
   .sec-head{text-align:center;margin-bottom:20px}
   .sec-head h2{font-family:var(--serif);font-size:clamp(25px,5.5vw,32px);margin:9px 0 0}
   .pours{display:flex;flex-direction:column;gap:11px}
@@ -227,7 +227,7 @@
       <button class="cta" type="submit" id="submit">Get my Galindo ID</button>
       <div class="note" id="note"></div>
       <div class="alt" id="fallback" hidden>
-        <span class="alt-or">— or send it on WhatsApp —</span>
+        <span class="alt-or">or send it on WhatsApp</span>
         <a class="wa-link" id="wa-send" rel="noopener noreferrer" target="_blank">Send my details on WhatsApp</a>
       </div>
       <div class="reassure">We only message you about Galindo: your ID, your orders, events and new releases. Never spam, and we never pass your details on.</div>
@@ -275,7 +275,7 @@
       <div>
         <h3>Reposado</h3>
         <div class="spec">Aged 9 months · 40%</div>
-        <div class="notes">Smooth and creamy, light amber — mature agave and oak, lifted by honey, fruit and citrus.</div>
+        <div class="notes">Smooth and creamy, light amber, with mature agave and oak, lifted by honey, fruit and citrus.</div>
         <div class="tagv">Double Gold · Best in Class 2026</div>
       </div>
     </div>
@@ -284,7 +284,7 @@
       <div>
         <h3>Añejo</h3>
         <div class="spec">Aged 24 months · Double distilled</div>
-        <div class="notes">A rich, creamy body with golden highlights — sweet, robust oak with walnut and hazelnut.</div>
+        <div class="notes">A rich, creamy body with golden highlights. Sweet, robust oak with walnut and hazelnut.</div>
       </div>
     </div>
     <div class="pour">
@@ -311,7 +311,7 @@
 </footer>
 
 <script>
-  /* Sign-ups go to Supabase (submit_contact, publishable key — it can only call that function). If that fails or isn't
+  /* Sign-ups go to Supabase (submit_contact, publishable key; it can only call that function). If that fails or isn't
      configured yet, Bradley's iMac (signups.csv); if that fails too, the guest gets a one-tap WhatsApp to the team. */
   var SUPABASE_URL = "https://yfopoeuncfpfizghqczr.supabase.co";
   var SUPABASE_KEY = "sb_publishable_aCL5Ko6acTk_pBSJ-zXvzA_UNSAyOcl";   /* publishable key: can only call submit_contact */
