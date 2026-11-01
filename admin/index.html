@@ -455,6 +455,8 @@
   var SUPABASE_URL = "https://yfopoeuncfpfizghqczr.supabase.co", SUPABASE_KEY = "sb_publishable_aCL5Ko6acTk_pBSJ-zXvzA_UNSAyOcl";
   var sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
   var $ = function(id){ return document.getElementById(id); };
+  // goes with every photo shared from Admin → Photos (WhatsApp etc.). Edit freely.
+  var SHARE_CAPTION = 'Galindo launch night 📸 Get your Galindo ID for all the photos and members\' prices: https://tequilaheroes.com/thanks/';
   var KIND = { restaurant:'Restaurant', bar:'Bar', bottle_store:'Bottle store', hotel:'Hotel', online:'Online', other:'Other' };
   var PROD = { reposado:'Reposado', anejo:'Añejo', extra:'Extra Añejo ‘V’' };
   var SRC = { thanks:'Thank-you page', booth:'Photo booth', warmup:'Warm-up page', door:'Door iPad', till:'Till', whatsapp:'WhatsApp', import:'Import', welcome:'Asked for info' };
@@ -1530,11 +1532,16 @@
   $('lb-share').addEventListener('click', function(){
     var f = lbFile(), a = curAlbum(), b = this; if(!f) return;
     b.textContent = 'Getting it…';
+    // WhatsApp on iPhone often drops text sent alongside a photo, so the caption also goes on the clipboard to paste in
+    var copied = navigator.clipboard ? navigator.clipboard.writeText(SHARE_CAPTION).then(function(){ return true; }, function(){ return false; }) : Promise.resolve(false);
     lbGet(f).then(function(blob){
       var file = new File([blob], f, { type:'image/jpeg' });
-      if(navigator.canShare && navigator.canShare({ files:[file] })) return navigator.share({ files:[file] }).then(function(){ b.textContent = 'Shared ✓'; });
-      // laptop / no file sharing: open WhatsApp with the photo's link (the album bucket is public, so it opens without a login)
-      window.open('https://wa.me/?text=' + encodeURIComponent('Galindo · ' + a.title + ' ' + photoUrl(a, f)), '_blank', 'noopener');
+      if(navigator.canShare && navigator.canShare({ files:[file] })){
+        copied.then(function(ok){ if(ok) $('lb-n').textContent = 'Caption copied: paste it in WhatsApp if it\'s not there'; });
+        return navigator.share({ files:[file], text:SHARE_CAPTION }).then(function(){ b.textContent = 'Shared ✓'; });
+      }
+      // laptop / no file sharing: open WhatsApp with the caption and the photo's link (the album bucket is public, so it opens without a login)
+      window.open('https://wa.me/?text=' + encodeURIComponent(SHARE_CAPTION + '\n' + photoUrl(a, f)), '_blank', 'noopener');
       b.textContent = 'Share on WhatsApp';
     }).catch(function(e){ b.textContent = (e && e.name === 'AbortError') ? 'Share on WhatsApp' : 'Couldn\'t get it: try again with signal'; });
   });
