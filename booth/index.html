@@ -64,13 +64,18 @@
   .actions{display:flex;flex-direction:column;gap:10px;margin-top:14px}
   .note{font-size:13px;color:var(--muted);text-align:center;line-height:1.45;margin-top:10px}
   .ok{color:var(--agave)}
-  .joincard{margin-top:16px;padding:16px;border:1px solid var(--line-2);border-radius:16px;background:var(--surface)}
-  .joincard .jt{font-family:var(--serif);font-size:22px;color:var(--fg);margin-bottom:10px;line-height:1.2}
-  .joincard input:not([type=checkbox]){width:100%;font-size:16px;color:var(--fg);background:var(--bg);border:1px solid var(--line);border-radius:11px;padding:12px 13px;margin-bottom:9px;font-family:var(--sans)}
-  .joincard .two{display:flex;gap:9px}
-  .joincard .jconsent{display:flex;gap:10px;align-items:flex-start;font-size:13px;color:var(--muted);line-height:1.45;margin:4px 0 12px}
-  .joincard .jconsent input{width:20px;height:20px;flex:none;accent-color:var(--gold)}
-  .joincard .btn{width:100%}
+  /* sign-up: a small card above the photo. Two fields (name + mobile-or-email), the opt-in, one button. */
+  .joincard{margin:0 0 12px;padding:12px;border:1px solid var(--line-2);border-radius:14px;background:var(--surface)}
+  .joincard .jt{font-size:14px;font-weight:600;color:var(--fg);margin:0 0 8px;line-height:1.3}
+  .joincard .jt span{color:var(--gold)}
+  .joincard .two{display:flex;gap:8px}
+  .joincard input:not([type=checkbox]){min-width:0;flex:1;font-size:16px;color:var(--fg);background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:10px 11px;font-family:var(--sans)}
+  .joincard input#j-first{flex:.8}
+  .joincard .jconsent{display:flex;gap:8px;align-items:flex-start;font-size:12px;color:var(--muted);line-height:1.4;margin:8px 0 9px}
+  .joincard .jconsent input{width:18px;height:18px;flex:none;accent-color:var(--gold);margin:0}
+  .joincard .btn{width:100%;padding:12px 16px;font-size:15px;border-radius:11px}
+  .joincard .note{margin-top:6px}
+  .joined{margin:0 0 12px;font-size:13px;color:var(--agave);text-align:center}
   .bad{color:var(--marigold)}
   .popia{font-size:12px;color:var(--faint);text-align:center;line-height:1.5;margin:2px 4px 0}
   .popia a{color:var(--muted)}
@@ -115,6 +120,14 @@
 
 <!-- RESULT -->
 <section class="wrap result" id="result" hidden>
+  <div class="joincard" id="joincard" hidden>
+    <div class="jt">Get this photo <span>+</span> first dibs on Galindo releases</div>
+    <div class="two"><input id="j-first" placeholder="First name" autocomplete="given-name" enterkeyhint="next"><input id="j-contact" type="text" placeholder="Mobile or email" autocomplete="tel" autocapitalize="off" autocorrect="off" spellcheck="false" enterkeyhint="go"></div>
+    <label class="jconsent"><input type="checkbox" id="j-consent"><span>Yes, send me my photo and Galindo news. Opt out any time. <a href="/privacy/" style="color:var(--muted)">Privacy</a></span></label>
+    <button class="btn" type="button" id="j-go">Join the Galindo list</button>
+    <div class="note" id="j-note"></div>
+  </div>
+  <div class="joined" id="joined" hidden></div>
   <img id="shot" alt="Your Galindo photo">
   <div class="note" id="holdhint" hidden><b style="color:var(--fg)">To save to Photos:</b> press and hold the photo above, then tap <b style="color:var(--fg)">Save to Photos</b>.</div>
   <div class="actions">
@@ -124,14 +137,6 @@
     <button class="small" id="again">Take another</button>
   </div>
   <div class="note" id="sendnote"></div>
-  <div class="joincard" id="joincard" hidden>
-    <div class="jt">Want this photo + first dibs on Galindo releases?</div>
-    <div class="jrow"><input id="j-first" placeholder="First name" autocomplete="given-name"></div>
-    <div class="jrow two"><input id="j-mobile" type="tel" inputmode="tel" placeholder="Mobile" autocomplete="tel"><input id="j-email" type="email" inputmode="email" placeholder="Email" autocomplete="email"></div>
-    <label class="jconsent"><input type="checkbox" id="j-consent"><span>Yes, Galindo can send me my photo and news about releases &amp; events. I can opt out any time. <a href="/privacy/" style="color:var(--muted)">Privacy</a></span></label>
-    <button class="btn" type="button" id="j-go">Join the Galindo list</button>
-    <div class="note" id="j-note"></div>
-  </div>
 </section>
 
 <script type="module">
@@ -433,7 +438,7 @@ async function snap(){
   $('shot').src = URL.createObjectURL(lastBlob);
   $('booth').hidden = true; $('result').hidden = false; window.scrollTo(0, 0);
   $('send').hidden = false; $('sendpopia').hidden = false; $('send').disabled = false;
-  lastFile = ''; $('joincard').hidden = joined; $('j-note').textContent = '';
+  lastFile = ''; $('joincard').hidden = joined; $('joined').hidden = true; $('j-note').textContent = '';
   $('send').textContent = 'Send to the Galindo album'; $('sendnote').textContent = ''; $('sendnote').className = 'note';
   busy = false;                                                // nothing leaves the phone until the guest taps Send (POPIA)
 }
@@ -464,9 +469,11 @@ async function sendShot(){
 /* ---------- optional contact capture (opt-in) ---------- */
 let joined = false;                                           // once per guest session: don't ask again on every photo
 async function joinList(){
-  const first = $('j-first').value.trim(), mobile = $('j-mobile').value.trim(), email = $('j-email').value.trim(), note = $('j-note');
-  if(!first){ note.textContent = 'Pop your first name in.'; note.className = 'note bad'; return; }
-  if(!mobile && !email){ note.textContent = 'A mobile or email so we can send it.'; note.className = 'note bad'; return; }
+  const first = $('j-first').value.trim(), contact = $('j-contact').value.trim(), note = $('j-note');
+  const isEmail = contact.indexOf('@') > 0, email = isEmail ? contact : '', mobile = isEmail ? '' : contact;
+  if(!first){ note.textContent = 'Pop your first name in.'; note.className = 'note bad'; $('j-first').focus(); return; }
+  if(isEmail ? !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(contact) : contact.replace(/\D/g, '').length < 9){
+    note.textContent = 'A mobile number or email so we can send it.'; note.className = 'note bad'; $('j-contact').focus(); return; }
   const b = $('j-go'); b.disabled = true; b.textContent = 'Adding you…';
   try{
     for(let i = 0; i < 20 && !lastFile && $('sendnote').textContent.indexOf('Sending') === 0; i++) await new Promise(r => setTimeout(r, 250));   // let the photo upload finish so we can link it
@@ -476,7 +483,7 @@ async function joinList(){
       body: JSON.stringify({ p: { source:'booth', ...c } }) });
     const j = await r.json(); if(!j.ok) throw new Error(j.reason || 'failed');
     joined = true; $('joincard').hidden = true;
-    $('sendnote').textContent = '✓ You’re on the Galindo list, ' + first + '. Gracias!'; $('sendnote').className = 'note ok';
+    $('joined').textContent = '✓ You’re on the Galindo list, ' + first + '. Gracias!'; $('joined').hidden = false;
   }catch(e){
     note.textContent = 'Couldn’t add you just now. Try again in a moment.'; note.className = 'note bad';
   }finally{ b.disabled = false; b.textContent = 'Join the Galindo list'; }
@@ -484,6 +491,8 @@ async function joinList(){
 
 /* ---------- wiring ---------- */
 $('j-go').addEventListener('click', joinList);
+$('j-first').addEventListener('keydown', (e) => { if(e.key === 'Enter'){ e.preventDefault(); $('j-contact').focus(); } });
+$('j-contact').addEventListener('keydown', (e) => { if(e.key === 'Enter'){ e.preventDefault(); joinList(); } });
 $('props').addEventListener('click', (e) => { const c = e.target.closest('.chip'); if(!c) return;
   const on = c.getAttribute('aria-pressed') !== 'true'; c.setAttribute('aria-pressed', on); props[c.dataset.p] = on; });
 $('snap').addEventListener('click', snap);
