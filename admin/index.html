@@ -1620,12 +1620,19 @@
     var now = new Date(), since = new Date(now), by = 'day';
     if(wRange === 'today'){ since.setHours(0, 0, 0, 0); by = 'hour'; } else { since.setHours(0, 0, 0, 0); since.setDate(since.getDate() - (+wRange - 1)); }
     sb.functions.invoke('traffic', { body:{ since:since.toISOString(), until:now.toISOString(), by:by } }).then(function(r){
+      // a non-2xx answer arrives as r.error with the Response in r.error.context: read its status and body to say what's wrong
+      var ctx = r.error && r.error.context;
+      if(ctx && typeof ctx.json === 'function') return ctx.json().catch(function(){ return null; }).then(function(b){ return { data:b, error:r.error, status:ctx.status }; });
+      return r;
+    }).then(function(r){
       if(my !== wReq) return; var d = r.data;
       if(r.error || !d || d.error){
-        var e = (d && d.error) || (r.error && r.error.message) || '';
+        var e = (d && (d.error || d.msg || d.message)) || (r.error && r.error.message) || '';
         $('w-stat').textContent = e === 'not-set-up' ? 'Not connected yet: the Cloudflare key still needs adding in Supabase (Edge Functions → Secrets).' :
-          /not found|404|Failed to send|FunctionsFetchError|FunctionsHttpError/i.test(e) && !d ? 'Not connected yet: the "traffic" edge function isn\'t deployed in Supabase.' :
-          'Couldn\'t load traffic: ' + e + (d && d.detail ? ' (' + d.detail + ')' : '');
+          e === 'not-team' ? 'Traffic is for team logins only.' :
+          r.status === 404 ? 'Not connected yet: the "traffic" edge function isn\'t deployed in Supabase.' :
+          r.status === 401 ? 'Supabase refused the login (401): turn off "Verify JWT with legacy secret" on the traffic function and save.' :
+          'Couldn\'t load traffic' + (r.status ? ' (' + r.status + ')' : '') + ': ' + e + (d && d.detail ? ' · ' + d.detail : '');
         return;
       }
       $('w-visits').textContent = d.visits.toLocaleString('en-ZA'); $('w-views').textContent = d.views.toLocaleString('en-ZA');
