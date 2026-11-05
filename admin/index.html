@@ -1453,9 +1453,9 @@
     return d.length >= 9 && d.length <= 15 ? { mobile:d } : null;
   }
   function welcomeText(first, gid){
-    return 'Hi' + (first ? ' ' + first : '') + '! Lovely to meet you. Here\'s Galindo, our 100% blue agave tequila: https://tequilaheroes.com\n\n' +
+    return 'Hi' + (first ? ' ' + first : '') + '! Lovely to meet you.\n\n' +
       (gid ? 'Your Galindo ID (your members\' card): ' + memberLink({ galindo_id:gid }) + '\n\n'
-           : 'Want to hear about new releases and events? Sign up here and the team will set you up with your own Galindo ID, our members\' card: ' + INVITE_LINK + '\n\n') +
+           : 'Sign up here and the team will set you up with your own Galindo ID, our members\' card: ' + INVITE_LINK + '\n\n') +
       '¡Salud!\nThe Galindo team';
   }
   function openWelcome(){
