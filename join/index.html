@@ -181,7 +181,7 @@
       <div class="chips" id="fav">
         <button class="chip" type="button" aria-pressed="false" data-v="Reposado">Reposado</button>
         <button class="chip" type="button" aria-pressed="false" data-v="Añejo">Añejo</button>
-        <button class="chip" type="button" aria-pressed="false" data-v="Extra Añejo ‘V’">Extra Añejo ‘V’</button>
+        <button class="chip" type="button" aria-pressed="false" data-v="Extra Añejo 'V'">Extra Añejo 'V'</button>
         <button class="chip" type="button" aria-pressed="false" data-v="All of them">All of them</button>
       </div>
 
@@ -218,7 +218,7 @@
     <div class="done" id="done">
       <div class="tick"><svg viewBox="0 0 24 24"><path d="M5 13l4 4L19 7"/></svg></div>
       <h3>You're on the list</h3>
-      <p>Thank you! ¡Salud!</p>
+      <p>Thank you! Salud!</p>
       <p class="next">The Galindo team will confirm your membership, then send you your Galindo ID and switch on your members' prices. We'll be in touch shortly.</p>
       <button type="button" id="again">Sign up someone else</button>
     </div>
@@ -254,8 +254,8 @@
     <div class="pour">
       <span class="dot" style="background:#E0812B"></span>
       <div>
-        <h3>Extra Añejo ‘V’</h3>
-        <div class="spec">3–5 years · Reserva Privada · Gift boxed</div>
+        <h3>Extra Añejo 'V'</h3>
+        <div class="spec">3-5 years · Reserva Privada · Gift boxed</div>
         <div class="notes">Roasted agave, caramel, dried fruit and vanilla; a long, warming finish of dark chocolate and spice. Made for sipping.</div>
       </div>
     </div>
@@ -318,7 +318,7 @@
     if(d.mobile && d.mobile.replace(/\D/g,'').length < 9){ note.textContent = "That mobile number looks short."; $('f-mobile').focus(); return; }
     if(d.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(d.email)){ note.textContent = "That email doesn't look right."; $('f-email').focus(); return; }
     if(!d.consent){ note.textContent = "Tick the box so we're allowed to keep in touch."; $('consent-row').classList.add('need'); return; }
-    note.textContent = ""; btn.disabled = true; btn.textContent = "Signing you up…";
+    note.textContent = ""; btn.disabled = true; btn.textContent = "Signing you up...";
     toSupabase(d).catch(function(){ return toImac(d); })
       .then(function(){ $('signup').hidden = true; $('done').classList.add('show'); window.scrollTo({ top:0, behavior:'smooth' }); })
       .catch(function(){

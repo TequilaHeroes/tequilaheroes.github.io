@@ -121,7 +121,7 @@
   .ph button{position:absolute;top:4px;right:4px;width:32px;height:32px;padding:0;border-radius:50%;font-size:18px;line-height:1;background:rgba(0,0,0,.6);color:#fff;border-color:transparent}
   .ph button.keep{right:auto;left:4px;background:var(--gold);color:#201600;font-weight:700}
   #p-grid .ph img{cursor:zoom-in}
-  /* album photo viewer: big photo, ‹ Share on WhatsApp ›, close. No remove button in here, so nobody bins one by accident. */
+  /* album photo viewer: big photo, &lt; Share on WhatsApp &gt;, close. No remove button in here, so nobody bins one by accident. */
   .lb{position:fixed;inset:0;z-index:60;background:rgba(8,7,6,.96);display:flex;flex-direction:column;align-items:center;justify-content:center;padding:16px}
   .lb[hidden]{display:none}
   .lb img{max-width:100%;max-height:calc(100vh - 170px);border-radius:12px;box-shadow:0 20px 60px rgba(0,0,0,.6)}
@@ -181,7 +181,7 @@
       <button type="button" role="tab" aria-selected="false" data-tab="sales">Sales</button>
       <button type="button" role="tab" aria-selected="false" data-tab="photos">Photos</button>
       <button type="button" role="tab" aria-selected="false" data-tab="traffic">Traffic</button>
-      <span class="refresh"><span id="r-at"></span><button type="button" id="r-go" title="Load the latest">↻ Refresh</button></span>
+      <span class="refresh"><span id="r-at"></span><button type="button" id="r-go" title="Load the latest">Refresh</button></span>
     </div>
 
     <!-- stockists -->
@@ -205,14 +205,14 @@
         <div class="checks" id="s-products">
           <label><input type="checkbox" value="reposado"> Reposado</label>
           <label><input type="checkbox" value="anejo"> Añejo</label>
-          <label><input type="checkbox" value="extra"> Extra Añejo ‘V’</label>
+          <label><input type="checkbox" value="extra"> Extra Añejo 'V'</label>
         </div>
         <div class="row">
           <div><label for="s-phone">Phone</label><input id="s-phone" type="tel" maxlength="30"></div>
-          <div><label for="s-website">Website</label><input id="s-website" inputmode="url" autocapitalize="off" placeholder="https://…"></div>
+          <div><label for="s-website">Website</label><input id="s-website" inputmode="url" autocapitalize="off" placeholder="https://..."></div>
         </div>
         <label for="s-maps">Google Maps link <span class="faint" style="text-transform:none;letter-spacing:0">(optional: we search by name + address if blank)</span></label>
-        <input id="s-maps" inputmode="url" autocapitalize="off" placeholder="https://maps.app.goo.gl/…">
+        <input id="s-maps" inputmode="url" autocapitalize="off" placeholder="https://maps.app.goo.gl/...">
         <div class="row">
           <div><label for="s-evname">Event on their card <span class="faint" style="text-transform:none;letter-spacing:0">(optional)</span></label><input id="s-evname" maxlength="60" placeholder="e.g. Galindo tasting night"></div>
           <div><label for="s-evdate">Event date <span class="faint" style="text-transform:none;letter-spacing:0">(shows "Done" after)</span></label><input id="s-evdate" type="date"></div>
@@ -222,7 +222,7 @@
           <div><label>On the website</label><div class="checks"><label><input type="checkbox" id="s-active" checked> Show it</label></div></div>
         </div>
         <label for="s-notes">Team notes <span class="faint" style="text-transform:none;letter-spacing:0">(never shown publicly)</span></label>
-        <textarea id="s-notes" maxlength="1000" placeholder="Contact person, order history, pricing agreed…"></textarea>
+        <textarea id="s-notes" maxlength="1000" placeholder="Contact person, order history, pricing agreed..."></textarea>
         <div class="formbtns">
           <button class="gold" type="submit" id="s-save">Save</button>
           <button type="button" id="s-cancel">Cancel</button>
@@ -240,7 +240,7 @@
         <button type="button" class="gold" data-invite>Copy invite link</button>
       </div>
       <div class="bar">
-        <input type="search" id="c-q" placeholder="Search name, mobile, email…">
+        <input type="search" id="c-q" placeholder="Search name, mobile, email...">
         <label class="checks" style="margin:0"><label><input type="checkbox" id="c-opt"> Opted-in only</label></label>
         <button type="button" id="c-csv">Export CSV</button>
       </div>
@@ -272,12 +272,12 @@
       <h4>Phone alerts <span style="text-transform:none;letter-spacing:0">(a ping when a member orders, changes or cancels)</span></h4>
       <div class="list"><div class="item" style="display:block">
         <label class="checks" style="margin:0"><label><input type="checkbox" id="al-on"> Send phone alerts</label></label>
-        <div class="s" id="al-how" style="margin-top:8px">Loading…</div>
+        <div class="s" id="al-how" style="margin-top:8px">Loading...</div>
       </div></div>
       <h4>Email alerts <span style="text-transform:none;letter-spacing:0">(an email to orders@tequilaheroes.com for every sale and order, and the day's new members each evening)</span></h4>
       <div class="list"><div class="item" style="display:block">
         <label class="checks" style="margin:0"><label><input type="checkbox" id="em-on"> Send email alerts</label></label>
-        <div class="s" id="em-how" style="margin-top:8px">Loading…</div>
+        <div class="s" id="em-how" style="margin-top:8px">Loading...</div>
       </div></div>
       </div>
     </section>
@@ -321,7 +321,7 @@
       <div class="lb" id="lb" hidden>
         <button class="close" type="button" id="lb-x" aria-label="Close">×</button>
         <img id="lb-img" alt="Album photo">
-        <div class="bar"><button type="button" id="lb-prev" aria-label="Previous">‹</button><button type="button" class="share" id="lb-share">Share on WhatsApp</button><button type="button" id="lb-next" aria-label="Next">›</button></div>
+        <div class="bar"><button type="button" id="lb-prev" aria-label="Previous">&lt;</button><button type="button" class="share" id="lb-share">Share on WhatsApp</button><button type="button" id="lb-next" aria-label="Next">&gt;</button></div>
         <div class="hint"><span id="lb-n"></span> · <button type="button" id="lb-save">Save to this phone</button></div>
       </div>
     </section>
@@ -331,7 +331,7 @@
       <div class="seg" id="w-range" style="margin:0 0 12px">
         <button type="button" data-r="today" aria-pressed="false">Today</button><button type="button" data-r="7" aria-pressed="true">7 days</button><button type="button" data-r="30" aria-pressed="false">30 days</button>
       </div>
-      <div class="tiles"><div class="tile"><b id="w-visits">–</b><span>visits</span></div><div class="tile"><b id="w-views">–</b><span>page views</span></div><div class="tile"><b id="w-per">–</b><span>pages per visit</span></div></div>
+      <div class="tiles"><div class="tile"><b id="w-visits">-</b><span>visits</span></div><div class="tile"><b id="w-views">-</b><span>page views</span></div><div class="tile"><b id="w-per">-</b><span>pages per visit</span></div></div>
       <div class="tbars" id="w-bars"></div><div class="taxis"><span id="w-a0"></span><span id="w-a1"></span></div>
       <p class="stat" id="w-stat" style="margin:0 0 6px"></p>
       <div class="tgrid">
@@ -348,7 +348,7 @@
       <div class="bar">
         <select id="t-event" style="flex:1;min-width:160px"></select>
         <button type="button" id="t-new">+ Event</button>
-        <button type="button" class="sync" id="t-sync">● Live</button>
+        <button type="button" class="sync" id="t-sync">Live</button>
       </div>
       <div class="card" style="margin-bottom:14px;display:flex;align-items:center;gap:12px;flex-wrap:wrap">
         <div style="flex:1;min-width:180px"><b style="color:var(--fg)">Invite a new member</b><div class="s" style="margin-top:3px">Copy this link and share it with potential new members. They sign up, then you approve them in Contacts.</div></div>
@@ -393,7 +393,7 @@
             <div class="note" id="h-note"></div>
           </form>
           <div id="t-hthanks" hidden style="text-align:center;padding-top:30px">
-            <div style="font-size:44px">🥃</div>
+            <div style="font-size:44px"></div>
             <h3 style="margin-top:8px">Thank you, <span id="h-name"></span>!</h3>
             <p class="muted">Please hand the phone back.</p>
           </div>
@@ -413,7 +413,7 @@
           <label style="margin-top:0">Who's buying? <span style="text-transform:none;letter-spacing:0">(needed for every direct sale)</span></label>
           <div id="t-picked" hidden></div>
           <div id="t-find">
-            <div class="bar" style="margin:0"><input type="search" id="t-q" placeholder="Search name, mobile, email…" autocomplete="off" style="flex:1"><button type="button" class="gold" id="t-scan">Scan card</button></div>
+            <div class="bar" style="margin:0"><input type="search" id="t-q" placeholder="Search name, mobile, email..." autocomplete="off" style="flex:1"><button type="button" class="gold" id="t-scan">Scan card</button></div>
             <div class="list" id="t-hits" style="margin-top:8px"></div>
           </div>
           <div id="t-whoslot"></div>
@@ -497,9 +497,9 @@
   var sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
   var $ = function(id){ return document.getElementById(id); };
   // goes with every photo shared from Admin → Photos (WhatsApp etc.). Edit freely.
-  var SHARE_CAPTION = 'Galindo launch night 📸 Get your Galindo ID for all the photos and members\' prices: https://tequilaheroes.com/thanks/';
+  var SHARE_CAPTION = 'Galindo launch night Get your Galindo ID for all the photos and members\' prices: https://tequilaheroes.com/thanks/';
   var KIND = { restaurant:'Restaurant', bar:'Bar', bottle_store:'Bottle store', hotel:'Hotel', online:'Online', other:'Other' };
-  var PROD = { reposado:'Reposado', anejo:'Añejo', extra:'Extra Añejo ‘V’' };
+  var PROD = { reposado:'Reposado', anejo:'Añejo', extra:'Extra Añejo \'V\'' };
   var SRC = { thanks:'Thank-you page', booth:'Photo booth', warmup:'Warm-up page', door:'Door iPad', till:'Till', whatsapp:'WhatsApp', import:'Import', welcome:'Asked for info', invite:'Invited' };
   var INVITE_LINK = 'https://tequilaheroes.com/join/';   // the copyable invite link the team shares with potential new members
   var stockists = [], contacts = [], editing = null;
@@ -549,9 +549,9 @@
   }
   function busy(){ return !$('s-form').hidden || !$('x-form').hidden || !$('c-msg-card').hidden || (document.activeElement && /INPUT|SELECT|TEXTAREA/.test(document.activeElement.tagName)); }
   $('r-go').addEventListener('click', function(){
-    if(!teamOk) return; var b = this; b.disabled = true; b.textContent = 'Refreshing…'; refreshAll();
+    if(!teamOk) return; var b = this; b.disabled = true; b.textContent = 'Refreshing...'; refreshAll();
     setTimeout(function(){ b.textContent = '✓ Up to date'; }, 700);
-    setTimeout(function(){ b.disabled = false; b.textContent = '↻ Refresh'; }, 2200);
+    setTimeout(function(){ b.disabled = false; b.textContent = 'Refresh'; }, 2200);
   });
   setInterval(function(){ if(teamOk && !document.hidden && !busy()) refreshAll(); }, 60000);
   document.addEventListener('visibilitychange', function(){ if(teamOk && !document.hidden && !busy()) refreshAll(); });
@@ -570,8 +570,8 @@
       return '<div class="item click" data-id="' + s.id + '"><div><div class="t">' + esc(s.name) + '</div>' +
         '<div class="s">' + esc([KIND[s.kind], s.area, s.city].filter(Boolean).join(' · ')) + '</div>' +
         '<div>' + (s.products || []).map(function(p){ return '<span class="pill">' + esc(PROD[p]) + '</span>'; }).join('') +
-        (s.active ? '' : '<span class="pill off">Hidden</span>') + '</div></div><div class="s">Edit ›</div></div>';
-    }).join('') : '<div class="empty">No stockists yet. Tap “Add stockist” and they appear on the site straight away.</div>';
+        (s.active ? '' : '<span class="pill off">Hidden</span>') + '</div></div><div class="s">Edit &gt;</div></div>';
+    }).join('') : '<div class="empty">No stockists yet. Tap \"Add stockist\" and they appear on the site straight away.</div>';
   }
   $('s-list').addEventListener('click', function(e){
     var it = e.target.closest('.item'); if(!it) return;
@@ -609,7 +609,7 @@
     });
   });
   $('s-del').addEventListener('click', function(){
-    if(!editing || !confirm('Delete ' + editing.name + '? Untick “Show it” instead if you only want it off the site for now.')) return;
+    if(!editing || !confirm('Delete ' + editing.name + '? Untick \"Show it\" instead if you only want it off the site for now.')) return;
     sb.from('stockists').delete().eq('id', editing.id).then(function(r){
       if(r.error){ $('s-note').textContent = 'Not deleted: ' + r.error.message; return; }
       closeForm(); loadStockists();
@@ -639,10 +639,10 @@
         '<div class="s">' + esc([c.mobile, c.email].filter(Boolean).join(' · ')) + '</div>' +
         '<div>' + ((c.sources || []).indexOf('invite') >= 0 && !c.galindo_id && !c.mates ? '<span class="pill" style="color:#201600;background:var(--marigold);border-color:var(--marigold)">Awaiting approval</span>' : '') +
         (c.consent ? '<span class="pill yes">Opted in</span>' : '<span class="pill off">No marketing</span>') +
-        (c.favourite ? '<span class="pill">♥ ' + esc(c.favourite) + '</span>' : '') +
+        (c.favourite ? '<span class="pill">' + esc(c.favourite) + '</span>' : '') +
         (c.sources || []).map(function(s){ return '<span class="pill" style="color:var(--muted)">' + esc(SRC[s] || s) + '</span>'; }).join('') + '</div>' +
         ((c.interests || []).length ? '<div class="s">Interested in: ' + esc(c.interests.join(', ')) + '</div>' : '') +
-        (c.notes ? '<div class="s">“' + esc(c.notes) + '”</div>' : '') +
+        (c.notes ? '<div class="s">\"' + esc(c.notes) + '\"</div>' : '') +
         (c.galindo_id ? '<div class="s" style="margin-top:4px"><span class="gidtag">' + esc(c.galindo_id) + '</span> · <select class="mini" data-tier="' + c.id + '">' +
           ['reposado', 'anejo', 'extra'].map(function(t){ return '<option value="' + t + '"' + (c.tier === t ? ' selected' : '') + '>' + TIER[t] + '</option>'; }).join('') + '</select>' +
           ' <label style="display:inline-flex;align-items:center;gap:5px;margin:0 0 0 6px;text-transform:none;letter-spacing:0;font-size:13px;color:var(--fg);font-weight:500">' +
@@ -674,14 +674,14 @@
     var cols = ['created_at','first_name','last_name','mobile','email','consent','favourite','interests','sources','notes','galindo_id','tier','member_link'];
     var cell = function(v){ var t = Array.isArray(v) ? v.join('; ') : String(v == null ? '' : v); if(/^[=+\-@\t\r]/.test(t)) t = "'" + t; return '"' + t.replace(/"/g, '""') + '"'; };
     var csv = cols.join(',') + '\n' + filtered().map(function(c){ return cols.map(function(k){ return cell(k === 'member_link' ? (c.galindo_id ? memberLink(c) : '') : c[k]); }).join(','); }).join('\n');
-    var a = document.createElement('a'); a.href = URL.createObjectURL(new Blob(['﻿' + csv], { type:'text/csv' }));
+    var a = document.createElement('a'); a.href = URL.createObjectURL(new Blob(['' + csv], { type:'text/csv' }));
     a.download = 'galindo-contacts-' + new Date().toISOString().slice(0, 10) + '.csv'; a.click();
   });
   /* ---------- Galindo IDs ---------- */
-  var TIER = { reposado:'Reposado', anejo:'Añejo', extra:'Extra Añejo ‘V’' };
+  var TIER = { reposado:'Reposado', anejo:'Añejo', extra:'Extra Añejo \'V\'' };
   var MSG_KEY = 'galindo_admin_id_msg';
   var MSG_DEFAULT = "Hi {first}! Here's your own Galindo ID, your members' card. It unlocks our members' prices and you can order bottles to collect or have delivered:\n{link}\n\n" +
-    "It's personal to you, so please keep it to yourself. Watch the Galindo film here: https://tequilaheroes.com/#film\n\n¡Salud!\nThe Galindo team";
+    "It's personal to you, so please keep it to yourself. Watch the Galindo film here: https://tequilaheroes.com/#film\n\nSalud!\nThe Galindo team";
   function msgTemplate(){ try{ return localStorage.getItem(MSG_KEY) || MSG_DEFAULT; }catch(e){ return MSG_DEFAULT; } }
   function memberLink(c){ return 'https://tequilaheroes.com/order/?id=' + c.galindo_id; }
   function waLink(c){ return 'https://wa.me/' + c.mobile_norm + '?text=' + encodeURIComponent(msgTemplate().replace(/\{first\}/g, c.first_name).replace(/\{link\}/g, memberLink(c))); }
@@ -736,7 +736,7 @@
       invoiced: hi + 'Creative Beverages has sent you invoice ' + (o.cb_invoice || '') + ' for Galindo order ' + o.ref + what + '.' +
         (o.pay_url ? ' Pay securely here: ' + o.pay_url + ' ' : ' ') + 'Once it\'s paid we\'ll arrange your ' + how + '.',
       paid: hi + 'payment received for Galindo order ' + o.ref + ', thank you! ' + (o.fulfilment === 'deliver' ? 'We\'ll let you know when your delivery is on its way.' : 'We\'ll be in touch to arrange collection.'),
-      done: 'Enjoy your Galindo, ' + o.first_name + '! ¡Salud! 🥃',
+      done: 'Enjoy your Galindo, ' + o.first_name + '! Salud!',
       cancelled: hi + 'your Galindo order ' + o.ref + ' has been cancelled. Any questions, just reply here.'
     }[o.status] || hi;
   }
@@ -804,10 +804,10 @@
       return '<div class="item"><div><div class="t">' + esc(o.ref) + ' · ' + esc([o.first_name, o.last_name].filter(Boolean).join(' ')) + '</div>' +
         '<div class="s">' + esc(orderItems(o)) + '</div>' +
         '<div class="s">' + (o.fulfilment === 'deliver' ? 'Deliver to: ' + esc(o.address) : 'Collect') + '</div>' +
-        (o.note ? '<div class="s">“' + esc(o.note) + '”</div>' : '') +
+        (o.note ? '<div class="s">\"' + esc(o.note) + '\"</div>' : '') +
         '<div class="s">' + esc([o.mobile, o.email, o.galindo_id].filter(Boolean).join(' · ')) + '</div>' +
         (o.cb_invoice ? '<div class="s">CB invoice <b style="color:var(--fg)">' + esc(o.cb_invoice) + '</b>' + (o.payment_ref ? ' · paid ref ' + esc(o.payment_ref) : '') + '</div>' : '') +
-        (o.pay_url ? '<div class="s">Pay link: <a href="' + esc(o.pay_url) + '" target="_blank" rel="noopener" style="color:var(--gold)">' + esc(o.pay_url.replace(/^https:\/\//, '').slice(0, 40)) + '…</a></div>' : '') +
+        (o.pay_url ? '<div class="s">Pay link: <a href="' + esc(o.pay_url) + '" target="_blank" rel="noopener" style="color:var(--gold)">' + esc(o.pay_url.replace(/^https:\/\//, '').slice(0, 40)) + '...</a></div>' : '') +
         '<div><span class="pill' + (o.status === 'new' ? ' off' : o.status === 'done' || o.status === 'paid' ? ' yes' : '') + '">' + STATUS[o.status] + '</span>' +
           (o.edited_at && o.status === 'new' ? '<span class="pill off">Changed by customer</span>' : '') +
           (o.status === 'cancelled' && o.cancelled_by === 'customer' ? '<span class="pill off">Cancelled by customer</span>' : '') + '</div></div>' +
@@ -920,25 +920,25 @@
     $('x-cbwrap').hidden = !te;
     if(te) $('x-cb').innerHTML = (te.status === 'closed' ? 'Closed ' + day(te.closed_at) + (te.closed_by ? ' by ' + esc(who(te.closed_by)) : '') : '<span style="color:var(--marigold)">Still open</span>') +
       ' · CB invoice ' + (te.cb_invoice ? '<b style="color:var(--fg)">' + esc(te.cb_invoice) + '</b>' : '<span style="color:var(--marigold)">not yet</span>') +
-      (te.cash_counted != null ? ' · cash ' + rand(te.cash_counted) + (te.cash_handed_to ? ' to ' + esc(te.cash_handed_to) : '') : '') + (te.notes ? '<br>“' + esc(te.notes) + '”' : '');
+      (te.cash_counted != null ? ' · cash ' + rand(te.cash_counted) + (te.cash_handed_to ? ' to ' + esc(te.cash_handed_to) : '') : '') + (te.notes ? '<br>\"' + esc(te.notes) + '\"' : '');
     if(last){ (last.products || []).forEach(function(p){ left[p.name] = p.stock; });
       (last.uses || []).forEach(function(u){ var p = (last.products || []).filter(function(x){ return x.id === u.productId; })[0]; if(p) tasted[p.name] = (tasted[p.name] || 0) + (u.qty || 1); }); }
     var names = Object.keys(by); Object.keys(left).forEach(function(n){ if(names.indexOf(n) < 0) names.push(n); });
     $('x-prod').innerHTML = names.length ? names.map(function(n){ var b = by[n] || { qty:0, rev:0 };
       return '<div class="item"><div><div class="t">' + esc(n) + '</div><div class="s">' + b.qty + ' sold' + (tasted[n] ? ' · ' + tasted[n] + ' tasting' : '') +
         (n in left ? ' · ' + left[n] + (te ? ' left' : ' left on the till') : '') + '</div></div><div class="t">' + rand(b.rev) + '</div></div>'; }).join('')
-      : '<div class="empty">' + (imports.length ? 'No sales for this event.' : 'No till data yet. Tap “Import till file”.') + '</div>';
+      : '<div class="empty">' + (imports.length ? 'No sales for this event.' : 'No till data yet. Tap \"Import till file\".') + '</div>';
     var dels = live.filter(function(s){ return !s.handed_over; });
     $('x-delwrap').hidden = !dels.length;
     $('x-del').innerHTML = dels.map(function(s){
       return '<div class="item"><div><div class="t">' + esc([s.first_name, s.last_name].filter(Boolean).join(' ') || '(no name)') + '</div>' +
-        '<div class="s">' + esc([s.mobile, s.email].filter(Boolean).join(' · ')) + '</div><div class="s">' + esc(itemsText(s)) + (s.note ? ' · “' + esc(s.note) + '”' : '') + '</div></div>' +
+        '<div class="s">' + esc([s.mobile, s.email].filter(Boolean).join(' · ')) + '</div><div class="s">' + esc(itemsText(s)) + (s.note ? ' · \"' + esc(s.note) + '\"' : '') + '</div></div>' +
         '<div style="text-align:right"><div class="s">' + hm(s.sold_at) + '</div><button class="link" type="button" data-deliver="' + esc(s.id) + '">Mark delivered</button></div></div>';
     }).join('');
     $('x-list').innerHTML = all.length ? all.map(function(s){
       var buyer = [s.first_name, s.last_name].filter(Boolean).join(' ');
       return '<div class="item' + (s.voided ? ' void' : '') + '"><div><div class="t">' + esc(itemsText(s)) + '</div>' +
-        '<div class="s">' + hm(s.sold_at) + ' · ' + esc(s.payment || 'Card') + (s.slip ? ' slip ' + esc(s.slip) : (s.payment || 'Card') === 'Card' ? ' slip —' : '') + (buyer ? ' · ' + esc(buyer) : '') + (ev ? '' : ' · ' + esc(s.event)) + '</div>' +
+        '<div class="s">' + hm(s.sold_at) + ' · ' + esc(s.payment || 'Card') + (s.slip ? ' slip ' + esc(s.slip) : (s.payment || 'Card') === 'Card' ? ' slip -' : '') + (buyer ? ' · ' + esc(buyer) : '') + (ev ? '' : ' · ' + esc(s.event)) + '</div>' +
         '<div class="s">' + esc(s.channel === 'qr' ? 'Guest QR order ' + (s.pickup || '') : s.channel === 'till' ? 'Till · ' + [who(s.sold_by), s.device].filter(Boolean).join(' · ') : 'iPad till') +
           (s.voided && s.void_reason ? ' · voided: ' + esc(s.void_reason) + (s.voided_by ? ' (' + esc(who(s.voided_by)) + ')' : '') : '') + '</div>' +
         '<div>' + (s.voided ? '<span class="pill off">Voided</span>' : '') + (!s.handed_over && !s.voided ? '<span class="pill off">To deliver</span>' : '') +
@@ -956,17 +956,17 @@
     e.preventDefault();
     var f = $('x-file').files[0], n = $('x-note'), ev = $('x-name').value.trim();
     if(!f || !ev) return;
-    n.className = 'note'; n.textContent = 'Reading the file…'; $('x-go').disabled = true;
+    n.className = 'note'; n.textContent = 'Reading the file...'; $('x-go').disabled = true;
     f.text().then(function(txt){
       var file; try{ file = JSON.parse(txt); }catch(err){ file = null; }
-      if(!file || file.format !== 'galindo-till') throw new Error('That isn’t a till export. On the till: Tonight → Export data.');
-      n.textContent = 'Importing ' + (file.sales || []).length + ' sales…';
+      if(!file || file.format !== 'galindo-till') throw new Error('That isn\'t a till export. On the till: Tonight → Export data.');
+      n.textContent = 'Importing ' + (file.sales || []).length + ' sales...';
       return sb.rpc('import_till', { p:{ event:ev, file:file } });
     }).then(function(r){
       $('x-go').disabled = false;
       if(r.error) throw new Error(r.error.message);
       var d = r.data || {};
-      if(!d.ok) throw new Error({ 'not-team':'Your login isn’t on the team list.', 'not-till-file':'That isn’t a till export.', 'too-big':'That file is too big.', 'no-event':'Give the event a name.' }[d.reason] || ('Not imported (' + d.reason + ').'));
+      if(!d.ok) throw new Error({ 'not-team':'Your login isn\'t on the team list.', 'not-till-file':'That isn\'t a till export.', 'too-big':'That file is too big.', 'no-event':'Give the event a name.' }[d.reason] || ('Not imported (' + d.reason + ').'));
       n.className = 'note ok';
       n.textContent = '✓ ' + d.sales_new + ' new sale' + (d.sales_new === 1 ? '' : 's') + ' added' + (d.sales_seen > d.sales_new ? ', ' + (d.sales_seen - d.sales_new) + ' already here' : '') +
         (d.buyers_added ? ' · ' + d.buyers_added + ' buyer' + (d.buyers_added === 1 ? '' : 's') + ' saved to Contacts' : '') + '.';
@@ -1068,7 +1068,7 @@
       return '<button type="button" class="prod' + (left != null && left <= 3 || pr == null ? ' low' : '') + '" data-add="' + x.key + '">' +
         '<span class="im"><img src="bottles/' + x.key + '.png" alt="" loading="lazy" onerror="this.parentNode.remove()"></span><b>' + esc(short(x.name)) + '</b>' +
         '<span class="pr">' + (pr == null ? '<span class="mo">Members only</span>' : rand(pr)) + '</span><span class="lf">' + (left == null ? x.sold + ' sold' : left + ' left' + (x.held ? ' · ' + x.held + ' held' : '')) + '</span></button>';
-    }).join('') : '<div class="empty" style="grid-column:1/-1">' + (navigator.onLine ? 'Loading…' : 'No signal yet: open the Till once with signal so this phone knows the prices.') + '</div>');
+    }).join('') : '<div class="empty" style="grid-column:1/-1">' + (navigator.onLine ? 'Loading...' : 'No signal yet: open the Till once with signal so this phone knows the prices.') + '</div>');
     renderCart();
     // guest QR orders still to sort out
     var qr = tSales.filter(function(s){ return s.channel === 'qr' && !s.voided && !s.handed_over; });
@@ -1140,7 +1140,7 @@
       '<div class="s">' + hm(s.sold_at) + (s.paid ? ' · ' + esc(s.payment || 'Card') + (s.slip ? ' ' + esc(s.slip) : (s.payment || 'Card') === 'Card' ? ' <span style="color:var(--marigold)">no slip</span>' : '') : '') +
         (name ? ' · ' + esc(name) : '') + (s.galindo_id ? ' · ' + esc(s.galindo_id) : '') + (s.price_basis === 'members' ? ' · members' : s.price_basis === 'retail' ? ' · retail' : '') +
         (guest && s.mobile ? ' · ' + esc(s.mobile) : '') + '</div>' +
-      '<div class="s">' + esc(s.channel === 'qr' ? 'Guest QR order' : s.channel === 'import' ? 'iPad till' : [who(s.sold_by), s.device].filter(Boolean).join(' · ')) + (s.note ? ' · “' + esc(s.note) + '”' : '') + '</div>' +
+      '<div class="s">' + esc(s.channel === 'qr' ? 'Guest QR order' : s.channel === 'import' ? 'iPad till' : [who(s.sold_by), s.device].filter(Boolean).join(' · ')) + (s.note ? ' · \"' + esc(s.note) + '\"' : '') + '</div>' +
       '<div>' + (s.voided ? '<span class="pill off">Voided' + (s.voided_by ? ' by ' + esc(who(s.voided_by)) : '') + '</span>' + (s.void_reason ? '<span class="pill">' + esc(s.void_reason) + '</span>' : '') : '') +
         (guest && !s.paid ? '<span class="pill off">Not paid yet</span>' : '') + (guest && s.paid ? '<span class="pill yes">Paid</span>' : '') +
         (!guest && !s.voided && !s.handed_over ? '<span class="pill off">To deliver</span>' : '') + '</div></div>' +
@@ -1152,7 +1152,7 @@
     setHTML($('t-lines'), keys.map(function(k){
       var x = (b && b.products || []).filter(function(p){ return p.key === k; })[0] || { name:k, price:0 }, pr = priceOf(x); tot += cart[k] * (pr || 0);
       return '<div class="ln"><span class="n">' + esc(short(x.name)) + '<br><span class="s">' + (pr == null ? '<span style="color:var(--marigold)">members only</span>' : rand(pr)) + '</span></span>' +
-        '<button type="button" data-dec="' + k + '">−</button><span class="q">' + cart[k] + '</span><button type="button" data-add="' + k + '">+</button></div>';
+        '<button type="button" data-dec="' + k + '">-</button><span class="q">' + cart[k] + '</span><button type="button" data-add="' + k + '">+</button></div>';
     }).join(''));
     $('t-total').textContent = rand(tot); $('t-go').textContent = 'Save sale · ' + rand(tot);
     [].forEach.call($('t-pay').querySelectorAll('button'), function(x){ x.setAttribute('aria-pressed', String(x.dataset.pay === tPay)); });
@@ -1213,7 +1213,7 @@
       if(r.error){ tProblem = navigator.onLine ? r.error.message : ''; renderSync(); return; }   // no signal / server down: try again later
       var q2 = queue(), d = r.data || {};
       if(d.ok){ q2 = q2.filter(function(x){ return x.id !== s.id; }); tProblem = ''; setQueue(q2); if(q2.length) flush(); else { loadBoard(); if(s.first) loadContacts(); } return; }
-      // the database refused it (event deleted, not on the team…): keep it, flag it, move it to the back
+      // the database refused it (event deleted, not on the team...): keep it, flag it, move it to the back
       s.err = { 'not-team':'Your login isn\'t on the team', 'no-event':'Event not found', 'no-items':'No bottles', 'bad-payment':'Bad payment type',
         'need-buyer':'No buyer', 'bad-card':'Galindo card not found', 'members-only':'Members only: card has no mates rate' }[d.reason] || d.reason;
       q2 = q2.filter(function(x){ return x.id !== s.id; }); q2.push(s); tProblem = s.err; setQueue(q2); renderTill();
@@ -1222,7 +1222,7 @@
   function renderSync(){
     var n = queue().length, b = $('t-sync');
     b.className = 'sync' + (n || tProblem || !navigator.onLine ? ' wait' : '');
-    b.textContent = n ? '⟳ ' + n + ' waiting to sync' + (tProblem ? ' · ' + tProblem : '') : !navigator.onLine ? '○ No signal' : tProblem ? '! ' + tProblem : '● Live';
+    b.textContent = n ? '' + n + ' waiting to sync' + (tProblem ? ' · ' + tProblem : '') : !navigator.onLine ? 'No signal' : tProblem ? '! ' + tProblem : 'Live';
   }
   $('t-sync').addEventListener('click', function(){
     var q = queue(), bad = q.filter(function(s){ return s.err; });
@@ -1292,7 +1292,7 @@
     tEditing = ev || null; ev = ev || { stock:{}, prices:{}, qr_open:false };
     $('t-form-h').textContent = tEditing ? 'Edit ' + ev.name : 'New event';
     $('t-name').value = ev.name || ''; $('t-name').disabled = !!tEditing; $('t-date').value = ev.starts_on || new Date(Date.now() - new Date().getTimezoneOffset() * 60000).toISOString().slice(0, 10);
-    var keys = prices.length ? prices : [{ key:'reposado', name:'Reposado' }, { key:'anejo', name:'Añejo' }, { key:'extra', name:'Extra Añejo ‘V’' }];
+    var keys = prices.length ? prices : [{ key:'reposado', name:'Reposado' }, { key:'anejo', name:'Añejo' }, { key:'extra', name:'Extra Añejo \'V\'' }];
     $('t-stock').innerHTML = keys.map(function(p){ return '<div><label style="margin-top:4px">' + esc(short(p.name)) + '</label><input type="number" min="0" step="1" inputmode="numeric" data-stock="' + p.key + '" value="' + (ev.stock[p.key] == null ? '' : ev.stock[p.key]) + '"></div>'; }).join('');
     $('t-prices').innerHTML = keys.map(function(p){ return '<div><label style="margin-top:4px">' + esc(short(p.name)) + '</label><input type="number" min="1" step="1" inputmode="numeric" data-eprice="' + p.key + '" placeholder="' + (p.price ? Number(p.price) : '') + '" value="' + (ev.prices[p.key] == null ? '' : ev.prices[p.key]) + '"></div>'; }).join('');
     $('t-qr').checked = !!ev.qr_open; $('t-note').textContent = '';
@@ -1320,7 +1320,7 @@
     var e = curEvent(); if(!e) return;
     var cash = $('t-cash').value, row = Object.assign({ cash_counted:cash === '' ? null : Number(cash), cash_handed_to:$('t-cashto').value.trim() || null,
       cb_invoice:$('t-inv').value.trim() || null, notes:$('t-enotes').value.trim() || null }, extra || {});
-    var n = $('t-cnote'); n.className = 'note'; n.textContent = 'Saving…';
+    var n = $('t-cnote'); n.className = 'note'; n.textContent = 'Saving...';
     sb.from('till_events').update(row).eq('name', e.name).then(function(r){
       if(r.error){ n.textContent = 'Not saved: ' + r.error.message; return; }
       n.className = 'note ok'; n.textContent = '✓ Saved'; document.activeElement.blur && document.activeElement.blur(); loadTill(); loadSales();
@@ -1397,7 +1397,7 @@
   $('t-join').addEventListener('click', function(){
     var m = $('t-msg'), first = $('t-first').value.trim(), mob = $('t-mobile').value.trim(), b = this;
     if(!first || !mob){ alert('Fill in at least their first name and mobile.'); (first ? $('t-mobile') : $('t-first')).focus(); return; }
-    b.disabled = true; b.textContent = 'Making their card…';
+    b.disabled = true; b.textContent = 'Making their card...';
     sb.rpc('till_new_member', { p:{ first:first, last:$('t-last').value.trim(), mobile:mob, email:$('t-email').value.trim(), consent:$('t-consent').checked } }).then(function(r){
       b.disabled = false; b.textContent = 'A mate? Sign them up + give a Galindo card';
       if(r.error){ alert(navigator.onLine ? 'Not done: ' + r.error.message : 'No signal: a new card needs signal. Sell at retail now, or try again in a moment.'); return; }
@@ -1406,14 +1406,14 @@
       var mn = waNumber({ mobile:d.mobile });
       tBuyer = { gid:d.galindo_id, first:d.first, last:d.last, tier:d.tier, mates:!!d.mates, fresh:true,
         wa:mn ? 'https://wa.me/' + mn + '?text=' + encodeURIComponent('Hi ' + d.first + '! Here\'s your Galindo ID, your members\' card. It unlocks our members\' prices, and you can order bottles to collect or have delivered:\n' +
-          memberLink({ galindo_id:d.galindo_id }) + '\n\nIt\'s personal to you, so please keep it to yourself. ¡Salud!\nThe Galindo team') : '' };
+          memberLink({ galindo_id:d.galindo_id }) + '\n\nIt\'s personal to you, so please keep it to yourself. Salud!\nThe Galindo team') : '' };
       ['t-first', 't-last', 't-mobile', 't-email'].forEach(function(id){ $(id).value = ''; });
       if(d.merged) alert(d.first + ' was already in Contacts, so their existing record got the card.');
       loadContacts(); renderTill();
     }, function(){ b.disabled = false; b.textContent = 'A mate? Sign them up + give a Galindo card'; alert('No signal: a new card needs signal.'); });
   });
   $('t-gid').addEventListener('keydown', function(e){ if(e.key === 'Enter'){ e.preventDefault(); useCard(this.value); } });
-  // camera scan of the QR on their members' card (it holds tequilaheroes.com/order/?id=GAL-…)
+  // camera scan of the QR on their members' card (it holds tequilaheroes.com/order/?id=GAL-...)
   var scanStream = null, scanTimer = null;
   function loadJsQR(){
     return window.jsQR ? Promise.resolve() : new Promise(function(ok, no){
@@ -1455,7 +1455,7 @@
     return 'Hi' + (first ? ' ' + first : '') + '! Lovely to meet you.\n\n' +
       (gid ? 'Your Galindo ID (your members\' card): ' + memberLink({ galindo_id:gid }) + '\n\n'
            : 'Sign up here and the team will set you up with your own Galindo ID, our members\' card: ' + INVITE_LINK + '\n\n') +
-      '¡Salud!\nThe Galindo team';
+      'Salud!\nThe Galindo team';
   }
   function openWelcome(){
     hidePriv(); $('w-first').value = ''; $('w-to').value = ''; $('w-note').textContent = ''; $('w-note').className = 'note'; $('w-go').textContent = 'Send';
@@ -1476,7 +1476,7 @@
     // open WhatsApp / mail straight from the tap (phones block it if it waits for the network), then save
     if(to.mobile) window.open('https://wa.me/' + to.mobile + '?text=' + encodeURIComponent(msg), '_blank');
     else location.href = 'mailto:' + to.email + '?subject=' + encodeURIComponent('Welcome to Galindo') + '&body=' + encodeURIComponent(msg);
-    n.textContent = 'Saving to Contacts…';
+    n.textContent = 'Saving to Contacts...';
     sb.rpc('send_welcome', { p:{ first:first, contact:raw } }).then(function(r){
       if(r.error || !r.data.ok){ n.textContent = 'Message opened, but not saved to Contacts: ' + (r.error ? r.error.message : r.data.reason); return; }
       n.className = 'note ok'; n.textContent = '✓ ' + (r.data.existing ? 'Already in Contacts (' + r.data.first + '), noted.' : 'Saved to Contacts as "asked for info".') + ' Send the message, then close.';
@@ -1567,7 +1567,7 @@
     }).join('') + (extra || ''));
   }
   $('p-album').addEventListener('change', function(){ renderAlbum(); });
-  // phone photos are 3–10 MB: shrink to 2000px on the long side as JPEG before uploading (keeps the bucket's 10 MB cap far away)
+  // phone photos are 3-10 MB: shrink to 2000px on the long side as JPEG before uploading (keeps the bucket's 10 MB cap far away)
   function shrink(file){
     return new Promise(function(ok, bad){
       var img = new Image(), u = URL.createObjectURL(file);
@@ -1594,8 +1594,8 @@
     function step(){
       if(i >= files.length) return finish();
       var f = files[i++];
-      renderAlbum('<div class="ph up">' + (files.length - i + 1) + ' to go…</div>');
-      $('p-stat').textContent = 'Uploading ' + i + ' of ' + files.length + '… keep this screen open';
+      renderAlbum('<div class="ph up">' + (files.length - i + 1) + ' to go...</div>');
+      $('p-stat').textContent = 'Uploading ' + i + ' of ' + files.length + '... keep this screen open';
       shrink(f).then(function(blob){
         var name = photoName();
         return sb.storage.from('member-photos').upload(a.folder + '/' + name, blob, { contentType:'image/jpeg', cacheControl:'31536000', upsert:false })
@@ -1645,7 +1645,7 @@
   }
   $('lb-share').addEventListener('click', function(){
     var f = lbFile(), a = curAlbum(), b = this; if(!f) return;
-    b.textContent = 'Getting it…';
+    b.textContent = 'Getting it...';
     // WhatsApp on iPhone drops text sent alongside a photo, so the caption also goes on the clipboard to paste in.
     // Copied the old way, right now inside the tap: the async clipboard API loses out once the share sheet takes focus.
     var copied = copyNow(SHARE_CAPTION);
@@ -1693,7 +1693,7 @@
     }).join('') : '<div class="stat" style="padding:7px 10px">Nothing yet</div>');
   }
   function loadTraffic(){
-    var my = ++wReq; $('w-stat').textContent = 'Loading…';
+    var my = ++wReq; $('w-stat').textContent = 'Loading...';
     var now = new Date(), since = new Date(now), by = 'day';
     if(wRange === 'today'){ since.setHours(0, 0, 0, 0); by = 'hour'; } else { since.setHours(0, 0, 0, 0); since.setDate(since.getDate() - (+wRange - 1)); }
     sb.functions.invoke('traffic', { body:{ since:since.toISOString(), until:now.toISOString(), by:by } }).then(function(r){
@@ -1713,7 +1713,7 @@
         return;
       }
       $('w-visits').textContent = d.visits.toLocaleString('en-ZA'); $('w-views').textContent = d.views.toLocaleString('en-ZA');
-      $('w-per').textContent = d.visits ? (d.views / d.visits).toFixed(1) : '–';
+      $('w-per').textContent = d.visits ? (d.views / d.visits).toFixed(1) : '-';
       // fill the gaps so quiet hours/days show as empty slots, not missing ones
       var map = {}; d.series.forEach(function(x){ map[by === 'hour' ? new Date(x.t).getHours() : x.t] = x.visits; });
       var slots = [];

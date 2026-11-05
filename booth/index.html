@@ -100,7 +100,7 @@
 <section class="wrap" id="booth" hidden>
   <div class="stage" id="stage">
     <canvas id="view" width="1080" height="1350"></canvas>
-    <div class="hint" id="hint">Loading the props…</div>
+    <div class="hint" id="hint">Loading the props...</div>
     <div class="count" id="count"></div>
     <div class="flash" id="flash"></div>
   </div>
@@ -142,7 +142,7 @@
 /* ---- CONFIG ---- */
 /* Photos a guest chooses to send go into Supabase's private booth-inbox bucket (the team checks each one in
    Admin → Photos before it goes into an album); opt-in contacts go to submit_contact. Publishable key: it can only
-   add new booth-… files to the inbox and call the public functions. */
+   add new booth-... files to the inbox and call the public functions. */
 const SUPABASE_URL = "https://yfopoeuncfpfizghqczr.supabase.co", SUPABASE_KEY = "sb_publishable_aCL5Ko6acTk_pBSJ-zXvzA_UNSAyOcl";
 const MP = "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14";
 const MODEL = "https://storage.googleapis.com/mediapipe-models/face_landmarker/face_landmarker/float16/1/face_landmarker.task";
@@ -310,7 +310,7 @@ function drawPour(g, t){
   });
 }
 
-// "Tequila Heroes" crew mode: lucha libre mask. Drawn in a fixed design space (eyes at x=±1, y=0;
+// "Tequila Heroes" crew mode: lucha libre mask. Drawn in a fixed design space (eyes at x=+/-1, y=0;
 // mouth at y=2.1) and mapped onto each face with an affine transform from the eyes + mouth, so it
 // stretches and tilts with the face. Drawn on its own layer so the holes show the real face.
 const layer = document.createElement('canvas'); layer.width = CW; layer.height = CH;
@@ -419,8 +419,8 @@ function render(){
     drawFrame();
     const h = $('hint');
     if(landmarker) h.textContent = !faces.length ? 'Get your face in the frame'
-      : (props.pour && !smooth.some(g => g && g.open > 0.045)) ? 'Open wide! 😮'
-      : props.hero ? 'Tequila Heroes · give us your Blue Steel 😗' : '';
+      : (props.pour && !smooth.some(g => g && g.open > 0.045)) ? 'Open wide!'
+      : props.hero ? 'Tequila Heroes · give us your Blue Steel' : '';
   }
   requestAnimationFrame(render);
 }
@@ -444,7 +444,7 @@ async function snap(){
 async function sendShot(){
   if(!lastBlob) return;
   const blob = lastBlob, b = $('send'), note = $('sendnote');
-  b.hidden = true; note.textContent = 'Sending to the Galindo album…'; note.className = 'note';
+  b.hidden = true; note.textContent = 'Sending to the Galindo album...'; note.className = 'note';
   try{
     const name = `booth-${stamp()}-${Math.random().toString(36).slice(2, 8).padEnd(6, '0')}.jpg`;
     const r = await fetch(`${SUPABASE_URL}/storage/v1/object/booth-inbox/${name}`, { method:'POST',
@@ -467,7 +467,7 @@ async function joinList(){
   if(!first){ note.textContent = 'Pop your first name in.'; note.className = 'note bad'; $('j-first').focus(); return; }
   if(isEmail ? !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(contact) : contact.replace(/\D/g, '').length < 9){
     note.textContent = 'A mobile number or email so we can send it.'; note.className = 'note bad'; $('j-contact').focus(); return; }
-  const b = $('j-go'); b.disabled = true; b.textContent = 'Adding you…';
+  const b = $('j-go'); b.disabled = true; b.textContent = 'Adding you...';
   try{
     for(let i = 0; i < 20 && !lastFile && $('sendnote').textContent.indexOf('Sending') === 0; i++) await new Promise(r => setTimeout(r, 250));   // let the photo upload finish so we can link it
     const c = { first, mobile, email, consent: $('j-consent').checked, photo: lastFile };
@@ -476,9 +476,9 @@ async function joinList(){
       body: JSON.stringify({ p: { source:'booth', ...c } }) });
     const j = await r.json(); if(!j.ok) throw new Error(j.reason || 'failed');
     joined = true; $('joincard').hidden = true;
-    $('joined').textContent = '✓ You’re on the Galindo list, ' + first + '. Gracias!'; $('joined').hidden = false;
+    $('joined').textContent = '✓ You\'re on the Galindo list, ' + first + '. Gracias!'; $('joined').hidden = false;
   }catch(e){
-    note.textContent = 'Couldn’t add you just now. Try again in a moment.'; note.className = 'note bad';
+    note.textContent = 'Couldn\'t add you just now. Try again in a moment.'; note.className = 'note bad';
   }finally{ b.disabled = false; b.textContent = 'Join the Galindo list'; }
 }
 
@@ -496,7 +496,7 @@ $('again').addEventListener('click', () => { $('result').hidden = true; $('booth
 $('send').addEventListener('click', sendShot);
 
 $('go').addEventListener('click', async () => {
-  const err = $('starterr'); err.hidden = true; $('go').disabled = true; $('go').textContent = 'Starting…';
+  const err = $('starterr'); err.hidden = true; $('go').disabled = true; $('go').textContent = 'Starting...';
   try{
     if(DEMO){ source = await new Promise((res, rej) => { const im = new Image(); im.onload = () => res(im); im.onerror = rej; im.src = DEMO; }); $('flip').hidden = true; }
     else {
@@ -511,7 +511,7 @@ $('go').addEventListener('click', async () => {
     err.hidden = false;
     err.textContent = (e.name === 'NotAllowedError')
       ? 'Camera access was blocked. Allow the camera for this site (Settings → Safari → Camera), then try again.'
-      : 'Couldn’t open the camera here. If you opened this inside WhatsApp or Instagram, open it in Safari or Chrome instead.';
+      : 'Couldn\'t open the camera here. If you opened this inside WhatsApp or Instagram, open it in Safari or Chrome instead.';
   }
 });
 

@@ -199,7 +199,7 @@
       <div class="chips" id="fav">
         <button class="chip" type="button" aria-pressed="false" data-v="Reposado">Reposado</button>
         <button class="chip" type="button" aria-pressed="false" data-v="Añejo">Añejo</button>
-        <button class="chip" type="button" aria-pressed="false" data-v="Extra Añejo ‘V’">Extra Añejo ‘V’</button>
+        <button class="chip" type="button" aria-pressed="false" data-v="Extra Añejo 'V'">Extra Añejo 'V'</button>
         <button class="chip" type="button" aria-pressed="false" data-v="Couldn't choose">Couldn't choose</button>
       </div>
 
@@ -236,7 +236,7 @@
     <div class="done" id="done">
       <div class="tick"><svg viewBox="0 0 24 24"><path d="M5 13l4 4L19 7"/></svg></div>
       <h3>Welcome to Galindo</h3>
-      <p>Thank you! ¡Salud!</p>
+      <p>Thank you! Salud!</p>
       <div class="gid-box" id="gid-box" hidden>
         <p>Your Galindo ID</p>
         <div class="gid" id="gid-val"></div>
@@ -290,8 +290,8 @@
     <div class="pour">
       <span class="dot" style="background:#E0812B"></span>
       <div>
-        <h3>Extra Añejo ‘V’</h3>
-        <div class="spec">3–5 years · Reserva Privada · Gift boxed</div>
+        <h3>Extra Añejo 'V'</h3>
+        <div class="spec">3-5 years · Reserva Privada · Gift boxed</div>
         <div class="notes">Roasted agave, caramel, dried fruit and vanilla; a long, warming finish of dark chocolate and spice. Made for sipping.</div>
       </div>
     </div>
@@ -352,7 +352,7 @@
     if(d.mobile && d.mobile.replace(/\D/g,'').length < 9){ note.textContent = "That mobile number looks short."; $('f-mobile').focus(); return; }
     if(d.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(d.email)){ note.textContent = "That email doesn't look right."; $('f-email').focus(); return; }
     if(!d.consent){ note.textContent = "Tick the box so we're allowed to keep in touch."; $('consent-row').classList.add('need'); return; }
-    note.textContent = ""; btn.disabled = true; btn.textContent = "Sending…";
+    note.textContent = ""; btn.disabled = true; btn.textContent = "Sending...";
     toSupabase(d).catch(function(){ return toImac(d); })
       .then(function(j){ $('signup').hidden = true; $('done').classList.add('show'); showId(j || {}, d); })
       .catch(function(){

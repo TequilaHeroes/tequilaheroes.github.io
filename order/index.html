@@ -277,7 +277,7 @@
       </form>
       <div class="done" id="o-done" hidden>
         <div class="tick"><svg viewBox="0 0 24 24"><path d="M5 13l4 4L19 7"/></svg></div>
-        <div class="ptitle" id="d-title">Order in. ¡Gracias!</div>
+        <div class="ptitle" id="d-title">Order in. Gracias!</div>
         <div class="ref" id="d-ref"></div>
         <p class="psub" id="d-sum" style="margin-bottom:14px"></p>
         <div id="d-pay" hidden style="margin-bottom:14px"></div>
@@ -293,7 +293,7 @@
     <div class="tiers">
       <div class="tierrow" data-t="reposado"><span class="dot" style="background:#E7C877"></span><div><h3>Reposado<span class="you" hidden>You</span></h3><p>Every member starts here. Members' prices and ordering, plus first word on Galindo nights.</p></div></div>
       <div class="tierrow" data-t="anejo"><span class="dot" style="background:#B9772F"></span><div><h3>Añejo<span class="you" hidden>You</span></h3><p>For regulars. First access to new releases and invites to members' tastings.</p></div></div>
-      <div class="tierrow" data-t="extra"><span class="dot" style="background:#3a2c1a;border:1px solid #8E7636"></span><div><h3>Extra Añejo ‘V’<span class="you" hidden>You</span></h3><p>By invitation. First claim on every allocation of the ‘V’, and private tastings.</p></div></div>
+      <div class="tierrow" data-t="extra"><span class="dot" style="background:#3a2c1a;border:1px solid #8E7636"></span><div><h3>Extra Añejo 'V'<span class="you" hidden>You</span></h3><p>By invitation. First claim on every allocation of the 'V', and private tastings.</p></div></div>
     </div>
     <p class="center" style="margin-top:16px"><button class="linkbtn" type="button" id="not-me">Not you? Use another ID</button></p>
   </section>
@@ -312,7 +312,7 @@
   var SUPABASE_URL = "https://yfopoeuncfpfizghqczr.supabase.co";
   var SUPABASE_KEY = "sb_publishable_aCL5Ko6acTk_pBSJ-zXvzA_UNSAyOcl";   /* publishable key: only the members' functions + public pages */
   var WA_NUMBER = "27722240774";   /* Andrea */
-  var TIER = { reposado:'Reposado', anejo:'Añejo', extra:'Extra Añejo ‘V’' };
+  var TIER = { reposado:'Reposado', anejo:'Añejo', extra:'Extra Añejo \'V\'' };
   var STORE = 'galindo_member_id';
 
   var $ = function(id){ return document.getElementById(id); };
@@ -335,7 +335,7 @@
     $('enter-note').textContent = msg || '';
   }
   function open(gid){
-    $('enter-go').disabled = true; $('enter-note').textContent = gid ? 'Checking…' : '';
+    $('enter-go').disabled = true; $('enter-note').textContent = gid ? 'Checking...' : '';
     return rpc('member_card', { gid:gid }).then(function(r){
       $('enter-go').disabled = false;
       if(!r || !r.ok){
@@ -366,7 +366,7 @@
       qty[p.key] = 0;
       return '<div class="prod"><div class="info"><h3>' + esc(p.name.replace('Galindo ', '')) + '</h3>' + (p.note ? '<div class="pn">' + esc(p.note) + '</div>' : '') +
         '<div class="pp">' + rand(p.price) + '</div></div><div class="step">' +
-        '<button type="button" data-k="' + esc(p.key) + '" data-d="-1" aria-label="One less">−</button><span class="q" id="q-' + esc(p.key) + '">0</span>' +
+        '<button type="button" data-k="' + esc(p.key) + '" data-d="-1" aria-label="One less">-</button><span class="q" id="q-' + esc(p.key) + '">0</span>' +
         '<button type="button" data-k="' + esc(p.key) + '" data-d="1" aria-label="One more">+</button>' +
         (p.key === 'extra' ? '' : '<button type="button" class="case" data-k="' + esc(p.key) + '" data-d="6">+6</button>') + '</div></div>';
     }).join('');
@@ -408,13 +408,13 @@
     if(mob.replace(/\D/g, '').length < 9){ n.textContent = 'Add your mobile so we can confirm.'; $('o-mobile').focus(); return; }
     if(ful === 'deliver' && ($('o-street').value.trim().length < 4 || !($('o-suburb').value.trim() || $('o-city').value.trim()))){ n.textContent = REASON.address; $('o-street').focus(); return; }
     if(ful === 'deliver' && !/^\d{4}$/.test($('o-pc').value.trim())){ n.textContent = REASON['postal-code']; $('o-pc').focus(); return; }
-    n.textContent = ''; $('o-go').disabled = true; $('o-go').textContent = editing ? 'Saving…' : 'Placing your order…';
+    n.textContent = ''; $('o-go').disabled = true; $('o-go').textContent = editing ? 'Saving...' : 'Placing your order...';
     rpc('place_order', { p:{ gid:member.id, mobile:mob, items:qty, fulfilment:ful, ref:editing || undefined, street:$('o-street').value.trim(), suburb:$('o-suburb').value.trim(),
       city:$('o-city').value.trim(), postal_code:$('o-pc').value.trim(), note:$('o-note').value.trim() } })
       .then(function(r){
         if(!r || !r.ok){ n.textContent = REASON[r && r.reason] || "That didn't go through. Try again, or message us."; return; }
         var lines = member.prices.filter(function(p){ return qty[p.key] > 0; }).map(function(p){ return qty[p.key] + '× ' + p.name.replace('Galindo ', ''); });
-        $('d-ref').textContent = r.ref; $('d-title').textContent = r.edited ? 'Order changed.' : 'Order in. ¡Gracias!';
+        $('d-ref').textContent = r.ref; $('d-title').textContent = r.edited ? 'Order changed.' : 'Order in. Gracias!';
         $('d-sum').textContent = lines.join(', ') + ' · ' + rand(r.total) + ' · ' + (ful === 'deliver' ? 'delivery' : 'collection') + '.';
         $('d-pay').hidden = true; $('d-pay').innerHTML = '';
         if(!r.edited) payNow(r.ref, mob, r.total);
@@ -428,7 +428,7 @@
   /* ---------- instant pay link: the moment an order is placed, ask Creative Beverages for the card pay link ---------- */
   function payNow(ref, mob, total){
     var el = $('d-pay'); el.hidden = false;
-    el.innerHTML = '<p class="small">Preparing your secure pay link…</p>';
+    el.innerHTML = '<p class="small">Preparing your secure pay link...</p>';
     fetch(SUPABASE_URL + '/functions/v1/woo-order', { method:'POST',
       headers:{ 'Content-Type':'application/json', apikey:SUPABASE_KEY, Authorization:'Bearer ' + SUPABASE_KEY },
       body:JSON.stringify({ ref:ref, gid:member.id, mobile:mob }) })
@@ -439,10 +439,10 @@
             '<p class="small" style="margin-top:8px">Secure card checkout by Creative Beverages. Your order is confirmed once you pay.</p>';
           loadOrders();
         } else {
-          el.innerHTML = '<p class="small">We’ll WhatsApp you a secure pay link from Creative Beverages shortly.</p>';
+          el.innerHTML = '<p class="small">We\'ll WhatsApp you a secure pay link from Creative Beverages shortly.</p>';
         }
       })
-      .catch(function(){ el.innerHTML = '<p class="small">We’ll WhatsApp you a secure pay link from Creative Beverages shortly.</p>'; });
+      .catch(function(){ el.innerHTML = '<p class="small">We\'ll WhatsApp you a secure pay link from Creative Beverages shortly.</p>'; });
   }
   /* ---------- your orders: status, change / cancel while still 'new' ---------- */
   var OST = { 'new':['Received', ''], sent:['With Creative Beverages', ''], invoiced:['Invoice sent: please pay', ''], paid:['Paid ✓', 'ok'], done:['', 'ok'], cancelled:['Cancelled', 'x'] };
