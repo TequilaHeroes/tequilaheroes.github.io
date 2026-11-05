@@ -287,13 +287,6 @@
     </div>
   </section>
 
-  <section class="wrap" id="photos" hidden>
-    <div class="panel">
-      <div class="ptitle" id="ph-title">Launch night photos</div>
-      <div class="psub">Every photo from the booth. Tap one to see it big and save it.</div>
-      <div class="grid" id="ph-grid"></div>
-    </div>
-  </section>
 
   <section class="wrap">
     <div class="eyebrow center" style="margin-bottom:12px">Your tier grows with you</div>
@@ -306,12 +299,6 @@
   </section>
 </div>
 
-<div class="lb" id="lb" hidden>
-  <button class="close" type="button" id="lb-x" aria-label="Close">×</button>
-  <img id="lb-img" alt="Launch night photo">
-  <div class="bar"><button type="button" id="lb-prev" aria-label="Previous">‹</button><button type="button" class="save" id="lb-save">Save photo</button><button type="button" id="lb-next" aria-label="Next">›</button></div>
-  <div class="hint" id="lb-hint">On iPhone: tap Save photo, then “Save Image”. Or press and hold the photo.</div>
-</div>
 
 <footer>
   <div class="wrap">
@@ -359,7 +346,7 @@
       member = r; store(r.id);
       var url = location.origin + location.pathname + '?id=' + encodeURIComponent(r.id);
       if(location.search.indexOf(r.id) < 0) history.replaceState(null, '', url);
-      renderMember(url); loadPhotos(); loadOrders();
+      renderMember(url); loadOrders();
     }).catch(function(){ $('enter-go').disabled = false; showEnter("We couldn't reach the members' list. Check your signal and try again."); });
   }
 
@@ -457,40 +444,6 @@
       })
       .catch(function(){ el.innerHTML = '<p class="small">We’ll WhatsApp you a secure pay link from Creative Beverages shortly.</p>'; });
   }
-  /* ---------- photos (URLs only come back for a valid ID; views + saves are logged against it) ---------- */
-  var photos = [], album = '', cur = 0;
-  function loadPhotos(){
-    rpc('member_photos', { gid:member.id }).then(function(r){
-      var a = r && r.ok && r.albums && r.albums[0];
-      if(!a || !a.photos.length){ $('photos').hidden = true; return; }
-      album = a.slug; photos = a.photos; $('ph-title').textContent = a.title.replace(' · ', ' photos · ');
-      $('ph-grid').innerHTML = photos.map(function(p, i){ return '<button type="button" data-i="' + i + '"><img loading="lazy" src="' + esc(p.url) + '" alt="Photo ' + (i + 1) + '"></button>'; }).join('');
-      $('photos').hidden = false;
-      if(location.hash === '#photos') setTimeout(function(){ $('photos').scrollIntoView({ behavior:'smooth', block:'start' }); }, 150);
-    }).catch(function(){});
-  }
-  function show(i){ cur = (i + photos.length) % photos.length; $('lb-img').src = photos[cur].url; $('lb').hidden = false; $('lb-save').textContent = 'Save photo'; }
-  $('ph-grid').addEventListener('click', function(e){ var b = e.target.closest('[data-i]'); if(b) show(+b.dataset.i); });
-  $('lb-x').addEventListener('click', function(){ $('lb').hidden = true; });
-  $('lb-prev').addEventListener('click', function(){ show(cur - 1); });
-  $('lb-next').addEventListener('click', function(){ show(cur + 1); });
-  $('lb').addEventListener('click', function(e){ if(e.target.id === 'lb') $('lb').hidden = true; });
-  document.addEventListener('keydown', function(e){ if($('lb').hidden) return; if(e.key === 'Escape') $('lb').hidden = true; if(e.key === 'ArrowLeft') show(cur - 1); if(e.key === 'ArrowRight') show(cur + 1); });
-  var tx = null;
-  $('lb-img').addEventListener('touchstart', function(e){ tx = e.touches[0].clientX; }, { passive:true });
-  $('lb-img').addEventListener('touchend', function(e){ if(tx === null) return; var dx = e.changedTouches[0].clientX - tx; tx = null; if(Math.abs(dx) > 50) show(cur + (dx < 0 ? 1 : -1)); });
-  $('lb-save').addEventListener('click', function(){
-    var p = photos[cur], b = $('lb-save');
-    rpc('log_photo', { gid:member.id, album:album, photo:p.file }).catch(function(){});
-    b.textContent = 'Getting it…';
-    fetch(p.url).then(function(r){ return r.blob(); }).then(function(blob){
-      var f = new File([blob], p.file, { type:'image/jpeg' });
-      if(navigator.canShare && navigator.canShare({ files:[f] })) return navigator.share({ files:[f] }).then(function(){ b.textContent = 'Saved ✓'; });
-      var a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = p.file; document.body.appendChild(a); a.click(); a.remove();
-      b.textContent = 'Saved ✓';
-    }).catch(function(e){ b.textContent = (e && e.name === 'AbortError') ? 'Save photo' : 'Press and hold the photo to save'; });
-  });
-
   /* ---------- your orders: status, change / cancel while still 'new' ---------- */
   var OST = { 'new':['Received', ''], sent:['With Creative Beverages', ''], invoiced:['Invoice sent: please pay', ''], paid:['Paid ✓', 'ok'], done:['', 'ok'], cancelled:['Cancelled', 'x'] };
   function itemsLine(o){ return (o.items || []).map(function(i){ return i.qty + '× ' + String(i.name).replace('Galindo ', ''); }).join(', '); }
