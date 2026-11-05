@@ -680,8 +680,7 @@
   /* ---------- Galindo IDs ---------- */
   var TIER = { reposado:'Reposado', anejo:'Añejo', extra:'Extra Añejo ‘V’' };
   var MSG_KEY = 'galindo_admin_id_msg';
-  var MSG_DEFAULT = "Hi {first}! Thank you for coming to the Galindo launch at Mexicola. It was a special night and we're so glad you were there.\n\n" +
-    "As a thank-you, here's your own Galindo ID, your members' card. It unlocks our members' prices and you can order bottles to collect or have delivered:\n{link}\n\n" +
+  var MSG_DEFAULT = "Hi {first}! Here's your own Galindo ID, your members' card. It unlocks our members' prices and you can order bottles to collect or have delivered:\n{link}\n\n" +
     "It's personal to you, so please keep it to yourself. Watch the Galindo film here: https://tequilaheroes.com/#film\n\n¡Salud!\nThe Galindo team";
   function msgTemplate(){ try{ return localStorage.getItem(MSG_KEY) || MSG_DEFAULT; }catch(e){ return MSG_DEFAULT; } }
   function memberLink(c){ return 'https://tequilaheroes.com/order/?id=' + c.galindo_id; }
