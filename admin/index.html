@@ -1043,7 +1043,7 @@
   var orders = [], prices = [];
   /* new → sent (to Creative Beverages) → invoiced (CB invoice no.) → paid → done; CB logins only do invoiced + paid */
   var STATUS = { 'new':'New', sent:'With Creative Beverages', invoiced:'Invoiced', paid:'Paid', done:'Done', cancelled:'Cancelled' };
-  var NEXT = { 'new':['sent', 'Send to Creative Beverages'], sent:['invoiced', 'Add CB invoice no.'], invoiced:['paid', 'Mark paid'], paid:['done', collectLabel] };
+  var NEXT = { 'new':['sent', 'Send to Creative Beverages'], sent:['invoiced', 'Add CB invoice no.'], invoiced:['paid', 'Mark paid (EFT / cash)'], paid:['done', collectLabel] };
   function collectLabel(o){ return o.fulfilment === 'deliver' ? 'Delivered' : 'Collected'; }
   // Two-axis order status, both derived from the order's own timestamps (one source of truth for the list + CSV).
   function paymentStatus(o){
@@ -1252,7 +1252,7 @@
         (ps ? '<div class="s">Pay link' + (o.woo_order_id && o.pay_token ? ' (always live)' : '') + ': <a href="' + esc(ps) + '" target="_blank" rel="noopener" style="color:var(--gold)">' + esc(ps.replace(/^https:\/\//, '').slice(0, 40)) + '...</a></div>' : '') +
         (dl ? '<div class="s" style="margin-top:5px">' + dl + '</div>' : '') +
         '<div class="oc-acts">' +
-        (nx ? '<button class="chip go" type="button" data-ost="' + o.id + '" data-to="' + nx[0] + '">' + (typeof nx[1] === 'function' ? nx[1](o) : nx[1]) + '</button>' : '') +
+        (nx ? '<button class="chip" type="button" data-ost="' + o.id + '" data-to="' + nx[0] + '">' + (typeof nx[1] === 'function' ? nx[1](o) : nx[1]) + '</button>' : '') +
         (mob && !partner ? '<a class="chip wa" data-' + (isDeliver && o.status === 'done' ? 'thanks' : 'wao') + '="' + o.id + '" target="_blank" rel="noopener" href="https://wa.me/' + mob + '?text=' +
           encodeURIComponent(waText(o)) + '">' + (isDeliver && o.status === 'done' ? 'Thank you &amp; enjoy' : 'WhatsApp ' + esc(o.first_name)) + '</a>' : '') +
         (o.status === 'invoiced' ? '<button class="chip" type="button" data-ost="' + o.id + '" data-to="paylink">' + (o.pay_url ? 'Change Pay link' : 'Add Pay link') + '</button>' : '') +
