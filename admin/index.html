@@ -1256,6 +1256,7 @@
         (mob && !partner ? '<a class="chip wa" data-' + (isDeliver && o.status === 'done' ? 'thanks' : 'wao') + '="' + o.id + '" target="_blank" rel="noopener" href="https://wa.me/' + mob + '?text=' +
           encodeURIComponent(waText(o)) + '">' + (isDeliver && o.status === 'done' ? 'Thank you &amp; enjoy' : 'WhatsApp ' + esc(o.first_name)) + '</a>' : '') +
         (o.status === 'invoiced' ? '<button class="chip" type="button" data-ost="' + o.id + '" data-to="paylink">' + (o.pay_url ? 'Change Pay link' : 'Add Pay link') + '</button>' : '') +
+        (!partner && ['invoiced', 'paid', 'done'].indexOf(o.status) >= 0 ? '<button class="chip" type="button" data-ost="' + o.id + '" data-to="editinv">' + (o.cb_invoice ? 'Edit CB invoice no.' : 'Add CB invoice no.') + '</button>' : '') +
         (!partner && o.woo_order_id && ['sent', 'invoiced'].indexOf(o.status) >= 0 ? '<button class="chip" type="button" data-ost="' + o.id + '" data-to="refresh">Refresh pay link</button>' : '') +
         (!partner && o.email && o.woo_order_id && ['sent', 'invoiced'].indexOf(o.status) >= 0 ? '<button class="chip" type="button" data-ost="' + o.id + '" data-to="emaillink">Email pay link</button>' : '') +
         (!partner && isDeliver && ['sent', 'invoiced', 'paid', 'done'].indexOf(o.status) >= 0 ? '<button class="chip" type="button" data-ost="' + o.id + '" data-to="track">' + (o.track_url ? 'Change track link' : 'Add track link') + '</button>' : '') +
@@ -1384,8 +1385,12 @@
       return;
     }
     if(to === 'invoiced'){
-      var inv = window.prompt('Creative Beverages invoice number for ' + o.ref + (o.woo_order_id && !o.cb_invoice ? ' (pre-filled with CB order ' + o.woo_order_id + '; change it if CB gave a different invoice number)' : '') + ':', o.cb_invoice || (o.woo_order_id ? String(o.woo_order_id) : '')); if(!inv || !inv.trim()) return; row.cb_invoice = inv.trim().slice(0, 40);
-      var pl = askPayLink(o); if(pl === false) return; if(pl) row.pay_url = pl;
+      // zero-tap: CB's reference IS the WooCommerce order number, so fill it in automatically. Correct it any time with "Edit CB invoice no.".
+      if(!o.cb_invoice && o.woo_order_id) row.cb_invoice = String(o.woo_order_id);
+    }
+    if(to === 'editinv'){
+      var inv = window.prompt('Creative Beverages invoice number for ' + o.ref + ':', o.cb_invoice || (o.woo_order_id ? String(o.woo_order_id) : ''));
+      if(inv === null) return; row = { cb_invoice:inv.trim().slice(0, 40) || null };
     }
     if(to === 'paylink'){ var pl2 = askPayLink(o); if(!pl2) return; row = { pay_url:pl2 }; }
     if(to === 'paid'){ var pref = window.prompt('Payment reference for ' + o.ref + ' (optional):', o.payment_ref || ''); if(pref === null) return; if(pref.trim()) row.payment_ref = pref.trim().slice(0, 80); }
