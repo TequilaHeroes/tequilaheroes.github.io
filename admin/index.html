@@ -97,6 +97,7 @@
   .oc-name{font-size:17px;font-weight:600;color:var(--fg);line-height:1.25;margin-top:2px}
   .oc-total{font-size:21px;font-weight:700;color:var(--gold-bright);text-align:right;white-space:nowrap;line-height:1}
   .oc-when{font-size:12px;color:var(--faint);text-align:right;margin-top:3px;white-space:nowrap}
+  .oc-pay{display:inline-block;margin:8px 0 0;font-size:14.5px;font-weight:700;padding:3px 11px}
   .oc-pills{margin-top:8px}
   .oc-items{font-size:15px;font-weight:600;color:var(--fg);margin:11px 0 4px}
   .ocard .s{margin-top:3px}
@@ -1196,16 +1197,18 @@
       // deliver orders split the last step: Out for delivery (sets dispatched) then Delivered
       if(!partner && isDeliver && o.status === 'paid') nx = o.dispatched_at ? ['done', 'Delivered'] : ['dispatch', 'Out for delivery'];
       var dl = isDeliver ? deliveryLine(o) : '', story = orderStory(o), ps = payShare(o), pay = paymentStatus(o), ship = shippingStatus(o);
+      // payment status moves to the right under the amount (big + bold); the left row keeps shipping + any flags
+      var ocPills = (ship ? '<span class="pill ' + ship.cls + '">' + ship.label + '</span>' : '') +
+        (o.edited_at && o.status === 'new' ? '<span class="pill off">Changed by customer</span>' : '') +
+        (o.status === 'cancelled' && o.cancelled_by === 'customer' ? '<span class="pill off">Cancelled by customer</span>' : '');
       return '<div class="ocard">' +
         '<div class="oc-head">' +
           '<div><div class="oc-ref">' + esc(o.ref) + '</div>' +
             '<div class="oc-name">' + esc([o.first_name, o.last_name].filter(Boolean).join(' ')) + '</div></div>' +
-          '<div><div class="oc-total">' + rand(o.total) + '</div><div class="oc-when">' + hm(o.created_at) + '</div></div>' +
+          '<div style="text-align:right"><div class="oc-total">' + rand(o.total) + '</div><div class="oc-when">' + hm(o.created_at) + '</div>' +
+            '<span class="pill ' + pay.cls + ' oc-pay">' + pay.label + '</span></div>' +
         '</div>' +
-        '<div class="oc-pills"><span class="pill ' + pay.cls + '">' + pay.label + '</span>' +
-          (ship ? '<span class="pill ' + ship.cls + '">' + ship.label + '</span>' : '') +
-          (o.edited_at && o.status === 'new' ? '<span class="pill off">Changed by customer</span>' : '') +
-          (o.status === 'cancelled' && o.cancelled_by === 'customer' ? '<span class="pill off">Cancelled by customer</span>' : '') + '</div>' +
+        (ocPills ? '<div class="oc-pills">' + ocPills + '</div>' : '') +
         '<div class="oc-items">' + esc(orderItems(o)) + '</div>' +
         '<div class="s">' + (isDeliver ? '<span class="oc-tag deliver">Deliver</span>' + esc(o.address) : '<span class="oc-tag collect">Collect</span>') + '</div>' +
         (o.note ? '<div class="s">\"' + esc(o.note) + '\"</div>' : '') +
