@@ -1411,7 +1411,7 @@
   }
   function renderPayments(){
     var open = payOpen();
-    if(!open.length){ $('pay-list').innerHTML = '<div class="empty">No open orders are on Creative Beverages yet.</div>'; $('pay-badge').hidden = true; return; }
+    if(!open.length){ $('pay-stat').textContent = ''; $('pay-list').innerHTML = '<div class="empty">No open orders are on Creative Beverages yet.</div>'; $('pay-badge').hidden = true; return; }
     var byRef = {}; (payChecked || []).forEach(function(r){ byRef[r.ref] = r; });
     var unpaid = 0;
     $('pay-list').innerHTML = open.map(function(o){
@@ -1425,6 +1425,10 @@
         '<div style="margin-top:4px">' + payChip(cb, paid) + fixed + '</div>' +
       '</div>';
     }).join('');
+    // Tally across ALL open orders (incl. ones already paid) so it matches the pills; before a check it reflects stored status.
+    var fixedN = (payChecked || []).filter(function(r){ return r.applied === 'paid'; }).length;
+    $('pay-stat').innerHTML = '<b>' + (open.length - unpaid) + '</b> of ' + open.length + ' paid' +
+      (fixedN ? ' · <span style="color:var(--agave)">' + fixedN + ' just confirmed from CB</span>' : '');
     $('pay-badge').hidden = !unpaid; $('pay-badge').textContent = unpaid;
   }
   function loadPayments(){
@@ -1456,10 +1460,8 @@
       b.disabled = false; b.textContent = 'Check payments with CB';
       payChecked = r.data.orders || [];
       $('pay-at').textContent = 'Checked ' + new Date().toLocaleTimeString('en-ZA', { hour:'2-digit', minute:'2-digit' });
-      $('pay-stat').innerHTML = '<b>' + r.data.paid + '</b> of ' + r.data.checked + ' paid' +
-        (r.data.fixed ? ' · <span style="color:var(--agave)">' + r.data.fixed + ' just reconciled from CB</span>' : '');
       if(r.data.fixed) loadOrders();   // some orders flipped to Paid: refresh the Orders tab and its Paid tags
-      renderPayments();
+      renderPayments();                // renderPayments owns the paid-tally now, so it always matches the pills
     });
   }
   $('pay-check').addEventListener('click', checkPayments);
