@@ -89,6 +89,13 @@
   body.partner .tabs button[data-tab]:not([data-tab="orders"]), body.partner .team-only{display:none!important}
   .acts{display:flex;flex-wrap:wrap;gap:4px 12px;justify-content:flex-end;margin-top:4px}
   .gidtag{font-size:12.5px;letter-spacing:.08em;font-weight:700;color:var(--gold-bright)}
+  /* "who already did what" badge on a contact / order card, and the Activity feed */
+  .did{font-size:12.5px;color:var(--muted);margin-top:6px;display:flex;flex-wrap:wrap;gap:1px 5px;align-items:baseline;line-height:1.3}
+  .did .who{color:var(--fg);font-weight:600} .did b{color:var(--gold-bright);font-weight:600} .did .when{color:var(--faint)}
+  .did.sent{color:var(--agave)} .did.sent .who,.did.sent b{color:var(--agave)}
+  .feed.item{align-items:baseline} .feed .t{font-weight:500;color:var(--muted)} .feed .who{color:var(--fg);font-weight:600} .feed b{color:var(--gold-bright);font-weight:600}
+  .feed.sent .who,.feed.sent b{color:var(--agave)}
+  .feed .when{font-size:12px;color:var(--faint);text-align:right;white-space:nowrap;min-width:84px}
   select.mini{width:auto;font-size:13px;padding:4px 8px;border-radius:8px}
   .msgbox{width:100%;min-height:150px;font-size:14px}
   @media(max-width:560px){.row{flex-direction:column;gap:0}}
@@ -177,6 +184,7 @@
       <button type="button" role="tab" aria-selected="true" data-tab="stockists">Stockists</button>
       <button type="button" role="tab" aria-selected="false" data-tab="contacts">Contacts</button>
       <button type="button" role="tab" aria-selected="false" data-tab="orders">Orders <span id="o-badge" class="pill" hidden></span></button>
+      <button type="button" role="tab" aria-selected="false" data-tab="activity">Activity</button>
       <button type="button" role="tab" aria-selected="false" data-tab="till">Till</button>
       <button type="button" role="tab" aria-selected="false" data-tab="sales">Sales</button>
       <button type="button" role="tab" aria-selected="false" data-tab="photos">Photos</button>
@@ -261,10 +269,11 @@
     <!-- orders (members ordering at tequilaheroes.com/order/) -->
     <section id="t-orders" hidden>
       <div class="bar">
-        <select id="o-filter" style="width:auto"><option value="open">Open orders</option><option value="">All orders</option><option value="done">Done</option><option value="cancelled">Cancelled</option></select>
+        <select id="o-filter" style="width:auto"><option value="open">Open orders</option><option value="">All orders</option><option value="todeliver">To deliver</option><option value="delivered">Delivered</option><option value="done">Done</option><option value="cancelled">Cancelled</option></select>
         <span class="stat" id="o-stat"></span>
         <button type="button" id="o-csv" style="margin-left:auto">Export CSV</button>
       </div>
+      <div class="stat team-only" id="o-deliv" style="margin:0 0 10px"></div>
       <div class="list" id="o-list"></div>
       <div class="team-only">
       <h4>Prices <span style="text-transform:none;letter-spacing:0">(members' = Galindo ID with the mates rate; retail = direct sales to anyone else, blank = members only)</span></h4>
@@ -280,6 +289,16 @@
         <div class="s" id="em-how" style="margin-top:8px">Loading...</div>
       </div></div>
       </div>
+    </section>
+
+    <!-- activity: who on the team has done what, newest first, so nobody double-messages a member -->
+    <section id="t-activity" hidden>
+      <p class="muted" style="margin:0 0 10px;font-size:13.5px">Everything the team does to a member or an order shows up here, with who did it. Check it before you send an ID or a pay link, so people don't get the same message twice.</p>
+      <div class="bar">
+        <input id="a-q" placeholder="Search name, order, Galindo ID..." style="flex:1;min-width:160px">
+        <label class="checks" style="margin:0"><label><input type="checkbox" id="a-mine"> Only mine</label></label>
+      </div>
+      <div class="list" id="a-list"></div>
     </section>
 
     <!-- sales (imported from the till iPad) -->
@@ -506,10 +525,125 @@
   function esc(s){ return String(s == null ? '' : s).replace(/[&<>"']/g, function(c){ return '&#' + c.charCodeAt(0) + ';'; }); }
   function day(t){ return t ? new Date(t).toLocaleDateString('en-ZA', { day:'numeric', month:'short', year:'numeric' }) : ''; }
 
+  /* ---------- activity log: who did what, so several admins don't double up on a member ---------- */
+  var ME = '';                                 // my email, set at sign-in; used to say "You"
+  var activity = [], actByContact = {}, actByOrder = {};
+  var ACT = {                                  // sent: a message probably went out, so warn before repeating
+    id_issued:      { t:'gave the ID',             sent:false },
+    id_sent:        { t:'sent the ID',             sent:true  },
+    link_copied:    { t:'copied the ID link',      sent:true  },
+    welcome_sent:   { t:'sent a welcome link',     sent:true  },
+    welcome_copied: { t:'copied a welcome link',   sent:true  },
+    opt_out:        { t:'opted them out',          sent:false },
+    sent_to_cb:     { t:'sent to Creative Beverages', sent:true },
+    order_whatsapp: { t:'messaged them',           sent:true  },
+    invoiced:        { t:'added the CB invoice',    sent:false },
+    pay_link_set:    { t:'set the pay link',        sent:false },
+    paid:            { t:'marked paid',             sent:false },
+    out_for_delivery:{ t:'sent it out for delivery',sent:false },
+    collected:       { t:'marked handed over',      sent:false },
+    thank_you:       { t:'sent the thank-you',      sent:true  },
+    cancelled:       { t:'cancelled it',            sent:false }
+  };
+  function actText(a){
+    if(a.action === 'order_whatsapp' && a.detail && a.detail.status === 'invoiced') return 'sent the pay link';
+    if(a.action === 'collected' && a.detail && a.detail.fulfilment === 'deliver') return 'marked delivered';
+    return (ACT[a.action] || { t:a.action }).t;
+  }
+  function actSent(a){
+    if(a.action === 'order_whatsapp') return !!(a.detail && a.detail.status === 'invoiced');
+    return !!(ACT[a.action] && ACT[a.action].sent);
+  }
+  function actWho(a){ return (a.actor_email && a.actor_email === ME) ? 'You' : (a.actor_name || 'Someone'); }
+  function ago(t){
+    var s = Math.max(0, (Date.now() - new Date(t).getTime()) / 1000);
+    if(s < 50) return 'just now';
+    if(s < 3600) return Math.round(s / 60) + 'm ago';
+    if(s < 86400) return Math.round(s / 3600) + 'h ago';
+    var d = Math.round(s / 86400); return d + (d === 1 ? ' day ago' : ' days ago');
+  }
+  function stamp(t){
+    var d = new Date(t), same = d.toDateString() === new Date().toDateString();
+    return d.toLocaleTimeString('en-ZA', { hour:'2-digit', minute:'2-digit' }) + ' · ' +
+      (same ? 'today' : d.toLocaleDateString('en-ZA', { day:'numeric', month:'short' }));
+  }
+  // the newest logged action for a contact / order, as an inline badge (empty if none)
+  function didBadge(map, id){
+    var list = map[id]; if(!list || !list.length) return '';
+    var a = list[0], sent = actSent(a);
+    return '<div class="did' + (sent ? ' sent' : '') + '">' + (sent ? '✓ ' : '') +
+      '<span class="who">' + esc(actWho(a)) + '</span> <b>' + esc(actText(a)) + '</b> ' +
+      '<span class="when">' + esc(ago(a.created_at)) + '</span></div>';
+  }
+  function indexActivity(){
+    actByContact = {}; actByOrder = {};
+    activity.forEach(function(a){
+      if(a.contact_id){ (actByContact[a.contact_id] = actByContact[a.contact_id] || []).push(a); }
+      if(a.order_id){ (actByOrder[a.order_id] = actByOrder[a.order_id] || []).push(a); }
+    });
+  }
+  // record an action against the signed-in admin; best-effort, it never blocks the action itself
+  function logAct(action, o){
+    o = o || {};
+    sb.rpc('log_activity', { p:{ action:action, contact:o.contact || null, order:o.order || null, subject:o.subject || '', detail:o.detail || {} } })
+      .then(function(r){
+        if(r.error || !r.data || !r.data.ok) return;
+        activity.unshift({ id:r.data.id, created_at:r.data.created_at, actor_email:r.data.actor_email, actor_name:r.data.actor_name,
+          action:action, contact_id:o.contact || null, order_id:o.order || null, subject:o.subject || '', detail:o.detail || {} });
+        indexActivity();
+        if(o.contact && contacts.length) renderContacts();
+        if(o.order && orders.length) renderOrders();
+        if(!$('t-activity').hidden) renderFeed();
+      }, function(){});
+  }
+  function loadActivity(){
+    sb.from('admin_activity').select('*').order('created_at', { ascending:false }).limit(1000).then(function(r){
+      if(r.error) return;                      // table isn't there until the activity SQL is run; fail quietly
+      activity = r.data || []; indexActivity();
+      if(!partner && contacts.length) renderContacts();
+      if(orders.length) renderOrders();
+      if(!$('t-activity').hidden) renderFeed();
+    });
+  }
+  // live updates: the moment any admin logs an action, it lands on everyone's screen (no waiting for the 60s refresh)
+  var activitySub = null;
+  function subscribeActivity(){
+    if(activitySub || !sb.channel) return;
+    activitySub = sb.channel('admin-activity')
+      .on('postgres_changes', { event:'INSERT', schema:'public', table:'admin_activity' }, function(payload){
+        var a = payload && payload.new; if(!a || !a.id) return;
+        if(activity.some(function(x){ return x.id === a.id; })) return;   // our own action, already shown
+        activity.unshift(a); indexActivity();
+        if(!partner && contacts.length) renderContacts();
+        if(orders.length) renderOrders();
+        if(!$('t-activity').hidden) renderFeed();
+      })
+      .subscribe();
+  }
+  function unsubscribeActivity(){ if(activitySub){ try{ sb.removeChannel(activitySub); }catch(e){} activitySub = null; } }
+  function renderFeed(){
+    var q = $('a-q').value.trim().toLowerCase(), mine = $('a-mine').checked;
+    var list = activity.filter(function(a){
+      if(mine && a.actor_email !== ME) return false;
+      if(!q) return true;
+      return [a.subject, a.actor_name, actText(a)].join(' ').toLowerCase().indexOf(q) >= 0;
+    });
+    $('a-list').innerHTML = list.length ? list.map(function(a){
+      var sent = actSent(a);
+      return '<div class="item feed' + (sent ? ' sent' : '') + '"><div><div class="t">' +
+        '<span class="who">' + esc(actWho(a)) + '</span> ' + (sent ? '✓ ' : '') + '<b>' + esc(actText(a)) + '</b></div>' +
+        (a.subject ? '<div class="s">' + esc(a.subject) + '</div>' : '') + '</div>' +
+        '<div class="when">' + esc(stamp(a.created_at)) + '</div></div>';
+    }).join('') : '<div class="empty">' + (activity.length ? 'Nothing matches that.' : 'No activity logged yet. It fills up as the team messages members and moves orders along.') + '</div>';
+  }
+  $('a-q').addEventListener('input', renderFeed);
+  $('a-mine').addEventListener('change', renderFeed);
+
   /* ---------- sign in / out ---------- */
   function show(session){
     $('v-login').hidden = !!session; $('v-app').hidden = !session;
-    if(!session){ teamOk = false; return; }
+    if(!session){ teamOk = false; ME = ''; unsubscribeActivity(); return; }
+    ME = (session.user.email || '').toLowerCase();
     $('who').textContent = session.user.email;
     Promise.all([sb.rpc('is_team'), sb.rpc('is_partner')]).then(function(r){
       var team = r[0].data === true; partner = !team && r[1].data === true;
@@ -536,15 +670,16 @@
   document.querySelector('.tabs').addEventListener('click', function(e){
     var b = e.target.closest('button[data-tab]'); if(!b) return;
     [].forEach.call(this.querySelectorAll('button[data-tab]'), function(x){ x.setAttribute('aria-selected', String(x === b)); });
-    ['stockists', 'contacts', 'orders', 'till', 'sales', 'photos', 'traffic'].forEach(function(t){ $('t-' + t).hidden = b.dataset.tab !== t; });
+    ['stockists', 'contacts', 'orders', 'activity', 'till', 'sales', 'photos', 'traffic'].forEach(function(t){ $('t-' + t).hidden = b.dataset.tab !== t; });
     if(b.dataset.tab === 'traffic') loadTraffic();
+    if(b.dataset.tab === 'activity') renderFeed();
   });
 
   /* ---------- refresh: button, every minute while the page is open, and on coming back to it ---------- */
   var teamOk = false;
   var partner = false;   // Creative Beverages login: Orders tab only, orders sent to them
   function refreshAll(){
-    teamOk = true; loadOrders(); if(!partner){ loadStockists(); loadContacts(); loadSales(); loadTill(); loadAlbums(); collectFromHash(); openTabFromHash(); if(!$('t-traffic').hidden) loadTraffic(); }
+    teamOk = true; loadOrders(); loadActivity(); subscribeActivity(); if(!partner){ loadStockists(); loadContacts(); loadSales(); loadTill(); loadAlbums(); collectFromHash(); openTabFromHash(); if(!$('t-traffic').hidden) loadTraffic(); }
     $('r-at').textContent = 'Updated ' + new Date().toLocaleTimeString('en-ZA', { hour:'2-digit', minute:'2-digit', second:'2-digit' });
   }
   function busy(){ return !$('s-form').hidden || !$('x-form').hidden || !$('c-msg-card').hidden || (document.activeElement && /INPUT|SELECT|TEXTAREA/.test(document.activeElement.tagName)); }
@@ -642,13 +777,15 @@
         (c.favourite ? '<span class="pill">' + esc(c.favourite) + '</span>' : '') +
         (c.sources || []).map(function(s){ return '<span class="pill" style="color:var(--muted)">' + esc(SRC[s] || s) + '</span>'; }).join('') + '</div>' +
         ((c.interests || []).length ? '<div class="s">Interested in: ' + esc(c.interests.join(', ')) + '</div>' : '') +
+        (c.heard_about ? '<div class="s">Heard via: ' + esc(c.heard_about) + '</div>' : '') +
         (c.notes ? '<div class="s">\"' + esc(c.notes) + '\"</div>' : '') +
         (c.galindo_id ? '<div class="s" style="margin-top:4px"><span class="gidtag">' + esc(c.galindo_id) + '</span> · <select class="mini" data-tier="' + c.id + '">' +
           ['reposado', 'anejo', 'extra'].map(function(t){ return '<option value="' + t + '"' + (c.tier === t ? ' selected' : '') + '>' + TIER[t] + '</option>'; }).join('') + '</select>' +
           ' <label style="display:inline-flex;align-items:center;gap:5px;margin:0 0 0 6px;text-transform:none;letter-spacing:0;font-size:13px;color:var(--fg);font-weight:500">' +
-          '<input type="checkbox" data-mates="' + c.id + '"' + (c.mates ? ' checked' : '') + ' style="width:16px;height:16px;accent-color:var(--gold)"> Mates rate</label></div>' : '') + '</div>' +
+          '<input type="checkbox" data-mates="' + c.id + '"' + (c.mates ? ' checked' : '') + ' style="width:16px;height:16px;accent-color:var(--gold)"> Mates rate</label></div>' : '') +
+        didBadge(actByContact, c.id) + '</div>' +
         '<div style="text-align:right"><div class="s">' + day(c.created_at) + '</div><div class="acts">' +
-        (c.galindo_id ? (c.mobile_norm ? '<a class="link" style="color:var(--agave);font-weight:600;font-size:14px" target="_blank" rel="noopener" href="' + waLink(c) + '">WhatsApp ID</a>' : '') +
+        (c.galindo_id ? (c.mobile_norm ? '<a class="link" style="color:var(--agave);font-weight:600;font-size:14px" data-waid="' + c.id + '" target="_blank" rel="noopener" href="' + waLink(c) + '">WhatsApp ID</a>' : '') +
             '<button class="link" type="button" data-copy="' + c.id + '">Copy link</button>'
           : '<button class="link" type="button" data-issue="' + c.id + '">Give Galindo ID</button>') +
         (c.consent ? '<button class="link danger" type="button" data-optout="' + c.id + '">Opt out</button>' : '') + '</div></div></div>';
@@ -656,22 +793,30 @@
   }
   $('c-q').addEventListener('input', renderContacts);
   $('c-opt').addEventListener('change', renderContacts);
+  function subjC(c){ return c ? [c.first_name, c.last_name].filter(Boolean).join(' ') + (c.galindo_id ? ' · ' + c.galindo_id : '') : ''; }
   $('c-list').addEventListener('click', function(e){
+    // WhatsApp the ID: the link opens on its own (we don't block it), we just record that it was sent
+    var wa = e.target.closest('[data-waid]');
+    if(wa){ var cwa = contacts.filter(function(x){ return x.id === wa.dataset.waid; })[0]; if(cwa) logAct('id_sent', { contact:cwa.id, subject:subjC(cwa) }); return; }
     var iss = e.target.closest('[data-issue]'), cp = e.target.closest('[data-copy]');
     if(iss){ iss.disabled = true; sb.rpc('issue_galindo_id', { contact:iss.dataset.issue }).then(function(r){
-      if(r.error){ alert('No ID issued: ' + r.error.message); iss.disabled = false; return; } loadContacts(); }); return; }
+      if(r.error){ alert('No ID issued: ' + r.error.message); iss.disabled = false; return; }
+      var ci = contacts.filter(function(x){ return x.id === iss.dataset.issue; })[0];
+      logAct('id_issued', { contact:iss.dataset.issue, subject:(ci ? ci.first_name + ' · ' : '') + (r.data || '') });
+      loadContacts(); }); return; }
     if(cp){ var cc = contacts.filter(function(x){ return x.id === cp.dataset.copy; })[0];
-      copyText(memberLink(cc)).then(function(){ cp.textContent = 'Copied ✓'; setTimeout(function(){ cp.textContent = 'Copy link'; }, 1500); }); return; }
+      copyText(memberLink(cc)).then(function(){ cp.textContent = 'Copied ✓'; setTimeout(function(){ cp.textContent = 'Copy link'; }, 1500); });
+      logAct('link_copied', { contact:cc.id, subject:subjC(cc) }); return; }
     var b = e.target.closest('[data-optout]'); if(!b) return;
     var c = contacts.filter(function(x){ return x.id === b.dataset.optout; })[0];
     if(!c || !confirm('Opt ' + c.first_name + ' out of marketing? Only do this if they asked to be removed.')) return;
     sb.from('contacts').update({ consent:false }).eq('id', c.id).then(function(r){
       if(r.error){ alert('Not changed: ' + r.error.message); return; }
-      c.consent = false; renderContacts();
+      c.consent = false; logAct('opt_out', { contact:c.id, subject:subjC(c) }); renderContacts();
     });
   });
   $('c-csv').addEventListener('click', function(){
-    var cols = ['created_at','first_name','last_name','mobile','email','consent','favourite','interests','sources','notes','galindo_id','tier','member_link'];
+    var cols = ['created_at','first_name','last_name','mobile','email','consent','favourite','heard_about','interests','sources','notes','galindo_id','tier','member_link'];
     var cell = function(v){ var t = Array.isArray(v) ? v.join('; ') : String(v == null ? '' : v); if(/^[=+\-@\t\r]/.test(t)) t = "'" + t; return '"' + t.replace(/"/g, '""') + '"'; };
     var csv = cols.join(',') + '\n' + filtered().map(function(c){ return cols.map(function(k){ return cell(k === 'member_link' ? (c.galindo_id ? memberLink(c) : '') : c[k]); }).join(','); }).join('\n');
     var a = document.createElement('a'); a.href = URL.createObjectURL(new Blob(['' + csv], { type:'text/csv' }));
@@ -708,7 +853,8 @@
     var n = contacts.filter(function(c){ return c.consent && !c.galindo_id; }).length;
     if(!n){ alert('Everyone who opted in already has a Galindo ID.'); return; }
     if(!confirm('Give a Galindo ID to ' + n + ' opted-in contact' + (n === 1 ? '' : 's') + '? Nothing is sent: you send each one from their WhatsApp ID button.')) return;
-    sb.rpc('issue_galindo_ids_opted_in').then(function(r){ if(r.error){ alert('Not done: ' + r.error.message); return; } loadContacts(); });
+    sb.rpc('issue_galindo_ids_opted_in').then(function(r){ if(r.error){ alert('Not done: ' + r.error.message); return; }
+      logAct('id_issued', { subject:(r.data || n) + ' opted-in contacts', detail:{ count:r.data || n, bulk:true } }); loadContacts(); });
   });
   $('c-msg-edit').addEventListener('click', function(){ $('c-msg').value = msgTemplate(); $('c-msg-card').hidden = false; });
   $('c-msg-done').addEventListener('click', function(){ try{ localStorage.setItem(MSG_KEY, $('c-msg').value); }catch(e){} $('c-msg-card').hidden = true; renderContacts(); });
@@ -720,9 +866,41 @@
   var STATUS = { 'new':'New', sent:'With Creative Beverages', invoiced:'Invoiced', paid:'Paid', done:'Done', cancelled:'Cancelled' };
   var NEXT = { 'new':['sent', 'Send to Creative Beverages'], sent:['invoiced', 'Add CB invoice no.'], invoiced:['paid', 'Mark paid'], paid:['done', collectLabel] };
   function collectLabel(o){ return o.fulfilment === 'deliver' ? 'Delivered' : 'Collected'; }
+  // "1d 3h" / "4h 20m" / "35m" from a millisecond gap
+  function dur(ms){
+    var m = Math.max(0, Math.round(ms / 60000));
+    if(m < 60) return m + 'm';
+    var h = Math.floor(m / 60), mm = m % 60;
+    if(h < 24) return h + 'h' + (mm ? ' ' + mm + 'm' : '');
+    var d = Math.floor(h / 24), hh = h % 24;
+    return d + 'd' + (hh ? ' ' + hh + 'h' : '');
+  }
+  // how long a delivery took: dispatched -> delivered when we have both, else paid -> delivered
+  function deliverMs(o){
+    if(!o.done_at) return null;
+    if(o.dispatched_at) return new Date(o.done_at) - new Date(o.dispatched_at);
+    if(o.paid_at) return new Date(o.done_at) - new Date(o.paid_at);
+    return null;
+  }
+  // the delivery status line on a deliver order's card (state + how long + the courier link)
+  function deliveryLine(o){
+    if(o.fulfilment !== 'deliver') return '';
+    var link = o.track_url ? ' · <a href="' + esc(o.track_url) + '" target="_blank" rel="noopener" style="color:var(--gold);font-weight:600">Track parcel &#8599;</a>' : '';
+    if(o.status === 'done'){ var ms = deliverMs(o); return '<span style="color:var(--agave);font-weight:600">&#10003; Delivered' + (ms != null ? ' in ' + dur(ms) : '') + '</span>' + link; }
+    if(o.dispatched_at){ return '<span style="color:var(--gold-bright);font-weight:600">Out for delivery &middot; ' + dur(Date.now() - new Date(o.dispatched_at)) + ' so far</span>' + link; }
+    if(['sent', 'invoiced', 'paid'].indexOf(o.status) >= 0){ return '<span style="color:var(--muted)">To dispatch</span>' + link; }
+    return link ? '<span style="color:var(--muted)">For delivery</span>' + link : '';
+  }
   // iKhokha iK Pay link for the order (made in Creative Beverages' iKhokha app); shows as "Pay now" on the member's page
   function askPayLink(o){
     var v = window.prompt('iKhokha Pay link for ' + o.ref + ' (' + rand(o.total) + '). Paste it, or leave blank to skip:', o.pay_url || '');
+    if(v === null) return false; v = v.trim(); if(!v) return '';
+    if(!/^https:\/\/\S+$/.test(v)){ alert('That doesn\'t look like a link. It should start with https://'); return false; }
+    return v.slice(0, 500);
+  }
+  // courier tracking link for a delivery (the live "track my parcel" URL from Creative Beverages)
+  function askTrack(o){
+    var v = window.prompt('Courier tracking link for ' + o.ref + '. Paste the URL, or leave blank:', o.track_url || '');
     if(v === null) return false; v = v.trim(); if(!v) return '';
     if(!/^https:\/\/\S+$/.test(v)){ alert('That doesn\'t look like a link. It should start with https://'); return false; }
     return v.slice(0, 500);
@@ -791,16 +969,32 @@
       emailAlerts.value = v;
     });
   });
-  function shownOrders(){ var f = $('o-filter').value; return orders.filter(function(o){ return !f ? true : f === 'open' ? ['done', 'cancelled'].indexOf(o.status) < 0 : o.status === f; }); }
+  function shownOrders(){ var f = $('o-filter').value; return orders.filter(function(o){
+    if(f === 'todeliver') return o.fulfilment === 'deliver' && ['done', 'cancelled'].indexOf(o.status) < 0;
+    if(f === 'delivered') return o.fulfilment === 'deliver' && o.status === 'done';
+    return !f ? true : f === 'open' ? ['done', 'cancelled'].indexOf(o.status) < 0 : o.status === f;
+  }); }
   function orderItems(o){ return (o.items || []).map(function(i){ return i.qty + '× ' + String(i.name).replace('Galindo ', ''); }).join(', '); }
   function renderOrders(){
     var list = shownOrders(), fresh = orders.filter(function(o){ return o.status === (partner ? 'sent' : 'new'); }).length;
     $('o-badge').hidden = !fresh; $('o-badge').textContent = fresh;
     var open = orders.filter(function(o){ return ['done', 'cancelled'].indexOf(o.status) < 0; });
     $('o-stat').innerHTML = '<b>' + open.length + '</b> open · ' + rand(open.reduce(function(t, o){ return t + Number(o.total); }, 0));
+    if($('o-deliv')){
+      var dOut = orders.filter(function(o){ return o.fulfilment === 'deliver' && o.dispatched_at && ['done', 'cancelled'].indexOf(o.status) < 0; });
+      var dDone = orders.filter(function(o){ return o.fulfilment === 'deliver' && o.status === 'done'; });
+      var ms = dDone.map(deliverMs).filter(function(x){ return x != null; });
+      var avg = ms.length ? dur(ms.reduce(function(a, b){ return a + b; }, 0) / ms.length) : null;
+      $('o-deliv').innerHTML = (dOut.length || dDone.length)
+        ? 'Deliveries: <b>' + dOut.length + '</b> out for delivery · <b>' + dDone.length + '</b> delivered' + (avg ? ' · avg ' + avg : '')
+        : '';
+    }
     $('o-list').innerHTML = list.length ? list.map(function(o){
-      var nx = NEXT[o.status], mob = waNumber(o);
+      var nx = NEXT[o.status], mob = waNumber(o), isDeliver = o.fulfilment === 'deliver';
       if(partner && ['sent', 'invoiced'].indexOf(o.status) < 0) nx = null;
+      // deliver orders split the last step: Out for delivery (sets dispatched) then Delivered
+      if(!partner && isDeliver && o.status === 'paid') nx = o.dispatched_at ? ['done', 'Delivered'] : ['dispatch', 'Out for delivery'];
+      var dl = isDeliver ? deliveryLine(o) : '';
       return '<div class="item"><div><div class="t">' + esc(o.ref) + ' · ' + esc([o.first_name, o.last_name].filter(Boolean).join(' ')) + '</div>' +
         '<div class="s">' + esc(orderItems(o)) + '</div>' +
         '<div class="s">' + (o.fulfilment === 'deliver' ? 'Deliver to: ' + esc(o.address) : 'Collect') + '</div>' +
@@ -810,21 +1004,37 @@
         (o.pay_url ? '<div class="s">Pay link: <a href="' + esc(o.pay_url) + '" target="_blank" rel="noopener" style="color:var(--gold)">' + esc(o.pay_url.replace(/^https:\/\//, '').slice(0, 40)) + '...</a></div>' : '') +
         '<div><span class="pill' + (o.status === 'new' ? ' off' : o.status === 'done' || o.status === 'paid' ? ' yes' : '') + '">' + STATUS[o.status] + '</span>' +
           (o.edited_at && o.status === 'new' ? '<span class="pill off">Changed by customer</span>' : '') +
-          (o.status === 'cancelled' && o.cancelled_by === 'customer' ? '<span class="pill off">Cancelled by customer</span>' : '') + '</div></div>' +
+          (o.status === 'cancelled' && o.cancelled_by === 'customer' ? '<span class="pill off">Cancelled by customer</span>' : '') + '</div>' +
+          (dl ? '<div class="s" style="margin-top:4px">' + dl + '</div>' : '') +
+          didBadge(actByOrder, o.id) + '</div>' +
         '<div style="text-align:right"><div class="t">' + rand(o.total) + '</div><div class="s">' + hm(o.created_at) + '</div><div class="acts">' +
-        (mob && !partner ? '<a class="link" style="color:var(--agave);font-weight:600;font-size:14px" target="_blank" rel="noopener" href="https://wa.me/' + mob + '?text=' +
-          encodeURIComponent(waText(o)) + '">WhatsApp ' + o.first_name + '</a>' : '') +
+        (mob && !partner ? '<a class="link" style="color:var(--agave);font-weight:600;font-size:14px" data-' + (isDeliver && o.status === 'done' ? 'thanks' : 'wao') + '="' + o.id + '" target="_blank" rel="noopener" href="https://wa.me/' + mob + '?text=' +
+          encodeURIComponent(waText(o)) + '">' + (isDeliver && o.status === 'done' ? 'Thank you &amp; enjoy' : 'WhatsApp ' + o.first_name) + '</a>' : '') +
         (nx ? '<button class="link" type="button" data-ost="' + o.id + '" data-to="' + nx[0] + '">' + (typeof nx[1] === 'function' ? nx[1](o) : nx[1]) + '</button>' : '') +
         (o.status === 'invoiced' ? '<button class="link" type="button" data-ost="' + o.id + '" data-to="paylink">' + (o.pay_url ? 'Change Pay link' : 'Add Pay link') + '</button>' : '') +
+        (!partner && isDeliver && ['sent', 'invoiced', 'paid', 'done'].indexOf(o.status) >= 0 ? '<button class="link" type="button" data-ost="' + o.id + '" data-to="track">' + (o.track_url ? 'Change track link' : 'Add track link') + '</button>' : '') +
         (!partner && ['done', 'cancelled'].indexOf(o.status) < 0 ? '<button class="link danger" type="button" data-ost="' + o.id + '" data-to="cancelled">Cancel</button>' : '') +
         '</div></div></div>';
     }).join('') : '<div class="empty">' + (orders.length ? 'No orders here.' : 'No orders yet. They arrive here when members order on tequilaheroes.com/order/.') + '</div>';
   }
   $('o-filter').addEventListener('change', renderOrders);
+  function subjO(o){ return o ? o.ref + ' · ' + [o.first_name, o.last_name].filter(Boolean).join(' ') : ''; }
   $('o-list').addEventListener('click', function(e){
+    // WhatsApp the customer: the link opens on its own, we just record it (and whether it carried the pay link)
+    var wao = e.target.closest('[data-wao]');
+    if(wao){ var ow = orders.filter(function(x){ return x.id === wao.dataset.wao; })[0];
+      if(ow) logAct('order_whatsapp', { order:ow.id, subject:subjO(ow), detail:{ status:ow.status } }); return; }
+    // "Thank you & enjoy" on a delivered order: the WhatsApp opens on its own, we record who sent it
+    var th = e.target.closest('[data-thanks]');
+    if(th){ var ot = orders.filter(function(x){ return x.id === th.dataset.thanks; })[0];
+      if(ot) logAct('thank_you', { order:ot.id, subject:subjO(ot) }); return; }
     var b = e.target.closest('[data-ost]'); if(!b) return;
     var o = orders.filter(function(x){ return x.id === b.dataset.ost; })[0];
     var to = b.dataset.to, row = { status:to };
+    // "Out for delivery": stamp the dispatch time (status stays as is) and take the courier link
+    if(to === 'dispatch'){ var tl = askTrack(o); if(tl === false) return; row = { dispatched_at:new Date().toISOString() }; if(tl) row.track_url = tl; }
+    // "Add / Change track link": just the courier link
+    if(to === 'track'){ var tl2 = askTrack(o); if(tl2 === false) return; row = { track_url:tl2 || null }; }
     if(to === 'cancelled' && !confirm('Cancel order ' + o.ref + '? Then tap WhatsApp to tell ' + o.first_name + '.')) return;
     if(to === 'sent'){
       if(!confirm('Send ' + o.ref + ' to Creative Beverages? This creates the order on their shop and fetches the Pay link. The customer can no longer change it after this.')) return;
@@ -844,7 +1054,8 @@
             'Couldn\'t send ' + o.ref + ' to Creative Beverages: ' + e + '. You can still use Add Pay link to paste one by hand.');
           return;
         }
-        o.status = 'sent'; o.woo_order_id = d.woo_order_id; if(d.pay_url) o.pay_url = d.pay_url; renderOrders();
+        o.status = 'sent'; o.woo_order_id = d.woo_order_id; if(d.pay_url) o.pay_url = d.pay_url;
+        logAct('sent_to_cb', { order:o.id, subject:subjO(o), detail:{ pay_link:!!d.pay_url } }); renderOrders();
       });
       return;
     }
@@ -857,7 +1068,10 @@
     b.disabled = true;
     sb.from('orders').update(row).eq('id', o.id).then(function(r){
       if(r.error){ alert('Not changed: ' + r.error.message); b.disabled = false; return; }
-      for(var k in row) o[k] = row[k]; renderOrders();
+      for(var k in row) o[k] = row[k];
+      var oa = { invoiced:'invoiced', paylink:'pay_link_set', paid:'paid', dispatch:'out_for_delivery', done:'collected', cancelled:'cancelled' }[to];
+      if(oa) logAct(oa, { order:o.id, subject:subjO(o), detail:oa === 'collected' ? { fulfilment:o.fulfilment } : {} });
+      renderOrders();
     });
   });
   function renderPrices(){
@@ -876,8 +1090,12 @@
     sb.from('price_list').update(row).eq('key', key).then(function(r){ if(r.error){ alert('Not saved: ' + r.error.message); } loadOrders(); });
   });
   $('o-csv').addEventListener('click', function(){
-    var cols = ['ref','created_at','status','cb_invoice','payment_ref','first_name','last_name','mobile','email','galindo_id','items','total','fulfilment','street','suburb','city','postal_code','note','sent_at','invoiced_at','paid_at','done_at'];
-    var csv = cols.join(',') + '\n' + shownOrders().map(function(o){ return cols.map(function(k){ return csvCell(k === 'items' ? orderItems(o) : o[k]); }).join(','); }).join('\n');
+    var cols = ['ref','created_at','status','cb_invoice','payment_ref','first_name','last_name','mobile','email','galindo_id','items','total','fulfilment','street','suburb','city','postal_code','note','sent_at','invoiced_at','paid_at','dispatched_at','done_at','track_url','delivery_hours'];
+    var csv = cols.join(',') + '\n' + shownOrders().map(function(o){ return cols.map(function(k){
+      if(k === 'items') return csvCell(orderItems(o));
+      if(k === 'delivery_hours'){ var ms = deliverMs(o); return csvCell(ms != null ? (ms / 3600000).toFixed(1) : ''); }
+      return csvCell(o[k]);
+    }).join(','); }).join('\n');
     var a = document.createElement('a'); a.href = URL.createObjectURL(new Blob(['\ufeff' + csv], { type:'text/csv' }));
     a.download = 'galindo-orders-' + new Date().toISOString().slice(0, 10) + '.csv'; a.click();
   });
@@ -1476,6 +1694,7 @@
     // open WhatsApp / mail straight from the tap (phones block it if it waits for the network), then save
     if(to.mobile) window.open('https://wa.me/' + to.mobile + '?text=' + encodeURIComponent(msg), '_blank');
     else location.href = 'mailto:' + to.email + '?subject=' + encodeURIComponent('Welcome to Galindo') + '&body=' + encodeURIComponent(msg);
+    logAct('welcome_sent', { contact:(known && known.id) || null, subject:(name || first || raw), detail:{ via:to.mobile ? 'whatsapp' : 'email' } });
     n.textContent = 'Saving to Contacts...';
     sb.rpc('send_welcome', { p:{ first:first, contact:raw } }).then(function(r){
       if(r.error || !r.data.ok){ n.textContent = 'Message opened, but not saved to Contacts: ' + (r.error ? r.error.message : r.data.reason); return; }
@@ -1495,6 +1714,7 @@
       n.className = 'note ok';
       n.textContent = '✓ Message copied, paste it into WhatsApp or anywhere.' + (to ? '' : ' (No cell or email entered, so no one was saved to Contacts.)');
     }, function(){ n.textContent = 'Could not copy automatically, long-press the message to copy it.'; });
+    logAct('welcome_copied', { contact:(known && known.id) || null, subject:(name || first || raw || 'generic message') });
     if(to){ sb.rpc('send_welcome', { p:{ first:first, contact:raw } }).then(function(r){
       if(!r.error && r.data && r.data.ok){ n.textContent += r.data.existing ? ' Already in Contacts (' + r.data.first + '), noted.' : ' Saved to Contacts as "asked for info".'; loadContacts(); }
     }, function(){}); }
