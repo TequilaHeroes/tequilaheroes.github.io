@@ -1384,7 +1384,7 @@
       return;
     }
     if(to === 'invoiced'){
-      var inv = window.prompt('Creative Beverages invoice number for ' + o.ref + ':', o.cb_invoice || ''); if(!inv || !inv.trim()) return; row.cb_invoice = inv.trim().slice(0, 40);
+      var inv = window.prompt('Creative Beverages invoice number for ' + o.ref + (o.woo_order_id && !o.cb_invoice ? ' (pre-filled with CB order ' + o.woo_order_id + '; change it if CB gave a different invoice number)' : '') + ':', o.cb_invoice || (o.woo_order_id ? String(o.woo_order_id) : '')); if(!inv || !inv.trim()) return; row.cb_invoice = inv.trim().slice(0, 40);
       var pl = askPayLink(o); if(pl === false) return; if(pl) row.pay_url = pl;
     }
     if(to === 'paylink'){ var pl2 = askPayLink(o); if(!pl2) return; row = { pay_url:pl2 }; }
