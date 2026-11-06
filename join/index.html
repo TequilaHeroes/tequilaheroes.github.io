@@ -233,6 +233,12 @@
       <button type="button" id="again">Sign up someone else</button>
     </div>
 
+    <div class="gate" id="gate" hidden style="text-align:center">
+      <div class="ctitle">This invite link is incomplete</div>
+      <p class="csub">Galindo memberships come through a personal invite from the team. Ask whoever told you about Galindo for their invite link, it has their name on it, or message us and we'll set you up.</p>
+      <a class="cta" id="gate-wa" rel="noopener noreferrer" target="_blank">Message the Galindo team</a>
+    </div>
+
     <div class="order">
       Already have a Galindo ID from the team?
       <br><a id="order" href="/order/">Open your members' page →</a>
@@ -297,6 +303,7 @@
   var $ = function(id){ return document.getElementById(id); };
   var REF = (new URLSearchParams(location.search).get('ref') || '').toLowerCase().replace(/[^a-z0-9]/g, '').slice(0, 20);  // who invited them
   var SB_HEAD = { 'Content-Type':'application/json', apikey:SUPABASE_KEY, Authorization:'Bearer ' + SUPABASE_KEY };
+  var blocked = false;   // true when there is no valid inviter: the form is replaced by the "ask for an invite" gate
   var fav = '';
   document.querySelectorAll('#fav .chip').forEach(function(b){
     b.addEventListener('click', function(){
@@ -323,6 +330,7 @@
 
   $('signup').addEventListener('submit', function(e){
     e.preventDefault();
+    if(blocked){ showGate(); return; }
     var d = data(), note = $('note'), btn = $('submit'); note.style.color = '';
     $('consent-row').classList.remove('need'); $('fallback').hidden = true;
     if(!d.first){ note.textContent = "Pop your first name in."; $('f-first').focus(); return; }
@@ -363,10 +371,28 @@
     $('done').classList.remove('show'); $('signup').hidden = false; $('f-first').focus();
   });
 
-  // personalise the greeting when someone opened a team member's invite link (/join/?ref=edrich)
-  if(REF){ post(SUPABASE_URL + '/rest/v1/rpc/inviter_name', SB_HEAD, { ref:REF }).then(function(j){
-    if(j && j.ok && j.name){ var h = $('hero-h1'); if(h) h.innerHTML = "You've been<br>invited by " + String(j.name).replace(/[&<>"]/g, '') + "."; }
-  }).catch(function(){}); }
+  // Sign-ups must come through a team member's invite link (/join/?ref=edrich) so every one is credited.
+  // No ref, or a ref that is not a real team member, shows the "ask for an invite" gate instead of the form.
+  // A ref we simply cannot verify right now (a network blip) is let through: record_invite re-checks it server-side.
+  function showGate(){
+    blocked = true;
+    var f = $('signup'); if(f) f.hidden = true;
+    var dn = $('done'); if(dn) dn.classList.remove('show');
+    ['.ctitle', '.csub', '.perks'].forEach(function(sel){ var el = document.querySelector('.capture ' + sel); if(el) el.style.display = 'none'; });
+    var g = $('gate'); if(g) g.hidden = false;
+    var h = $('hero-h1'); if(h) h.innerHTML = "Galindo is<br>invite-only.";
+    var lead = document.querySelector('.lead'); if(lead) lead.textContent = "Memberships come through a personal invite from the team. Grab your inviter's link, or message us and we'll set you up.";
+    var wa = $('gate-wa'); if(wa) wa.href = "https://wa.me/" + WA_NUMBER + "?text=" + encodeURIComponent("Hi! I'd love to join Galindo. Could you send me an invite or set me up with a Galindo ID?");
+  }
+  if(!REF){ showGate(); }
+  else { fetch(SUPABASE_URL + '/rest/v1/rpc/inviter_name', { method:'POST', headers:SB_HEAD, body:JSON.stringify({ ref:REF }) })
+    .then(function(r){ return r.json(); })
+    .then(function(j){
+      if(j && j.ok && j.name){ var h = $('hero-h1'); if(h) h.innerHTML = "You've been<br>invited by " + String(j.name).replace(/[&<>"]/g, '') + "."; }
+      else { showGate(); }   // ref present but not a real team member
+    })
+    .catch(function(){ /* could not verify (offline / blip): allow; the server still validates attribution */ });
+  }
 </script>
 <!-- Cloudflare Web Analytics --><script type='module' src='https://static.cloudflareinsights.com/beacon.min.js' data-cf-beacon='{"token": "9ece67056cf94b17afa92a201a111250"}'></script><!-- End Cloudflare Web Analytics -->
 </body>
