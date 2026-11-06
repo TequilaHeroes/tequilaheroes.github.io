@@ -94,8 +94,9 @@
 
   .field{text-align:left;margin-top:12px}
   .field label{display:block;font-family:var(--sans);font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--faint);font-weight:600;margin:0 2px 6px}
-  .field input{width:100%;font-family:var(--body);font-size:17px;color:var(--fg);background:var(--bg);border:1px solid var(--line);border-radius:12px;padding:14px 15px;transition:border-color .15s}
-  .field input:focus{outline:none;border-color:var(--gold-soft)}
+  .field input, .field select{width:100%;font-family:var(--body);font-size:17px;color:var(--fg);background:var(--bg);border:1px solid var(--line);border-radius:12px;padding:14px 15px;transition:border-color .15s}
+  .field select{appearance:none;-webkit-appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 8' fill='none' stroke='%23c9a44a' stroke-width='1.6'%3E%3Cpath d='M1 1.5 6 6.5 11 1.5'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 16px center;background-size:12px;padding-right:40px}
+  .field input:focus, .field select:focus{outline:none;border-color:var(--gold-soft)}
   .field input::placeholder{color:var(--faint)}
   .two{display:flex;gap:11px}
   .two .field{flex:1;min-width:0}
@@ -142,7 +143,7 @@
   footer .meta{font-family:var(--sans);font-size:11px;letter-spacing:.07em;color:var(--faint);line-height:1.9;margin-top:12px}
   footer .legal{font-family:var(--sans);font-size:10px;letter-spacing:.16em;text-transform:uppercase;color:var(--faint);margin-top:14px}
   .chips.multi .chip[aria-pressed="true"]{background:var(--agave);border-color:var(--agave);color:#10200a}
-  .field .opt{text-transform:none;letter-spacing:0;color:var(--faint);font-weight:500}
+  .opt{text-transform:none;letter-spacing:0;color:var(--faint);font-weight:500}
   .consent.need{color:var(--marigold)}
   .perks{list-style:none;padding:0;margin:18px auto 4px;max-width:30em;text-align:left;display:flex;flex-direction:column;gap:10px}
   .perks li{position:relative;padding-left:26px;color:var(--muted);font-size:16px;line-height:1.45}
@@ -162,14 +163,14 @@
   <div class="eyebrow rise d1">An invitation · Friends of the house</div>
   <img class="hero-logo rise d1" src="/galindo-logo.png" alt="Tequila Galindo">
 
-  <h1 class="rise d2">You've been<br>invited to Galindo.</h1>
+  <h1 class="rise d2" id="hero-h1">You've been<br>invited to Galindo.</h1>
   <p class="lead rise d3">Our 100% blue agave tequila, Los Altos de Jalisco, now in South Africa, <b>at friends-of-the-house prices</b>. Sign up below and the team will set you up.</p>
 </header>
 
 <section class="wrap" style="padding-top:6px">
   <div class="capture rise d4">
     <div class="ctitle">Get your Galindo ID</div>
-    <div class="csub">Your members' card for Galindo. It takes a minute. The team confirms you, then switches on your members' prices.</div>
+    <div class="csub">Your members' card. Takes a minute, then the team says hello and you're in.</div>
     <ul class="perks">
       <li><b>Members' prices on bottles,</b> the friends-of-the-house rate, to collect or have delivered. Switched on once the team has said hello.</li>
       <li><b>Order from your own members' page,</b> whenever you like, a bottle or a case.</li>
@@ -185,7 +186,7 @@
         <button class="chip" type="button" aria-pressed="false" data-v="All of them">All of them</button>
       </div>
 
-      <div class="qlabel">Keep me posted about</div>
+      <div class="qlabel">What interests you? <span class="opt">(pick a few)</span></div>
       <div class="chips multi" id="topics">
         <button class="chip" type="button" aria-pressed="true" data-v="Ordering bottles">Ordering bottles</button>
         <button class="chip" type="button" aria-pressed="false" data-v="Events">Events</button>
@@ -199,12 +200,21 @@
         <div class="field"><label for="f-last">Last name</label><input id="f-last" autocomplete="family-name" autocapitalize="words"></div>
       </div>
       <div class="two">
-        <div class="field"><label for="f-mobile">Mobile</label><input id="f-mobile" type="tel" inputmode="tel" placeholder="072 000 0000" autocomplete="tel"></div>
-        <div class="field"><label for="f-email">Email</label><input id="f-email" type="email" inputmode="email" placeholder="you@email.com" autocomplete="email"></div>
+        <div class="field"><label for="f-mobile">Mobile <span class="opt">(for your orders)</span></label><input id="f-mobile" type="tel" inputmode="tel" placeholder="072 000 0000" autocomplete="tel" required></div>
+        <div class="field"><label for="f-email">Email <span class="opt">(for your orders)</span></label><input id="f-email" type="email" inputmode="email" placeholder="you@email.com" autocomplete="email" required></div>
       </div>
+      <div class="field"><label for="f-heard">How did you hear about us?</label>
+        <select id="f-heard">
+          <option value="">Choose one...</option>
+          <option>WhatsApp or a friend</option>
+          <option>Instagram</option>
+          <option>A stockist or bar</option>
+          <option>An event or tasting</option>
+          <option>Other</option>
+        </select></div>
       <div class="field"><label for="f-note">Who invited you, or anything else? <span class="opt">(optional)</span></label><input id="f-note" placeholder="e.g. Edrich said to sign up · keen on a case for Christmas"></div>
 
-      <label class="consent" id="consent-row"><input type="checkbox" id="f-consent"><span>Yes, Galindo can contact me about my ID, orders, events and new releases. I can ask to be removed any time.</span></label>
+      <label class="consent" id="consent-row"><input type="checkbox" id="f-consent"><span>Keep me posted about Galindo events and new releases. <span class="opt">Optional, and you can opt out any time.</span></span></label>
 
       <button class="cta" type="submit" id="submit">Sign me up</button>
       <div class="note" id="note"></div>
@@ -212,7 +222,7 @@
         <span class="alt-or">or send it on WhatsApp</span>
         <a class="wa-link" id="wa-send" rel="noopener noreferrer" target="_blank">Send my details on WhatsApp</a>
       </div>
-      <div class="reassure">We only message you about Galindo: your ID, your orders, events and new releases. Never spam, and we never pass your details on.</div>
+      <div class="reassure">Your mobile and email are just for your Galindo ID and orders. We'll only send news and events if you opt in above. Never spam, and we never share your details.</div>
     </form>
 
     <div class="done" id="done">
@@ -285,6 +295,8 @@
   var WA_NUMBER = "27722240774";   /* Andrea */
 
   var $ = function(id){ return document.getElementById(id); };
+  var REF = (new URLSearchParams(location.search).get('ref') || '').toLowerCase().replace(/[^a-z0-9]/g, '').slice(0, 20);  // who invited them
+  var SB_HEAD = { 'Content-Type':'application/json', apikey:SUPABASE_KEY, Authorization:'Bearer ' + SUPABASE_KEY };
   var fav = '';
   document.querySelectorAll('#fav .chip').forEach(function(b){
     b.addEventListener('click', function(){
@@ -300,13 +312,13 @@
 
   function data(){
     return { type:'signup', first:$('f-first').value.trim(), last:$('f-last').value.trim(), mobile:$('f-mobile').value.trim(),
-             email:$('f-email').value.trim(), favourite:fav, interests:topics(), note:$('f-note').value.trim(), consent:$('f-consent').checked };
+             email:$('f-email').value.trim(), favourite:fav, interests:topics(), heard:$('f-heard').value, note:$('f-note').value.trim(), consent:$('f-consent').checked };
   }
   function waText(d){
     return "Hi! I've been invited to Galindo and I'd love to join.\n" +
       "Name: " + d.first + " " + d.last + "\n" + (d.mobile ? "Mobile: " + d.mobile + "\n" : "") + (d.email ? "Email: " + d.email + "\n" : "") +
-      (d.favourite ? "Curious about: " + d.favourite + "\n" : "") + (d.interests ? "Interested in: " + d.interests + "\n" : "") + (d.note ? "Note: " + d.note + "\n" : "") +
-      "Happy for Galindo to contact me.";
+      (d.favourite ? "Curious about: " + d.favourite + "\n" : "") + (d.interests ? "Interested in: " + d.interests + "\n" : "") + (d.heard ? "Heard via: " + d.heard + "\n" : "") + (d.note ? "Note: " + d.note + "\n" : "") +
+      (d.consent ? "Happy for Galindo to keep me posted about events and new releases." : "Just for my Galindo ID and orders.");
   }
 
   $('signup').addEventListener('submit', function(e){
@@ -314,10 +326,10 @@
     var d = data(), note = $('note'), btn = $('submit'); note.style.color = '';
     $('consent-row').classList.remove('need'); $('fallback').hidden = true;
     if(!d.first){ note.textContent = "Pop your first name in."; $('f-first').focus(); return; }
-    if(!d.mobile && !d.email){ note.textContent = "Add a mobile number or an email so the team can reach you."; $('f-mobile').focus(); return; }
-    if(d.mobile && d.mobile.replace(/\D/g,'').length < 9){ note.textContent = "That mobile number looks short."; $('f-mobile').focus(); return; }
-    if(d.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(d.email)){ note.textContent = "That email doesn't look right."; $('f-email').focus(); return; }
-    if(!d.consent){ note.textContent = "Tick the box so we're allowed to keep in touch."; $('consent-row').classList.add('need'); return; }
+    if(!d.mobile){ note.textContent = "Add your mobile so the team can set up your ID and orders."; $('f-mobile').focus(); return; }
+    if(d.mobile.replace(/\D/g,'').length < 9){ note.textContent = "That mobile number looks short."; $('f-mobile').focus(); return; }
+    if(!d.email){ note.textContent = "Add your email so we can send your orders and receipts."; $('f-email').focus(); return; }
+    if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(d.email)){ note.textContent = "That email doesn't look right."; $('f-email').focus(); return; }
     note.textContent = ""; btn.disabled = true; btn.textContent = "Signing you up...";
     toSupabase(d).catch(function(){ return toImac(d); })
       .then(function(){ $('signup').hidden = true; $('done').classList.add('show'); window.scrollTo({ top:0, behavior:'smooth' }); })
@@ -337,15 +349,24 @@
   function toSupabase(d){
     if(!SUPABASE_URL || !SUPABASE_KEY) return Promise.reject(new Error('not configured'));
     var p = { source:'invite' }; for(var k in d) if(k !== 'type') p[k] = d[k];
-    return post(SUPABASE_URL + '/rest/v1/rpc/submit_contact', { 'Content-Type':'application/json', apikey:SUPABASE_KEY, Authorization:'Bearer ' + SUPABASE_KEY }, { p:p });
+    return post(SUPABASE_URL + '/rest/v1/rpc/submit_contact', SB_HEAD, { p:p }).then(function(res){
+      // credit the sign-up to the team member whose link they used (best-effort; first inviter wins)
+      if(REF) post(SUPABASE_URL + '/rest/v1/rpc/record_invite', SB_HEAD, { p:{ ref:REF, mobile:d.mobile, email:d.email } }).catch(function(){});
+      return res;
+    });
   }
-  function toImac(d){ return post(ENDPOINT, {'Content-Type':'application/json'}, { type:'signup', source:'invite', first:d.first, last:d.last, mobile:d.mobile, email:d.email, favourite:d.favourite, interests:d.interests, note:d.note, consent:d.consent }); }
+  function toImac(d){ return post(ENDPOINT, {'Content-Type':'application/json'}, { type:'signup', source:'invite', first:d.first, last:d.last, mobile:d.mobile, email:d.email, favourite:d.favourite, interests:d.interests, heard:d.heard, note:d.note, consent:d.consent }); }
 
   $('again').addEventListener('click', function(){
-    ['f-first','f-last','f-mobile','f-email','f-note'].forEach(function(id){ $(id).value = ''; });
+    ['f-first','f-last','f-mobile','f-email','f-heard','f-note'].forEach(function(id){ $(id).value = ''; });
     $('f-consent').checked = false; $('note').textContent = '';
     $('done').classList.remove('show'); $('signup').hidden = false; $('f-first').focus();
   });
+
+  // personalise the greeting when someone opened a team member's invite link (/join/?ref=edrich)
+  if(REF){ post(SUPABASE_URL + '/rest/v1/rpc/inviter_name', SB_HEAD, { ref:REF }).then(function(j){
+    if(j && j.ok && j.name){ var h = $('hero-h1'); if(h) h.innerHTML = "You've been<br>invited by " + String(j.name).replace(/[&<>"]/g, '') + "."; }
+  }).catch(function(){}); }
 </script>
 <!-- Cloudflare Web Analytics --><script type='module' src='https://static.cloudflareinsights.com/beacon.min.js' data-cf-beacon='{"token": "9ece67056cf94b17afa92a201a111250"}'></script><!-- End Cloudflare Web Analytics -->
 </body>

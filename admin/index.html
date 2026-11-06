@@ -506,6 +506,16 @@
         <div class="formbtns t-priv"><label class="checks" style="margin:0;font-size:13px">This phone is called</label><input id="t-device" maxlength="40" style="width:auto;flex:1;min-width:120px;padding:7px 10px;font-size:14px"></div>
       </div>
     </section>
+
+    <!-- member history: the member's whole journey with Galindo, opened from a contact's History link -->
+    <div class="handover" id="hist-sheet" hidden>
+      <div class="wrap" style="max-width:520px;padding-top:max(36px, env(safe-area-inset-top,0px))">
+        <button type="button" id="hist-close" aria-label="Close" style="position:absolute;top:max(14px, env(safe-area-inset-top));right:16px;background:none;border:none;color:var(--fg);font-size:32px;line-height:1;cursor:pointer;padding:6px 10px">&times;</button>
+        <div class="brand" style="font-size:30px">History</div>
+        <p class="muted" style="margin:4px 0 18px;font-size:14px" id="hist-who"></p>
+        <div id="hist-list"></div>
+      </div>
+    </div>
   </div>
 </div>
 
@@ -520,7 +530,9 @@
   var KIND = { restaurant:'Restaurant', bar:'Bar', bottle_store:'Bottle store', hotel:'Hotel', online:'Online', other:'Other' };
   var PROD = { reposado:'Reposado', anejo:'Añejo', extra:'Extra Añejo \'V\'' };
   var SRC = { thanks:'Thank-you page', booth:'Photo booth', warmup:'Warm-up page', door:'Door iPad', till:'Till', whatsapp:'WhatsApp', import:'Import', welcome:'Asked for info', invite:'Invited' };
-  var INVITE_LINK = 'https://tequilaheroes.com/join/';   // the copyable invite link the team shares with potential new members
+  var INVITE_BASE = 'https://tequilaheroes.com/join/';   // base invite link; each admin shares their own ?ref= version so sign-ups are credited to them
+  var myRef = '';                                        // the logged-in admin's invite code (from my_invite_ref)
+  function inviteLink(){ return INVITE_BASE + (myRef ? '?ref=' + encodeURIComponent(myRef) : ''); }
   var stockists = [], contacts = [], editing = null;
   function esc(s){ return String(s == null ? '' : s).replace(/[&<>"']/g, function(c){ return '&#' + c.charCodeAt(0) + ';'; }); }
   function day(t){ return t ? new Date(t).toLocaleDateString('en-ZA', { day:'numeric', month:'short', year:'numeric' }) : ''; }
@@ -546,6 +558,7 @@
     cancelled:       { t:'cancelled it',            sent:false }
   };
   function actText(a){
+    if(a.action === 'sent_to_cb' && a.detail && a.detail.pay_link) return 'sent to Creative Beverages · instant pay link';
     if(a.action === 'order_whatsapp' && a.detail && a.detail.status === 'invoiced') return 'sent the pay link';
     if(a.action === 'collected' && a.detail && a.detail.fulfilment === 'deliver') return 'marked delivered';
     return (ACT[a.action] || { t:a.action }).t;
@@ -574,6 +587,21 @@
     return '<div class="did' + (sent ? ' sent' : '') + '">' + (sent ? '✓ ' : '') +
       '<span class="who">' + esc(actWho(a)) + '</span> <b>' + esc(actText(a)) + '</b> ' +
       '<span class="when">' + esc(ago(a.created_at)) + '</span></div>';
+  }
+  // one "Brian sent the ID · 2h ago" line, and a stack of them (newest first) for an order / contact
+  function actLine(a){
+    var sent = actSent(a);
+    return '<div class="did' + (sent ? ' sent' : '') + '">' + (sent ? '&#10003; ' : '') +
+      '<span class="who">' + esc(actWho(a)) + '</span> <b>' + esc(actText(a)) + '</b> <span class="when">' + esc(ago(a.created_at)) + '</span></div>';
+  }
+  function storyLines(acts){ return acts.slice(0, 6).map(actLine).join(''); }
+  // the who-did-what strip under a contact's actions: logged activity, or a dim fallback for IDs issued before the log
+  function contactStory(c){
+    var acts = actByContact[c.id] || [];
+    if(acts.length) return storyLines(acts);
+    return c.galindo_id && c.id_issued_at
+      ? '<div class="did" style="color:var(--faint)">Galindo ID issued ' + esc(day(c.id_issued_at)) + ' <span style="color:var(--faint)">(before activity tracking)</span></div>'
+      : '';
   }
   function indexActivity(){
     actByContact = {}; actByOrder = {};
@@ -650,6 +678,8 @@
       var ok = team || partner; $('not-team').hidden = ok; $('team-ui').hidden = !ok;
       document.body.classList.toggle('partner', partner);
       if(partner){ $('who').textContent = session.user.email + ' · Creative Beverages'; document.querySelector('[data-tab="orders"]').click(); }
+      // each admin's own invite code, so "Copy invite link" credits sign-ups to them
+      if(team) sb.rpc('my_invite_ref').then(function(rr){ myRef = rr.data || ''; });
       // speed: team logins always open on the Till
       if(team) document.querySelector('[data-tab="till"]').click();
       if(ok) refreshAll();
@@ -766,35 +796,75 @@
       return [c.first_name, c.last_name, c.mobile, c.email, c.notes, c.galindo_id].join(' ').toLowerCase().indexOf(q) >= 0;
     });
   }
+  /* ---------- member history: the member's whole journey (sign-up, photos, party + online orders, membership) ---------- */
+  var HIST_SRC = {
+    booth:'Signed up at the photo booth', warmup:'Checked in at the warm-up', door:'Checked in at the door (launch)',
+    thanks:'Signed up on the website', till:'Added at the event till', whatsapp:'Added via WhatsApp',
+    import:'Imported to contacts', welcome:'Asked for more info', invite:'Invited by a friend'
+  };
+  function histLabel(it){
+    var d = it.data || {};
+    if(it.kind === 'member') return 'Became a Galindo member';
+    if(it.kind === 'order') return 'Ordered online &middot; ' + esc(d.ref || '') + (d.total != null ? ' &middot; ' + rand(d.total) : '') + (d.qty ? ' &middot; ' + d.qty + ' bottle' + (d.qty === 1 ? '' : 's') : '') + (d.fulfilment === 'deliver' ? ' (delivery)' : '');
+    if(it.kind === 'sale') return 'Bought at ' + esc(d.event || 'the event') + (d.total != null ? ' &middot; ' + rand(d.total) : '') + (d.qty ? ' &middot; ' + d.qty + ' bottle' + (d.qty === 1 ? '' : 's') : '');
+    return esc(HIST_SRC[d.source] || ('Added via ' + (d.source || 'unknown'))) + (d.photo ? ' &middot; added a photo' : '');
+  }
+  function histColor(it){ return it.kind === 'order' || it.kind === 'sale' ? 'var(--gold-bright)' : it.kind === 'member' ? 'var(--agave)' : 'var(--gold)'; }
+  function openHistory(cid){
+    var c = contacts.filter(function(x){ return x.id === cid; })[0];
+    $('hist-who').textContent = c ? [c.first_name, c.last_name].filter(Boolean).join(' ') + (c.galindo_id ? ' · ' + c.galindo_id : '') : '';
+    $('hist-list').innerHTML = '<div class="empty">Loading...</div>';
+    $('hist-sheet').hidden = false; window.scrollTo(0, 0);
+    sb.rpc('member_history', { contact:cid }).then(function(r){
+      if(r.error || !r.data || !r.data.ok){ $('hist-list').innerHTML = '<div class="empty">Could not load the history' + (r.error ? ': ' + esc(r.error.message) : '') + '.</div>'; return; }
+      renderHistory(r.data.items || []);
+    }, function(){ $('hist-list').innerHTML = '<div class="empty">No signal, try again.</div>'; });
+  }
+  function renderHistory(items){
+    if(!items.length){ $('hist-list').innerHTML = '<div class="empty">Nothing logged for this member yet.</div>'; return; }
+    $('hist-list').innerHTML = '<div style="position:relative;padding-left:20px;border-left:2px solid var(--line)">' +
+      items.map(function(it){
+        return '<div style="position:relative;margin-bottom:16px">' +
+          '<span style="position:absolute;left:-27px;top:3px;width:11px;height:11px;border-radius:50%;background:' + histColor(it) + ';border:2px solid var(--bg)"></span>' +
+          '<div class="s" style="font-size:12.5px">' + esc(day(it.at)) + '</div>' +
+          '<div style="font-weight:500;color:var(--fg)">' + histLabel(it) + '</div></div>';
+      }).join('') + '</div>';
+  }
+  $('hist-close').addEventListener('click', function(){ $('hist-sheet').hidden = true; });
+  $('hist-sheet').addEventListener('click', function(e){ if(e.target === this) this.hidden = true; });
+
   function renderContacts(){
     var list = filtered(), opted = contacts.filter(function(c){ return c.consent; }).length;
     $('c-stat').innerHTML = '<b>' + contacts.length + '</b> contacts · <b>' + opted + '</b> happy to hear from us' + (list.length !== contacts.length ? ' · showing ' + list.length : '');
     $('c-list').innerHTML = list.length ? list.map(function(c){
-      return '<div class="item"><div><div class="t">' + esc([c.first_name, c.last_name].filter(Boolean).join(' ')) + '</div>' +
+      var story = contactStory(c);
+      return '<div class="item" style="flex-wrap:wrap"><div><div class="t">' + esc([c.first_name, c.last_name].filter(Boolean).join(' ')) + '</div>' +
         '<div class="s">' + esc([c.mobile, c.email].filter(Boolean).join(' · ')) + '</div>' +
         '<div>' + ((c.sources || []).indexOf('invite') >= 0 && !c.galindo_id && !c.mates ? '<span class="pill" style="color:#201600;background:var(--marigold);border-color:var(--marigold)">Awaiting approval</span>' : '') +
         (c.consent ? '<span class="pill yes">Opted in</span>' : '<span class="pill off">No marketing</span>') +
         (c.favourite ? '<span class="pill">' + esc(c.favourite) + '</span>' : '') +
-        (c.sources || []).map(function(s){ return '<span class="pill" style="color:var(--muted)">' + esc(SRC[s] || s) + '</span>'; }).join('') + '</div>' +
+        (c.sources || []).map(function(s){ var lbl = (s === 'invite' && c.invited_by) ? 'Invited by ' + c.invited_by : (SRC[s] || s); return '<span class="pill" style="color:var(--muted)">' + esc(lbl) + '</span>'; }).join('') + '</div>' +
         ((c.interests || []).length ? '<div class="s">Interested in: ' + esc(c.interests.join(', ')) + '</div>' : '') +
         (c.heard_about ? '<div class="s">Heard via: ' + esc(c.heard_about) + '</div>' : '') +
         (c.notes ? '<div class="s">\"' + esc(c.notes) + '\"</div>' : '') +
         (c.galindo_id ? '<div class="s" style="margin-top:4px"><span class="gidtag">' + esc(c.galindo_id) + '</span> · <select class="mini" data-tier="' + c.id + '">' +
           ['reposado', 'anejo', 'extra'].map(function(t){ return '<option value="' + t + '"' + (c.tier === t ? ' selected' : '') + '>' + TIER[t] + '</option>'; }).join('') + '</select>' +
           ' <label style="display:inline-flex;align-items:center;gap:5px;margin:0 0 0 6px;text-transform:none;letter-spacing:0;font-size:13px;color:var(--fg);font-weight:500">' +
-          '<input type="checkbox" data-mates="' + c.id + '"' + (c.mates ? ' checked' : '') + ' style="width:16px;height:16px;accent-color:var(--gold)"> Mates rate</label></div>' : '') +
-        didBadge(actByContact, c.id) + '</div>' +
+          '<input type="checkbox" data-mates="' + c.id + '"' + (c.mates ? ' checked' : '') + ' style="width:16px;height:16px;accent-color:var(--gold)"> Mates rate</label></div>' : '') + '</div>' +
         '<div style="text-align:right"><div class="s">' + day(c.created_at) + '</div><div class="acts">' +
         (c.galindo_id ? (c.mobile_norm ? '<a class="link" style="color:var(--agave);font-weight:600;font-size:14px" data-waid="' + c.id + '" target="_blank" rel="noopener" href="' + waLink(c) + '">WhatsApp ID</a>' : '') +
             '<button class="link" type="button" data-copy="' + c.id + '">Copy link</button>'
           : '<button class="link" type="button" data-issue="' + c.id + '">Give Galindo ID</button>') +
-        (c.consent ? '<button class="link danger" type="button" data-optout="' + c.id + '">Opt out</button>' : '') + '</div></div></div>';
+        '<button class="link" type="button" data-hist="' + c.id + '">History</button>' +
+        (c.consent ? '<button class="link danger" type="button" data-optout="' + c.id + '">Opt out</button>' : '') + '</div></div>' +
+        (story ? '<div style="flex-basis:100%;text-align:left;border-top:1px solid var(--line);margin-top:10px;padding-top:8px">' + story + '</div>' : '') + '</div>';
     }).join('') : '<div class="empty">' + (contacts.length ? 'Nobody matches that.' : 'No contacts yet.') + '</div>';
   }
   $('c-q').addEventListener('input', renderContacts);
   $('c-opt').addEventListener('change', renderContacts);
   function subjC(c){ return c ? [c.first_name, c.last_name].filter(Boolean).join(' ') + (c.galindo_id ? ' · ' + c.galindo_id : '') : ''; }
   $('c-list').addEventListener('click', function(e){
+    var hb = e.target.closest('[data-hist]'); if(hb){ openHistory(hb.dataset.hist); return; }
     // WhatsApp the ID: the link opens on its own (we don't block it), we just record that it was sent
     var wa = e.target.closest('[data-waid]');
     if(wa){ var cwa = contacts.filter(function(x){ return x.id === wa.dataset.waid; })[0]; if(cwa) logAct('id_sent', { contact:cwa.id, subject:subjC(cwa) }); return; }
@@ -835,7 +905,7 @@
   document.addEventListener('click', function(e){
     var ib = e.target.closest('[data-invite]'); if(!ib) return;
     var old = ib.textContent;
-    copyText(INVITE_LINK).then(function(){ ib.textContent = 'Copied ✓'; setTimeout(function(){ ib.textContent = old; }, 1600); });
+    copyText(inviteLink()).then(function(){ ib.textContent = 'Copied ✓'; setTimeout(function(){ ib.textContent = old; }, 1600); });
   });
   $('c-list').addEventListener('change', function(e){
     var mt = e.target.closest('[data-mates]');
@@ -890,6 +960,19 @@
     if(o.dispatched_at){ return '<span style="color:var(--gold-bright);font-weight:600">Out for delivery &middot; ' + dur(Date.now() - new Date(o.dispatched_at)) + ' so far</span>' + link; }
     if(['sent', 'invoiced', 'paid'].indexOf(o.status) >= 0){ return '<span style="color:var(--muted)">To dispatch</span>' + link; }
     return link ? '<span style="color:var(--muted)">For delivery</span>' + link : '';
+  }
+  // the who-did-what strip under an order's actions: logged activity (newest first), or, for orders
+  // handled before the activity log existed, a dim timeline derived from the order's own timestamps.
+  function orderStory(o){
+    var acts = actByOrder[o.id] || [];
+    if(acts.length) return storyLines(acts);
+    var steps = [];
+    if(o.sent_at) steps.push('Sent to Creative Beverages ' + hm(o.sent_at));
+    if(o.invoiced_at) steps.push('invoiced');
+    if(o.paid_at) steps.push('paid');
+    if(o.dispatched_at) steps.push('out for delivery');
+    if(o.done_at) steps.push(o.fulfilment === 'deliver' ? 'delivered' : 'collected');
+    return steps.length ? '<div class="did" style="color:var(--faint)">' + esc(steps.join(' · ')) + ' <span style="color:var(--faint)">(before activity tracking)</span></div>' : '';
   }
   // iKhokha iK Pay link for the order (made in Creative Beverages' iKhokha app); shows as "Pay now" on the member's page
   function askPayLink(o){
@@ -994,8 +1077,8 @@
       if(partner && ['sent', 'invoiced'].indexOf(o.status) < 0) nx = null;
       // deliver orders split the last step: Out for delivery (sets dispatched) then Delivered
       if(!partner && isDeliver && o.status === 'paid') nx = o.dispatched_at ? ['done', 'Delivered'] : ['dispatch', 'Out for delivery'];
-      var dl = isDeliver ? deliveryLine(o) : '';
-      return '<div class="item"><div><div class="t">' + esc(o.ref) + ' · ' + esc([o.first_name, o.last_name].filter(Boolean).join(' ')) + '</div>' +
+      var dl = isDeliver ? deliveryLine(o) : '', story = orderStory(o);
+      return '<div class="item" style="flex-wrap:wrap"><div><div class="t">' + esc(o.ref) + ' · ' + esc([o.first_name, o.last_name].filter(Boolean).join(' ')) + '</div>' +
         '<div class="s">' + esc(orderItems(o)) + '</div>' +
         '<div class="s">' + (o.fulfilment === 'deliver' ? 'Deliver to: ' + esc(o.address) : 'Collect') + '</div>' +
         (o.note ? '<div class="s">\"' + esc(o.note) + '\"</div>' : '') +
@@ -1005,16 +1088,19 @@
         '<div><span class="pill' + (o.status === 'new' ? ' off' : o.status === 'done' || o.status === 'paid' ? ' yes' : '') + '">' + STATUS[o.status] + '</span>' +
           (o.edited_at && o.status === 'new' ? '<span class="pill off">Changed by customer</span>' : '') +
           (o.status === 'cancelled' && o.cancelled_by === 'customer' ? '<span class="pill off">Cancelled by customer</span>' : '') + '</div>' +
-          (dl ? '<div class="s" style="margin-top:4px">' + dl + '</div>' : '') +
-          didBadge(actByOrder, o.id) + '</div>' +
+          (dl ? '<div class="s" style="margin-top:4px">' + dl + '</div>' : '') + '</div>' +
         '<div style="text-align:right"><div class="t">' + rand(o.total) + '</div><div class="s">' + hm(o.created_at) + '</div><div class="acts">' +
         (mob && !partner ? '<a class="link" style="color:var(--agave);font-weight:600;font-size:14px" data-' + (isDeliver && o.status === 'done' ? 'thanks' : 'wao') + '="' + o.id + '" target="_blank" rel="noopener" href="https://wa.me/' + mob + '?text=' +
           encodeURIComponent(waText(o)) + '">' + (isDeliver && o.status === 'done' ? 'Thank you &amp; enjoy' : 'WhatsApp ' + o.first_name) + '</a>' : '') +
         (nx ? '<button class="link" type="button" data-ost="' + o.id + '" data-to="' + nx[0] + '">' + (typeof nx[1] === 'function' ? nx[1](o) : nx[1]) + '</button>' : '') +
         (o.status === 'invoiced' ? '<button class="link" type="button" data-ost="' + o.id + '" data-to="paylink">' + (o.pay_url ? 'Change Pay link' : 'Add Pay link') + '</button>' : '') +
+        (!partner && o.woo_order_id && ['sent', 'invoiced'].indexOf(o.status) >= 0 ? '<button class="link" type="button" data-ost="' + o.id + '" data-to="refresh">Refresh pay link</button>' : '') +
+        (!partner && o.email && o.woo_order_id && ['sent', 'invoiced'].indexOf(o.status) >= 0 ? '<button class="link" type="button" data-ost="' + o.id + '" data-to="emaillink">Email pay link</button>' : '') +
         (!partner && isDeliver && ['sent', 'invoiced', 'paid', 'done'].indexOf(o.status) >= 0 ? '<button class="link" type="button" data-ost="' + o.id + '" data-to="track">' + (o.track_url ? 'Change track link' : 'Add track link') + '</button>' : '') +
         (!partner && ['done', 'cancelled'].indexOf(o.status) < 0 ? '<button class="link danger" type="button" data-ost="' + o.id + '" data-to="cancelled">Cancel</button>' : '') +
-        '</div></div></div>';
+        '</div>' +
+        (story ? '<div style="flex-basis:100%;text-align:left;border-top:1px solid var(--line);margin-top:10px;padding-top:8px">' + story + '</div>' : '') +
+        '</div></div>';
     }).join('') : '<div class="empty">' + (orders.length ? 'No orders here.' : 'No orders yet. They arrive here when members order on tequilaheroes.com/order/.') + '</div>';
   }
   $('o-filter').addEventListener('change', renderOrders);
@@ -1056,6 +1142,66 @@
         }
         o.status = 'sent'; o.woo_order_id = d.woo_order_id; if(d.pay_url) o.pay_url = d.pay_url;
         logAct('sent_to_cb', { order:o.id, subject:subjO(o), detail:{ pay_link:!!d.pay_url } }); renderOrders();
+      });
+      return;
+    }
+    // "Refresh pay link": re-check the live CB order and get a working link (rebuilding it if the old one died), so the
+    // link the team WhatsApps the customer is never stale.
+    if(to === 'refresh'){
+      b.disabled = true; var wasLbl = b.textContent; b.textContent = 'Refreshing...';
+      sb.functions.invoke('woo-order', { body:{ ref:o.ref } }).then(function(r){
+        var ctx = r.error && r.error.context;
+        if(ctx && typeof ctx.json === 'function') return ctx.json().catch(function(){ return null; }).then(function(bd){ return { data:bd, error:r.error }; });
+        return r;
+      }).then(function(r){
+        b.disabled = false; b.textContent = wasLbl;
+        var d = r.data;
+        if(r.error || !d || !d.ok){
+          alert('Couldn\'t refresh the pay link for ' + o.ref + ': ' + ((d && (d.error || d.detail)) || (r.error && r.error.message) || 'please try again') + '.');
+          return;
+        }
+        if(d.pay_url){
+          o.pay_url = d.pay_url; if(d.woo_order_id) o.woo_order_id = d.woo_order_id;
+          logAct('pay_link_set', { order:o.id, subject:subjO(o), detail:{ revived:!!d.revived } }); renderOrders();
+          alert(d.revived ? 'The old link had expired, so a fresh one was made. It\'s ready to WhatsApp ' + o.first_name + '.' : 'Pay link is live and ready to WhatsApp ' + o.first_name + '.');
+        } else if(d.paid){
+          alert(o.ref + ' is already paid on Creative Beverages’ side. Refreshing the orders.'); refreshAll();
+        } else {
+          alert('Creative Beverages is still processing this order. Give it a moment and try again.');
+        }
+      });
+      return;
+    }
+    // "Email pay link": fetch a LIVE link (same path as Refresh, so it is never a dead link), then open a pre-filled
+    // email to the customer. Built for the Zapper same-device problem: they open the link on a laptop/tablet and scan.
+    if(to === 'emaillink'){
+      if(!o.email){ alert('No email on file for ' + o.first_name + '. Use WhatsApp or Copy instead.'); return; }
+      b.disabled = true; var elbl = b.textContent; b.textContent = 'Getting link...';
+      sb.functions.invoke('woo-order', { body:{ ref:o.ref } }).then(function(r){
+        var ctx = r.error && r.error.context;
+        if(ctx && typeof ctx.json === 'function') return ctx.json().catch(function(){ return null; }).then(function(bd){ return { data:bd, error:r.error }; });
+        return r;
+      }).then(function(r){
+        b.disabled = false; b.textContent = elbl;
+        var d = r.data;
+        if(r.error || !d || !d.ok){
+          alert('Couldn\'t get a live pay link for ' + o.ref + ': ' + ((d && (d.error || d.detail)) || (r.error && r.error.message) || 'please try again') + '.');
+          return;
+        }
+        if(d.paid){ alert(o.ref + ' is already paid on Creative Beverages’ side. Refreshing the orders.'); refreshAll(); return; }
+        if(!d.pay_url){ alert('Creative Beverages is still processing this order. Give it a moment and try again.'); return; }
+        o.pay_url = d.pay_url; if(d.woo_order_id) o.woo_order_id = d.woo_order_id;
+        var subject = 'Your Galindo payment link (order ' + o.ref + ')';
+        var body = 'Hi ' + o.first_name + ',\n\n' +
+          'Here is your secure payment link for Galindo order ' + o.ref + ' (' + rand(o.total) + '):\n\n' +
+          d.pay_url + '\n\n' +
+          'How to pay: on the next screen, pay by card, or choose Zapper and scan the QR code. On a phone, card is easiest (a Zapper QR needs a computer or tablet to scan).\n\n' +
+          'Any trouble, just reply to this email.\n\nGalindo / Creative Beverages';
+        var a = document.createElement('a');
+        a.href = 'mailto:' + encodeURIComponent(o.email) + '?subject=' + encodeURIComponent(subject) + '&body=' + encodeURIComponent(body);
+        document.body.appendChild(a); a.click(); a.remove();
+        logAct('order_whatsapp', { order:o.id, subject:subjO(o), detail:{ status:o.status, via:'email_pay_link' } });
+        renderOrders();
       });
       return;
     }
@@ -1672,7 +1818,7 @@
   function welcomeText(first, gid){
     return 'Hi' + (first ? ' ' + first : '') + '! Lovely to meet you.\n\n' +
       (gid ? 'Your Galindo ID (your members\' card): ' + memberLink({ galindo_id:gid }) + '\n\n'
-           : 'Sign up here and the team will set you up with your own Galindo ID, our members\' card: ' + INVITE_LINK + '\n\n') +
+           : 'Sign up here and the team will set you up with your own Galindo ID, our members\' card: ' + inviteLink() + '\n\n') +
       'Salud!\nThe Galindo team';
   }
   function openWelcome(){
