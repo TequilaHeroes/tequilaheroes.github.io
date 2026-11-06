@@ -1083,7 +1083,7 @@
   // Self-healing pay link to share: for a CB (woo) order it's a permanent token link that resolves to a LIVE checkout
   // every time it's opened (rebuilding a dead CB order on the spot), so a link WhatsApped or emailed never goes stale.
   // A manually pasted iKhokha link (no woo_order_id) has nothing to heal, so we send that raw URL as before.
-  function payShare(o){ return (o && o.woo_order_id && o.pay_token) ? (SUPABASE_URL + '/functions/v1/woo-order?t=' + encodeURIComponent(o.pay_token)) : ((o && o.pay_url) || ''); }
+  function payShare(o){ return (o && o.woo_order_id && o.pay_token) ? (location.origin + '/pay/?t=' + encodeURIComponent(o.pay_token)) : ((o && o.pay_url) || ''); }
   function waText(o){
     var hi = 'Hi ' + o.first_name + ', ', what = ' (' + orderItems(o) + ', ' + rand(o.total) + ')', how = o.fulfilment === 'deliver' ? 'delivery' : 'collection';
     return {
@@ -1407,15 +1407,28 @@
     renderPayments();
     if(!payAutoDone){ payAutoDone = true; checkPayments(); }
   }
+  function payFail(msg){
+    var b = $('pay-check'); b.disabled = false; b.textContent = 'Check payments with CB';
+    $('pay-stat').innerHTML = '<span style="color:var(--marigold)">Could not check CB: ' + esc(msg) + '</span>';
+  }
   function checkPayments(){
     var b = $('pay-check'); if(b.disabled) return;
     b.disabled = true; b.textContent = 'Checking with CB...'; $('pay-stat').textContent = 'Reading each order off Creative Beverages...';
     sb.functions.invoke('woo-status', { body:{} }).then(function(r){
-      b.disabled = false; b.textContent = 'Check payments with CB';
       if(r.error || !r.data || !r.data.ok){
-        $('pay-stat').innerHTML = '<span style="color:var(--marigold)">Could not check CB: ' + esc(r.error ? r.error.message : (r.data && r.data.error) || 'unknown') + '</span>';
+        var ctx = r.error && r.error.context;                 // supabase-js hides the real Response here on a non-2xx; dig out the true status + reason
+        if(ctx && typeof ctx.text === 'function'){
+          var st = ctx.status;
+          ctx.text().then(function(t){
+            var reason = ''; try{ reason = (JSON.parse(t) || {}).error || ''; }catch(e){ reason = (t || '').slice(0, 160); }
+            payFail('HTTP ' + st + (reason ? ' · ' + reason : ''));
+          }, function(){ payFail('HTTP ' + st); });
+        } else {
+          payFail(r.error ? r.error.message : (r.data && r.data.error) || 'unknown');
+        }
         return;
       }
+      b.disabled = false; b.textContent = 'Check payments with CB';
       payChecked = r.data.orders || [];
       $('pay-at').textContent = 'Checked ' + new Date().toLocaleTimeString('en-ZA', { hour:'2-digit', minute:'2-digit' });
       $('pay-stat').innerHTML = '<b>' + r.data.paid + '</b> of ' + r.data.checked + ' paid' +
