@@ -783,7 +783,7 @@
       // each admin's own invite code, so "Copy invite link" credits sign-ups to them
       if(team) sb.rpc('my_invite_ref').then(function(rr){ myRef = rr.data || ''; });
       // speed: team logins always open on the Till
-      if(team) document.querySelector('[data-tab="till"]').click();
+      if(team) document.querySelector('[data-tab="orders"]').click();   // land on Orders (was Till): iOS reloads the tab often and Orders is where the team works
       if(ok) refreshAll();
     });
   }
