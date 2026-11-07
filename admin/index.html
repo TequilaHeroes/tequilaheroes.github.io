@@ -1192,6 +1192,7 @@
     Promise.all([sb.from('orders').select('*').order('created_at', { ascending:false }).limit(2000), sb.from('price_list').select('*').order('sort')]).then(function(r){
       if(r[0].error){ $('o-list').innerHTML = '<div class="empty">Could not load orders: ' + esc(r[0].error.message) + '</div>'; return; }
       orders = r[0].data; prices = r[1].data || []; renderOrders(); if(!partner){ renderPrices(); loadAlerts(); } if(!$('t-payments').hidden) renderPayments(); if(!$('t-activity').hidden) renderFeed();
+      if(!partner){ syncOnlineOption(); var ts = $('t-sales'); if(ts && !ts.hidden) renderSales(); }   // online orders count in the Sales tab
     });
   }
   var alerts = null, emailAlerts = null;
@@ -1576,6 +1577,7 @@
       if(r[0].error){ $('x-list').innerHTML = '<div class="empty">Could not load sales: ' + esc(r[0].error.message) + '</div>'; return; }
       sales = r[0].data; imports = r[1].data || [];
       var names = []; sales.concat(imports).forEach(function(x){ if(names.indexOf(x.event) < 0) names.push(x.event); });
+      if(onlineSales().length) names.push(ONLINE_EV);
       var cur = $('x-event').value;
       $('x-event').innerHTML = (names.length > 1 ? '<option value="">All events</option>' : '') + names.map(function(n){ return '<option>' + esc(n) + '</option>'; }).join('');
       if(cur && names.indexOf(cur) >= 0) $('x-event').value = cur;
@@ -1583,7 +1585,24 @@
       renderSales(); if(!$('t-activity').hidden) renderFeed();
     });
   }
-  function eventSales(){ var ev = $('x-event').value; return sales.filter(function(s){ return !ev || s.event === ev; }); }
+  // Paid online orders (Orders tab, paid through Creative Beverages) count here too, as sale-shaped rows under the
+  // event "Online orders", so Takings / Sales / Bottles and "By product" are EVERYTHING: events, direct till sales, online.
+  var ONLINE_EV = 'Online orders';
+  function onlineSales(){
+    return orders.filter(function(o){ return o.status === 'paid' || o.status === 'done'; }).map(function(o){
+      return { id:'order:' + o.id, online:true, ref:o.ref, event:ONLINE_EV, sold_at:o.paid_at || o.created_at, channel:'online',
+        items:(o.items || []).map(function(i){ return { name:i.name, qty:i.qty, price:i.price, productId:i.key }; }), total:o.total,
+        payment:'Online · CB' + (o.cb_invoice ? ' ' + o.cb_invoice : ''), paid:true, voided:false, handed_over:o.status === 'done', delivered_at:o.delivered_at || null,
+        first_name:o.first_name, last_name:o.last_name, mobile:o.mobile, email:o.email, galindo_id:o.galindo_id, note:o.note, fulfilment:o.fulfilment };
+    });
+  }
+  // keep the event picker offering "Online orders" (and "All events") once orders have loaded, whichever list loaded first
+  function syncOnlineOption(){
+    var sel = $('x-event'); if(!sel || !onlineSales().length) return;
+    if(![].some.call(sel.options, function(o){ return o.value === ''; })) sel.insertAdjacentHTML('afterbegin', '<option value="">All events</option>');
+    if(![].some.call(sel.options, function(o){ return o.value === ONLINE_EV; })) sel.insertAdjacentHTML('beforeend', '<option>' + ONLINE_EV + '</option>');
+  }
+  function eventSales(){ var ev = $('x-event').value; return sales.concat(onlineSales()).filter(function(s){ return !ev || s.event === ev; }); }
   function renderSales(){
     // guest QR orders count once they're paid
     var all = eventSales().filter(function(s){ return s.paid !== false || s.voided; }), live = all.filter(function(s){ return !s.voided; }), ev = $('x-event').value;
@@ -1607,7 +1626,7 @@
       return '<div class="item"><div><div class="t">' + esc(n) + '</div><div class="s">' + b.qty + ' sold' + (tasted[n] ? ' · ' + tasted[n] + ' tasting' : '') +
         (n in left ? ' · ' + left[n] + (te ? ' left' : ' left on the till') : '') + '</div></div><div class="t">' + rand(b.rev) + '</div></div>'; }).join('')
       : '<div class="empty">' + (imports.length ? 'No sales for this event.' : 'No till data yet. Tap \"Import till file\".') + '</div>';
-    var dels = live.filter(function(s){ return !s.handed_over; });
+    var dels = live.filter(function(s){ return !s.handed_over && !s.online; });   // online deliveries are tracked on the Orders tab
     $('x-delwrap').hidden = !dels.length;
     $('x-del').innerHTML = dels.map(function(s){
       return '<div class="item"><div><div class="t">' + esc([s.first_name, s.last_name].filter(Boolean).join(' ') || '(no name)') + '</div>' +
@@ -1618,9 +1637,10 @@
       var buyer = [s.first_name, s.last_name].filter(Boolean).join(' ');
       return '<div class="item' + (s.voided ? ' void' : '') + '"><div><div class="t">' + esc(itemsText(s)) + '</div>' +
         '<div class="s">' + hm(s.sold_at) + ' · ' + esc(s.payment || 'Card') + (s.slip ? ' slip ' + esc(s.slip) : (s.payment || 'Card') === 'Card' ? ' slip -' : '') + (buyer ? ' · ' + esc(buyer) : '') + (ev ? '' : ' · ' + esc(s.event)) + '</div>' +
-        '<div class="s">' + esc(s.channel === 'qr' ? 'Guest QR order ' + (s.pickup || '') : s.channel === 'till' ? 'Till · ' + [who(s.sold_by), s.device].filter(Boolean).join(' · ') : 'iPad till') +
+        '<div class="s">' + esc(s.online ? 'Online order ' + s.ref + ' · paid through Creative Beverages · ' + (s.fulfilment === 'deliver' ? 'delivery' : 'collect') :
+            s.channel === 'qr' ? 'Guest QR order ' + (s.pickup || '') : s.channel === 'till' ? 'Till · ' + [who(s.sold_by), s.device].filter(Boolean).join(' · ') : 'iPad till') +
           (s.voided && s.void_reason ? ' · voided: ' + esc(s.void_reason) + (s.voided_by ? ' (' + esc(who(s.voided_by)) + ')' : '') : '') + '</div>' +
-        '<div>' + (s.voided ? '<span class="pill off">Voided</span>' : '') + (!s.handed_over && !s.voided ? '<span class="pill off">To deliver</span>' : '') +
+        '<div>' + (s.voided ? '<span class="pill off">Voided</span>' : '') + (s.online ? '<span class="pill yes">Online</span>' : !s.handed_over && !s.voided ? '<span class="pill off">To deliver</span>' : '') +
         (s.delivered_at ? '<span class="pill yes">Delivered ' + day(s.delivered_at) + '</span>' : '') + (s.consent ? '<span class="pill yes">Opted in</span>' : '') + '</div></div>' +
         '<div class="t">' + rand(s.total) + '</div></div>';
     }).join('') : '';
