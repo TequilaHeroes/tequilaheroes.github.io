@@ -110,6 +110,7 @@
   .chip.go{flex:1 1 100%;background:linear-gradient(180deg,var(--gold-bright),var(--gold));color:#201600;border-color:var(--gold)}
   .chip.wa{color:var(--agave);border-color:#3c4a2e;background:rgba(139,178,106,.08)}
   .chip.danger{color:var(--marigold);border-color:#5a3a1e}
+  .cedit{flex:1 1 100%} .cedit input{margin-top:6px} .cedit .two{display:flex;gap:6px} .cedit .two input{flex:1;min-width:0}
   .oc-story{border-top:1px solid var(--line);margin-top:13px;padding-top:9px}
   .oc-hist{border-top:1px solid var(--line);margin-top:13px;padding-top:10px}
   .oh-head{font-size:12.5px;color:var(--muted);font-weight:600;margin-bottom:8px}
@@ -600,6 +601,8 @@
     welcome_sent:   { t:'sent a welcome link',     sent:true  },
     welcome_copied: { t:'copied a welcome link',   sent:true  },
     opt_out:        { t:'opted them out',          sent:false },
+    contact_edited: { t:'edited the contact',      sent:false },
+    contact_deleted:{ t:'deleted the contact',     sent:false },
     sent_to_cb:     { t:'sent to Creative Beverages', sent:true },
     order_whatsapp: { t:'messaged them',           sent:true  },
     invoiced:        { t:'added the CB invoice',    sent:false },
@@ -941,6 +944,15 @@
     $('c-stat').innerHTML = '<b>' + contacts.length + '</b> contacts · <b>' + opted + '</b> happy to hear from us' + (list.length !== contacts.length ? ' · showing ' + list.length : '');
     $('c-list').innerHTML = list.length ? list.map(function(c){
       var story = contactStory(c);
+      // inline edit: name, mobile, email. Saved through edit_contact (team-only RPC) so the mobile/email are normalised
+      // and uniqueness-checked exactly like a sign-up; the member then signs in with the NEW mobile.
+      if(c.id === editingC) return '<div class="item" style="flex-wrap:wrap"><div class="cedit" data-cedit="' + c.id + '">' +
+        '<div class="two"><input data-f="first_name" placeholder="First name" value="' + esc(c.first_name || '') + '">' +
+        '<input data-f="last_name" placeholder="Surname" value="' + esc(c.last_name || '') + '"></div>' +
+        '<input data-f="mobile" type="tel" inputmode="tel" placeholder="Mobile" value="' + esc(c.mobile || '') + '">' +
+        '<input data-f="email" type="email" inputmode="email" autocapitalize="off" placeholder="Email" value="' + esc(c.email || '') + '">' +
+        '<div style="margin-top:8px;display:flex;gap:8px"><button class="chip go" type="button" data-csave="' + c.id + '">Save</button>' +
+        '<button class="chip" type="button" data-ccancel="' + c.id + '">Cancel</button></div></div></div>';
       return '<div class="item" style="flex-wrap:wrap"><div><div class="t">' + esc([c.first_name, c.last_name].filter(Boolean).join(' ')) + '</div>' +
         '<div class="s">' + esc([c.mobile, c.email].filter(Boolean).join(' · ')) + '</div>' +
         '<div>' + ((c.sources || []).indexOf('invite') >= 0 && !c.galindo_id && !c.mates ? '<span class="pill" style="color:#201600;background:var(--marigold);border-color:var(--marigold)">Awaiting approval</span>' : '') +
@@ -959,7 +971,9 @@
             '<button class="link" type="button" data-copy="' + c.id + '">Copy link</button>'
           : '<button class="link" type="button" data-issue="' + c.id + '">Give Galindo ID</button>') +
         '<button class="link" type="button" data-hist="' + c.id + '">History</button>' +
-        (c.consent ? '<button class="link danger" type="button" data-optout="' + c.id + '">Opt out</button>' : '') + '</div></div>' +
+        '<button class="link" type="button" data-cedit-go="' + c.id + '">Edit</button>' +
+        (c.consent ? '<button class="link danger" type="button" data-optout="' + c.id + '">Opt out</button>' : '') +
+        '<button class="link danger" type="button" data-cdel="' + c.id + '">Delete</button></div></div>' +
         (story ? '<div style="flex-basis:100%;text-align:left;border-top:1px solid var(--line);margin-top:10px;padding-top:8px">' + story + '</div>' : '') + '</div>';
     }).join('') : '<div class="empty">' + (contacts.length ? 'Nobody matches that.' : 'No contacts yet.') + '</div>';
   }
@@ -980,6 +994,11 @@
     if(cp){ var cc = contacts.filter(function(x){ return x.id === cp.dataset.copy; })[0];
       copyText(memberLink(cc)).then(function(){ cp.textContent = 'Copied ✓'; setTimeout(function(){ cp.textContent = 'Copy link'; }, 1500); });
       logAct('link_copied', { contact:cc.id, subject:subjC(cc) }); return; }
+    var eg = e.target.closest('[data-cedit-go]'), ecan = e.target.closest('[data-ccancel]'), esv = e.target.closest('[data-csave]'), dl = e.target.closest('[data-cdel]');
+    if(eg){ editingC = eg.dataset.ceditGo; renderContacts(); var fi = document.querySelector('[data-cedit="' + editingC + '"] input'); if(fi) fi.focus(); return; }
+    if(ecan){ editingC = ''; renderContacts(); return; }
+    if(esv){ saveContact(esv); return; }
+    if(dl){ deleteContact(dl); return; }
     var b = e.target.closest('[data-optout]'); if(!b) return;
     var c = contacts.filter(function(x){ return x.id === b.dataset.optout; })[0];
     if(!c || !confirm('Opt ' + c.first_name + ' out of marketing? Only do this if they asked to be removed.')) return;
@@ -988,6 +1007,45 @@
       c.consent = false; logAct('opt_out', { contact:c.id, subject:subjC(c) }); renderContacts();
     });
   });
+  /* ---------- edit / delete a contact ---------- */
+  var editingC = '';   // id of the contact whose card is showing the inline edit form
+  var CREASON = { 'bad-name':'First name is needed.', 'bad-mobile':'That mobile number looks wrong.', 'bad-email':'That email looks wrong.',
+    unreachable:'Keep at least a mobile or an email.', 'mobile-taken':'That mobile already belongs to {other}.', 'email-taken':'That email already belongs to {other}.',
+    'no-contact':'That contact is gone already. Reload.', 'not-team':'Not on the team.' };
+  function saveContact(btn){
+    var id = btn.dataset.csave, c = contacts.filter(function(x){ return x.id === id; })[0], box = document.querySelector('[data-cedit="' + id + '"]'); if(!c || !box) return;
+    var p = { id:id }; [].forEach.call(box.querySelectorAll('input[data-f]'), function(i){ p[i.dataset.f] = i.value.trim(); });
+    btn.disabled = true; btn.textContent = 'Saving...';
+    sb.rpc('edit_contact', { p:p }).then(function(r){
+      var d = r.data;
+      if(r.error || !d || !d.ok){
+        btn.disabled = false; btn.textContent = 'Save';
+        alert('Not saved: ' + (((d && (CREASON[d.reason] || d.reason)) || (r.error && r.error.message) || 'please try again')).replace('{other}', (d && d.other) || 'another contact'));
+        return;
+      }
+      var changed = Object.keys(d.contact).filter(function(k){ return k !== 'id' && String(c[k] || '') !== String(d.contact[k] || ''); });
+      Object.keys(d.contact).forEach(function(k){ c[k] = d.contact[k]; });
+      editingC = ''; logAct('contact_edited', { contact:c.id, subject:subjC(c), detail:{ changed:changed } }); renderContacts();
+    });
+  }
+  function deleteContact(btn){
+    var c = contacts.filter(function(x){ return x.id === btn.dataset.cdel; })[0]; if(!c) return;
+    if(!confirm('Delete ' + subjC(c) + ' for good? Their sign-up history and photos go too. Someone with orders or sales can\'t be deleted: opt them out instead.')) return;
+    btn.disabled = true;
+    sb.rpc('delete_contact', { p_id:c.id }).then(function(r){
+      var d = r.data;
+      if(r.error || !d || !d.ok){
+        btn.disabled = false;
+        alert(d && d.reason === 'has-history'
+          ? c.first_name + ' has ' + (d.orders || 0) + ' order(s) and ' + (d.sales || 0) + ' sale(s), so they stay on the list. Use Opt out instead.'
+          : 'Not deleted: ' + ((d && (CREASON[d.reason] || d.reason)) || (r.error && r.error.message) || 'please try again'));
+        return;
+      }
+      var at = contacts.indexOf(c); if(at >= 0) contacts.splice(at, 1);
+      if(editingC === c.id) editingC = '';
+      logAct('contact_deleted', { subject:subjC(c) }); renderContacts();   // no contact id: the row is gone
+    });
+  }
   $('c-csv').addEventListener('click', function(){
     var cols = ['created_at','first_name','last_name','mobile','email','consent','favourite','heard_about','interests','sources','notes','galindo_id','tier','member_link'];
     var cell = function(v){ var t = Array.isArray(v) ? v.join('; ') : String(v == null ? '' : v); if(/^[=+\-@\t\r]/.test(t)) t = "'" + t; return '"' + t.replace(/"/g, '""') + '"'; };
