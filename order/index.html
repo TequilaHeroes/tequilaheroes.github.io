@@ -336,14 +336,20 @@
     $('v-member').hidden = true; $('v-enter').hidden = false;
     $('enter-note').textContent = msg || '';
   }
-  function open(gid){
+  // This must NOT be called `open`: a top-level `function open()` replaces the browser's own window.open, which openPay()
+  // relies on. That exact bug sent every "Pay now" tap to the enter-your-ID screen on 6-7 Nov 2026 (window.open('')
+  // ran a lookup for an empty ID, which "wasn't recognised" and wiped the saved ID).
+  function openCard(gid){
     MOB = '';   // forget the in-session mobile so a different member doesn't inherit it
     $('enter-go').disabled = true; $('enter-note').textContent = gid ? 'Checking...' : '';
     return rpc('member_card', { gid:gid }).then(function(r){
       $('enter-go').disabled = false;
       if(!r || !r.ok){
-        store('');
-        showEnter(r && r.reason === 'slow-down' ? 'Too many tries just now. Give it a few minutes.' : "We don't recognise that ID. Check it against your message, or ask us on WhatsApp.");
+        var why = r && r.reason;
+        if(why === 'unknown') store('');   // only forget the saved ID when the members' list really rejected it
+        showEnter(why === 'slow-down' ? 'Too many tries just now. Give it a few minutes.'
+          : why === 'unknown' ? "We don't recognise that ID. Check it against your message, or ask us on WhatsApp."
+          : "We couldn't check your ID just now. Give it a moment and try again.");
         return;
       }
       member = r; store(r.id);
@@ -522,7 +528,7 @@
   });
 
   $('d-again').addEventListener('click', function(){ renderMember(location.href); $('o-note').value = ''; });
-  $('enter').addEventListener('submit', function(e){ e.preventDefault(); var v = $('gid-in').value.trim(); if(v) open(v); });
+  $('enter').addEventListener('submit', function(e){ e.preventDefault(); var v = $('gid-in').value.trim(); if(v) openCard(v); });
   function printArea(){
     var a = $('print-area'); if(!a){ a = document.createElement('div'); a.id = 'print-area'; a.hidden = true; document.body.appendChild(a); }
     a.innerHTML = ''; a.appendChild($('card').cloneNode(true)); a.firstChild.removeAttribute('id');
@@ -532,7 +538,7 @@
   $('not-me').addEventListener('click', function(){ store(''); MOB = ''; try{ localStorage.removeItem(MOB_KEY); }catch(e){} member = null; history.replaceState(null, '', location.pathname); $('gid-in').value = ''; showEnter(''); });
 
   var start = new URLSearchParams(location.search).get('id') || stored();
-  if(start) open(start); else showEnter('');
+  if(start) openCard(start); else showEnter('');
 </script>
 <!-- Cloudflare Web Analytics --><script type='module' src='https://static.cloudflareinsights.com/beacon.min.js' data-cf-beacon='{"token": "9ece67056cf94b17afa92a201a111250"}'></script><!-- End Cloudflare Web Analytics -->
 </body>
