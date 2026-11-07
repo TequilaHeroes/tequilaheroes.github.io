@@ -1635,7 +1635,7 @@
     }).join('');
     $('x-list').innerHTML = all.length ? all.map(function(s){
       var buyer = [s.first_name, s.last_name].filter(Boolean).join(' ');
-      return '<div class="item' + (s.voided ? ' void' : '') + '"><div><div class="t">' + esc(itemsText(s)) + '</div>' +
+      return '<div class="item' + (s.voided ? ' void' : '') + '"><div><div class="t">' + (s.ref ? '<span class="gidtag">' + esc(s.ref) + '</span> · ' : '') + esc(itemsText(s)) + '</div>' +
         '<div class="s">' + hm(s.sold_at) + ' · ' + esc(s.payment || 'Card') + (s.slip ? ' slip ' + esc(s.slip) : (s.payment || 'Card') === 'Card' ? ' slip -' : '') + (buyer ? ' · ' + esc(buyer) : '') + (ev ? '' : ' · ' + esc(s.event)) + '</div>' +
         '<div class="s">' + esc(s.online ? 'Online order ' + s.ref + ' · paid through Creative Beverages · ' + (s.fulfilment === 'deliver' ? 'delivery' : 'collect') :
             s.channel === 'qr' ? 'Guest QR order ' + (s.pickup || '') : s.channel === 'till' ? 'Till · ' + [who(s.sold_by), s.device].filter(Boolean).join(' · ') : 'iPad till') +
@@ -1682,7 +1682,7 @@
     });
   });
   $('x-csv').addEventListener('click', function(){
-    var cols = ['event','sold_at','channel','sold_by','device','pickup','galindo_id','price_basis','cb_invoice','slip','items','total','payment','paid','voided','void_reason','voided_by','handed_over','delivered_at','first_name','last_name','mobile','email','consent','note'];
+    var cols = ['ref','event','sold_at','channel','sold_by','device','pickup','galindo_id','price_basis','cb_invoice','slip','items','total','payment','paid','voided','void_reason','voided_by','handed_over','delivered_at','first_name','last_name','mobile','email','consent','note'];
     var csv = cols.join(',') + '\n' + eventSales().map(function(s){ return cols.map(function(k){ return csvCell(k === 'items' ? itemsText(s) : s[k]); }).join(','); }).join('\n');
     var a = document.createElement('a'); a.href = URL.createObjectURL(new Blob(['\ufeff' + csv], { type:'text/csv' }));
     a.download = 'galindo-sales-' + new Date().toISOString().slice(0, 10) + '.csv'; a.click();
@@ -1835,7 +1835,7 @@
         acts.push('<button class="link danger" type="button" data-tact="void">Void</button>');
       }
     }
-    return '<div class="item' + (s.voided ? ' void' : '') + '" data-sale="' + esc(s.id) + '"><div><div class="t">' + (guest ? '<span class="gidtag">' + esc(s.pickup) + '</span> · ' : '') + esc(itemsText(s)) + '</div>' +
+    return '<div class="item' + (s.voided ? ' void' : '') + '" data-sale="' + esc(s.id) + '"><div><div class="t">' + (s.ref ? '<span class="gidtag">' + esc(s.ref) + '</span> · ' : '') + (guest ? '<span class="gidtag">' + esc(s.pickup) + '</span> · ' : '') + esc(itemsText(s)) + '</div>' +
       '<div class="s">' + hm(s.sold_at) + (s.paid ? ' · ' + esc(s.payment || 'Card') + (s.slip ? ' ' + esc(s.slip) : (s.payment || 'Card') === 'Card' ? ' <span style="color:var(--marigold)">no slip</span>' : '') : '') +
         (name ? ' · ' + esc(name) : '') + (s.galindo_id ? ' · ' + esc(s.galindo_id) : '') + (s.price_basis === 'members' ? ' · members' : s.price_basis === 'retail' ? ' · retail' : '') +
         (guest && s.mobile ? ' · ' + esc(s.mobile) : '') + '</div>' +
