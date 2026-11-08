@@ -736,8 +736,10 @@
         if(srcs.length && srcs.every(function(s){ return s === 'import'; })) return;   // a bulk import isn't live activity
         var src = srcs.filter(function(s){ return s !== 'import'; })[0] || srcs[0] || '';
         var name = [c.first_name, c.last_name].filter(Boolean).join(' ') || '(no name)';
-        items.push({ at:c.created_at, sys:'member', text:SYS_SRC[src] || 'joined', sub:name,
-          search:[name, SYS_SRC[src] || 'joined', 'joined member'].join(' ') });
+        // name the inviter on invite sign-ups so the feed says whose invite it was, not just "joined by invite"
+        var mtext = (src === 'invite' && c.invited_by) ? 'joined · invited by ' + c.invited_by : (SYS_SRC[src] || 'joined');
+        items.push({ at:c.created_at, sys:'member', text:mtext, sub:name,
+          search:[name, mtext, 'joined member', c.invited_by || ''].join(' ') });
       });
       sales.forEach(function(s){
         if(s.voided || s.paid === false) return;                // voided or still-unpaid guest QR orders don't count yet
