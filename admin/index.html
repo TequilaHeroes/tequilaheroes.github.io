@@ -135,6 +135,15 @@
   .feed.order b{color:var(--gold)} .feed.order .sysdot{background:var(--gold)}
   .feed.sale b{color:var(--gold-bright)} .feed.sale .sysdot{background:var(--gold-bright)}
   .feed.paid b{color:var(--agave)} .feed.paid .sysdot{background:var(--agave)}
+  .acks{display:flex;align-items:center;flex-wrap:wrap;gap:7px;margin-top:9px}
+  .ackbtn{display:inline-flex;align-items:center;gap:6px;font:inherit;font-size:12.5px;font-weight:600;cursor:pointer;color:var(--faint);background:var(--surface-2);border:1px solid var(--line-2);border-radius:999px;padding:5px 11px;line-height:1;-webkit-tap-highlight-color:transparent}
+  .ackbtn .emo{font-size:14px;line-height:1;filter:grayscale(1);opacity:.5}
+  .ackbtn.on{color:var(--agave);border-color:#3c4a2e;background:rgba(139,178,106,.12)}
+  .ackbtn.on .emo{filter:none;opacity:1}
+  .ackbtn:active{transform:scale(.96)}
+  .acknames{display:inline-flex;align-items:center;gap:6px;flex-wrap:wrap}
+  .ackn{font-size:12px;color:var(--muted)} .ackn.me{color:var(--agave);font-weight:600}
+  .acksep{color:var(--faint);font-size:11px}
   select.mini{width:auto;font-size:13px;padding:4px 8px;border-radius:8px}
   .msgbox{width:100%;min-height:150px;font-size:14px}
   @media(max-width:560px){.row{flex-direction:column;gap:0}}
@@ -706,6 +715,65 @@
       .subscribe();
   }
   function unsubscribeActivity(){ if(activitySub){ try{ sb.removeChannel(activitySub); }catch(e){} activitySub = null; } }
+
+  // ---------- acknowledgements: a thumbs-up on any feed row, so the team can see someone's eyes are on it ----------
+  // A row has no single table behind it, so an ack points at it by a stable string key the client builds per row
+  // (see feedModel): a:<activity id>  o:<order id>:new  o:<order id>:paid  m:<contact id>  s:<sale id>.
+  var acks = {}, myName = '', ackSub = null;        // acks[key] = [{ email, name }]
+  function indexAcks(rows){ acks = {}; (rows || []).forEach(function(a){ (acks[a.item_key] = acks[a.item_key] || []).push({ email:a.actor_email, name:a.actor_name }); }); }
+  function loadAcks(){
+    sb.from('admin_acks').select('*').limit(4000).then(function(r){
+      if(r.error) return;                            // table isn't there until the acks SQL is run; fail quietly
+      indexAcks(r.data); if(!$('t-activity').hidden) renderFeed();
+    });
+  }
+  function firstName(n){ return String(n || '').trim().split(/\s+/)[0] || ''; }
+  function ackHtml(key){
+    if(!key) return '';
+    var list = acks[key] || [];
+    if(!list.length){
+      return '<div class="acks"><button type="button" class="ackbtn" data-ack="' + esc(key) + '" aria-label="Acknowledge"><span class="emo">👍</span> ack</button></div>';
+    }
+    var mine = false, names = [];
+    list.forEach(function(a){ var me = a.email === ME; if(me) mine = true; names.push({ me:me, label: me ? 'You' : (firstName(a.name) || 'Someone') }); });
+    names.sort(function(a, b){ return a.me ? -1 : b.me ? 1 : 0; });            // "You" first
+    var ns = names.map(function(n){ return '<span class="ackn' + (n.me ? ' me' : '') + '">' + esc(n.label) + '</span>'; }).join('<span class="acksep">·</span>');
+    return '<div class="acks"><button type="button" class="ackbtn' + (mine ? ' on' : '') + '" data-ack="' + esc(key) + '" aria-pressed="' + (mine ? 'true' : 'false') + '">' +
+      '<span class="emo">👍</span> ' + list.length + '</button><span class="acknames">' + ns + '</span></div>';
+  }
+  // tap toggles your thumb; show it at once (optimistic), then let the server confirm and the realtime feed reconcile
+  function toggleAck(key){
+    var list = acks[key] || (acks[key] = []);
+    var idx = -1; for(var i = 0; i < list.length; i++){ if(list[i].email === ME){ idx = i; break; } }
+    if(idx < 0) list.push({ email:ME, name:myName || 'You' }); else list.splice(idx, 1);
+    if(!$('t-activity').hidden) renderFeed();
+    sb.rpc('toggle_ack', { p:{ key:key } }).then(function(r){
+      if(r.error || !r.data || !r.data.ok){ loadAcks(); return; }      // reconcile from the truth if it was refused
+      if(r.data.actor_name) myName = r.data.actor_name;
+      var l = acks[key] || (acks[key] = []); var mi = -1; for(var j = 0; j < l.length; j++){ if(l[j].email === ME){ mi = j; break; } }
+      if(r.data.acked){ if(mi < 0) l.push({ email:ME, name:myName }); else l[mi].name = myName; }
+      else if(mi >= 0) l.splice(mi, 1);
+      if(!$('t-activity').hidden) renderFeed();
+    }, function(){ loadAcks(); });
+  }
+  function subscribeAcks(){
+    if(ackSub || !sb.channel) return;
+    ackSub = sb.channel('admin-acks')
+      .on('postgres_changes', { event:'INSERT', schema:'public', table:'admin_acks' }, function(p){
+        var a = p && p.new; if(!a || !a.item_key) return;
+        var l = acks[a.item_key] || (acks[a.item_key] = []);
+        var hit = false; l.forEach(function(x){ if(x.email === a.actor_email){ x.name = a.actor_name; hit = true; } });
+        if(!hit) l.push({ email:a.actor_email, name:a.actor_name });
+        if(!$('t-activity').hidden) renderFeed();
+      })
+      .on('postgres_changes', { event:'DELETE', schema:'public', table:'admin_acks' }, function(p){
+        var a = p && p.old; if(!a || !a.item_key || !acks[a.item_key]) return;
+        acks[a.item_key] = acks[a.item_key].filter(function(x){ return x.email !== a.actor_email; });
+        if(!$('t-activity').hidden) renderFeed();
+      })
+      .subscribe();
+  }
+  function unsubscribeAcks(){ if(ackSub){ try{ sb.removeChannel(ackSub); }catch(e){} ackSub = null; } }
   // The feed is the whole pulse of the night, not just button-presses: team actions (who messaged,
   // who moved an order) PLUS the events that happen on their own, members joining, orders coming in,
   // payments landing, bottles sold at the till. Team actions come from admin_activity; the rest we
@@ -718,15 +786,15 @@
   function feedModel(){
     var items = [];
     activity.forEach(function(a){
-      items.push({ at:a.created_at, mine:a.actor_email === ME, who:actWho(a), sent:actSent(a),
+      items.push({ at:a.created_at, key:'a:' + a.id, mine:a.actor_email === ME, who:actWho(a), sent:actSent(a),
         text:actText(a), sub:a.subject || '', search:[a.subject, a.actor_name, actText(a)].join(' ') });
     });
     orders.forEach(function(o){                                 // online orders + the payments that land on them
       var name = [o.first_name, o.last_name].filter(Boolean).join(' '), ref = o.ref || '';
       var sub = ref + (name ? ' · ' + name : '');
-      if(o.created_at) items.push({ at:o.created_at, sys:'order', text:'ordered online · ' + rand(o.total),
+      if(o.created_at) items.push({ at:o.created_at, key:'o:' + o.id + ':new', sys:'order', text:'ordered online · ' + rand(o.total),
         sub:sub, search:[ref, name, 'ordered online'].join(' ') });
-      if(o.paid_at) items.push({ at:o.paid_at, sys:'paid', text:'payment received · ' + rand(o.total),
+      if(o.paid_at) items.push({ at:o.paid_at, key:'o:' + o.id + ':paid', sys:'paid', text:'payment received · ' + rand(o.total),
         sub:sub, search:[ref, name, 'payment received paid'].join(' ') });
     });
     if(!partner){                                               // members + till sales are team-only (CB never opens this tab)
@@ -738,13 +806,13 @@
         var name = [c.first_name, c.last_name].filter(Boolean).join(' ') || '(no name)';
         // name the inviter on invite sign-ups so the feed says whose invite it was, not just "joined by invite"
         var mtext = (src === 'invite' && c.invited_by) ? 'joined · invited by ' + c.invited_by : (SYS_SRC[src] || 'joined');
-        items.push({ at:c.created_at, sys:'member', text:mtext, sub:name,
+        items.push({ at:c.created_at, key:'m:' + c.id, sys:'member', text:mtext, sub:name,
           search:[name, mtext, 'joined member', c.invited_by || ''].join(' ') });
       });
       sales.forEach(function(s){
         if(s.voided || s.paid === false) return;                // voided or still-unpaid guest QR orders don't count yet
         var buyer = [s.first_name, s.last_name].filter(Boolean).join(' ');
-        items.push({ at:s.sold_at, sys:'sale', text:'sold ' + itemsText(s) + ' · ' + rand(s.total),
+        items.push({ at:s.sold_at, key:'s:' + s.id, sys:'sale', text:'sold ' + itemsText(s) + ' · ' + rand(s.total),
           sub:buyer || s.event || '', search:[itemsText(s), buyer, s.event, 'sold till'].join(' ') });
       });
     }
@@ -762,22 +830,23 @@
       if(a.sys){
         return '<div class="item feed sys ' + a.sys + '"><div><div class="t">' +
           '<span class="sysdot"></span><b>' + esc(a.text) + '</b></div>' +
-          (a.sub ? '<div class="s">' + esc(a.sub) + '</div>' : '') + '</div>' +
+          (a.sub ? '<div class="s">' + esc(a.sub) + '</div>' : '') + ackHtml(a.key) + '</div>' +
           '<div class="when">' + esc(stamp(a.at)) + '</div></div>';
       }
       return '<div class="item feed' + (a.sent ? ' sent' : '') + '"><div><div class="t">' +
         '<span class="who">' + esc(a.who) + '</span> ' + (a.sent ? '✓ ' : '') + '<b>' + esc(a.text) + '</b></div>' +
-        (a.sub ? '<div class="s">' + esc(a.sub) + '</div>' : '') + '</div>' +
+        (a.sub ? '<div class="s">' + esc(a.sub) + '</div>' : '') + ackHtml(a.key) + '</div>' +
         '<div class="when">' + esc(stamp(a.at)) + '</div></div>';
     }).join('') : '<div class="empty">' + (q || mine ? 'Nothing matches that.' : 'Nothing yet. It fills up as members join, orders come in, payments land, and the team works.') + '</div>';
   }
   $('a-q').addEventListener('input', renderFeed);
   $('a-mine').addEventListener('change', renderFeed);
+  $('a-list').addEventListener('click', function(e){ var b = e.target.closest('[data-ack]'); if(b) toggleAck(b.getAttribute('data-ack')); });
 
   /* ---------- sign in / out ---------- */
   function show(session){
     $('v-login').hidden = !!session; $('v-app').hidden = !session;
-    if(!session){ teamOk = false; ME = ''; unsubscribeActivity(); return; }
+    if(!session){ teamOk = false; ME = ''; unsubscribeActivity(); unsubscribeAcks(); return; }
     ME = (session.user.email || '').toLowerCase();
     $('who').textContent = session.user.email;
     Promise.all([sb.rpc('is_team'), sb.rpc('is_partner')]).then(function(r){
@@ -817,7 +886,7 @@
   var teamOk = false;
   var partner = false;   // Creative Beverages login: Orders tab only, orders sent to them
   function refreshAll(){
-    teamOk = true; loadOrders(); loadActivity(); subscribeActivity(); if(!partner){ loadStockists(); loadContacts(); loadSales(); loadTill(); loadAlbums(); collectFromHash(); openTabFromHash(); if(!$('t-traffic').hidden) loadTraffic(); }
+    teamOk = true; loadOrders(); loadActivity(); subscribeActivity(); if(!partner){ loadAcks(); subscribeAcks(); loadStockists(); loadContacts(); loadSales(); loadTill(); loadAlbums(); collectFromHash(); openTabFromHash(); if(!$('t-traffic').hidden) loadTraffic(); }
     $('r-at').textContent = 'Updated ' + new Date().toLocaleTimeString('en-ZA', { hour:'2-digit', minute:'2-digit', second:'2-digit' });
   }
   function busy(){ return !$('s-form').hidden || !$('x-form').hidden || !$('c-msg-card').hidden || (document.activeElement && /INPUT|SELECT|TEXTAREA/.test(document.activeElement.tagName)); }
