@@ -721,10 +721,16 @@
   // (see feedModel): a:<activity id>  o:<order id>:new  o:<order id>:paid  m:<contact id>  s:<sale id>.
   var acks = {}, myName = '', ackSub = null;        // acks[key] = [{ email, name }]
   function indexAcks(rows){ acks = {}; (rows || []).forEach(function(a){ (acks[a.item_key] = acks[a.item_key] || []).push({ email:a.actor_email, name:a.actor_name }); }); }
+  // a thumb shows on the feed, on order cards and on the payments list; refresh whichever of those is open
+  function rerenderAcks(){
+    if(!$('t-activity').hidden) renderFeed();
+    if(!$('t-orders').hidden && orders.length) renderOrders();
+    if(!$('t-payments').hidden) renderPayments();
+  }
   function loadAcks(){
     sb.from('admin_acks').select('*').limit(4000).then(function(r){
       if(r.error) return;                            // table isn't there until the acks SQL is run; fail quietly
-      indexAcks(r.data); if(!$('t-activity').hidden) renderFeed();
+      indexAcks(r.data); rerenderAcks();
     });
   }
   function firstName(n){ return String(n || '').trim().split(/\s+/)[0] || ''; }
@@ -746,14 +752,14 @@
     var list = acks[key] || (acks[key] = []);
     var idx = -1; for(var i = 0; i < list.length; i++){ if(list[i].email === ME){ idx = i; break; } }
     if(idx < 0) list.push({ email:ME, name:myName || 'You' }); else list.splice(idx, 1);
-    if(!$('t-activity').hidden) renderFeed();
+    rerenderAcks();
     sb.rpc('toggle_ack', { p:{ key:key } }).then(function(r){
       if(r.error || !r.data || !r.data.ok){ loadAcks(); return; }      // reconcile from the truth if it was refused
       if(r.data.actor_name) myName = r.data.actor_name;
       var l = acks[key] || (acks[key] = []); var mi = -1; for(var j = 0; j < l.length; j++){ if(l[j].email === ME){ mi = j; break; } }
       if(r.data.acked){ if(mi < 0) l.push({ email:ME, name:myName }); else l[mi].name = myName; }
       else if(mi >= 0) l.splice(mi, 1);
-      if(!$('t-activity').hidden) renderFeed();
+      rerenderAcks();
     }, function(){ loadAcks(); });
   }
   function subscribeAcks(){
@@ -764,12 +770,12 @@
         var l = acks[a.item_key] || (acks[a.item_key] = []);
         var hit = false; l.forEach(function(x){ if(x.email === a.actor_email){ x.name = a.actor_name; hit = true; } });
         if(!hit) l.push({ email:a.actor_email, name:a.actor_name });
-        if(!$('t-activity').hidden) renderFeed();
+        rerenderAcks();
       })
       .on('postgres_changes', { event:'DELETE', schema:'public', table:'admin_acks' }, function(p){
         var a = p && p.old; if(!a || !a.item_key || !acks[a.item_key]) return;
         acks[a.item_key] = acks[a.item_key].filter(function(x){ return x.email !== a.actor_email; });
-        if(!$('t-activity').hidden) renderFeed();
+        rerenderAcks();
       })
       .subscribe();
   }
@@ -1395,12 +1401,14 @@
         '</div>' +
         (story ? '<div class="oc-story">' + story + '</div>' : '') +
         orderHistoryHtml(o, ordersByCust) +
+        (!partner ? ackHtml('o:' + o.id) : '') +            // a team thumb to say "I've got eyes on this order"
         '</div>';
     }).join('') : '<div class="empty">' + (orders.length ? 'No orders here.' : 'No orders yet. They arrive here when members order on tequilaheroes.com/order/.') + '</div>';
   }
   $('o-filter').addEventListener('change', renderOrders);
   function subjO(o){ return o ? o.ref + ' · ' + [o.first_name, o.last_name].filter(Boolean).join(' ') : ''; }
   $('o-list').addEventListener('click', function(e){
+    var ack = e.target.closest('[data-ack]'); if(ack){ toggleAck(ack.getAttribute('data-ack')); return; }
     // WhatsApp the customer: the link opens on its own, we just record it (and whether it carried the pay link)
     var wao = e.target.closest('[data-wao]');
     if(wao){ var ow = orders.filter(function(x){ return x.id === wao.dataset.wao; })[0];
@@ -1597,6 +1605,7 @@
       return '<div class="item" style="display:block">' +
         '<div><b>' + esc(o.ref) + '</b> · ' + esc([o.first_name, o.last_name].filter(Boolean).join(' ')) + ' · ' + rand(o.total) + (o.fulfilment === 'deliver' ? ' · delivery' : ' · collect') + '</div>' +
         '<div style="margin-top:4px">' + payChip(cb, paid) + fixed + '</div>' +
+        (!partner ? ackHtml('o:' + o.id) : '') +          // same thumb as the order card: one mark per order, shared across both tabs
       '</div>';
     }).join('');
     // Tally across ALL open orders (incl. ones already paid) so it matches the pills; before a check it reflects stored status.
@@ -1605,6 +1614,7 @@
       (fixedN ? ' · <span style="color:var(--agave)">' + fixedN + ' just confirmed from CB</span>' : '');
     $('pay-badge').hidden = !unpaid; $('pay-badge').textContent = unpaid;
   }
+  $('pay-list').addEventListener('click', function(e){ var b = e.target.closest('[data-ack]'); if(b) toggleAck(b.getAttribute('data-ack')); });
   function loadPayments(){
     if(!orders.length){ loadOrders(); }   // loadOrders re-renders this tab when it lands (see loadOrders)
     renderPayments();
