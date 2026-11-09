@@ -86,6 +86,7 @@
   .trow span{position:relative;overflow:hidden;text-overflow:ellipsis;white-space:nowrap} .trow b{position:relative;color:var(--gold-bright)}
   h4{margin:18px 0 8px;font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--faint)}
   .item.void{opacity:.5}
+  .item[data-sale]{cursor:pointer}
   body.partner .tabs button[data-tab]:not([data-tab="orders"]), body.partner .team-only{display:none!important}
   .acts{display:flex;flex-wrap:wrap;gap:4px 12px;justify-content:flex-end;margin-top:4px}
   .gidtag{font-size:12.5px;letter-spacing:.08em;font-weight:700;color:var(--gold-bright)}
@@ -576,6 +577,15 @@
         <div class="brand" style="font-size:30px">History</div>
         <p class="muted" style="margin:4px 0 18px;font-size:14px" id="hist-who"></p>
         <div id="hist-list"></div>
+      </div>
+    </div>
+
+    <!-- till sale: tap a sale to open it, see everything and edit the details -->
+    <div class="handover" id="sale-sheet" hidden>
+      <div class="wrap" style="max-width:520px;padding-top:max(36px, env(safe-area-inset-top,0px))">
+        <button type="button" id="sale-close" aria-label="Close" style="position:absolute;top:max(14px, env(safe-area-inset-top));right:16px;background:none;border:none;color:var(--fg);font-size:32px;line-height:1;cursor:pointer;padding:6px 10px">&times;</button>
+        <div class="brand" style="font-size:30px">Sale</div>
+        <div id="sale-body"></div>
       </div>
     </div>
   </div>
@@ -1384,6 +1394,7 @@
         '<div class="s">' + (isDeliver ? '<span class="oc-tag deliver">Deliver</span>' + esc(o.address) : '<span class="oc-tag collect">Collect</span>') + '</div>' +
         (o.note ? '<div class="s">\"' + esc(o.note) + '\"</div>' : '') +
         '<div class="s">' + esc([o.mobile, o.email, o.galindo_id].filter(Boolean).join(' · ')) + '</div>' +
+        (o.company ? '<div class="s" style="margin-top:4px">For a company tax invoice · <b style="color:var(--fg)">' + esc(o.company) + '</b>' + (o.vat_no ? ' · VAT ' + esc(o.vat_no) : '') + (o.bill_address ? ' · ' + esc(o.bill_address) : '') + ' <span style="color:var(--marigold)">give these to CB</span></div>' : '') +
         (o.cb_invoice ? '<div class="s">CB invoice <b style="color:var(--fg)">' + esc(o.cb_invoice) + '</b>' + (o.payment_ref ? ' · paid ref ' + esc(o.payment_ref) : '') + '</div>' : '') +
         (ps ? '<div class="s">Pay link' + (o.woo_order_id && o.pay_token ? ' (always live)' : '') + ': <a href="' + esc(ps) + '" target="_blank" rel="noopener" style="color:var(--gold)">' + esc(ps.replace(/^https:\/\//, '').slice(0, 40)) + '...</a></div>' : '') +
         (dl ? '<div class="s" style="margin-top:5px">' + dl + '</div>' : '') +
@@ -2028,7 +2039,8 @@
 
   // void / fix / pay / hand over
   $('t-main').addEventListener('click', function(e){
-    var b = e.target.closest('[data-tact]'); if(!b) return;
+    var b = e.target.closest('[data-tact]');
+    if(!b){ var row = e.target.closest('[data-sale]'); if(row && !e.target.closest('a, button, input, .acts')) openSale(row.dataset.sale); return; }
     var s = tSales.filter(function(x){ return x.id === b.closest('[data-sale]').dataset.sale; })[0]; if(!s) return;
     var act = b.dataset.tact, p = { id:s.id };
     if(act === 'void'){ var why = window.prompt((s.channel === 'qr' ? 'Cancel ' : 'Void ') + itemsText(s) + ' (' + rand(s.total) + ')? Say why:', ''); if(!why || !why.trim()) return; p.action = 'void'; p.reason = why.trim(); }
@@ -2050,6 +2062,82 @@
       if(r.error || !r.data.ok){ alert('Not changed: ' + (r.error ? r.error.message : r.data.reason) + (navigator.onLine ? '' : ' (no signal)')); return; }
       loadBoard();
       if(act === 'pay-card' || act === 'pay-cash'){ if(confirm('Paid. Hand the bottles over now?')) sb.rpc('till_update', { p:{ id:s.id, action:'hand', done:true } }).then(loadBoard); }
+    });
+  });
+  /* ---------- open a till sale: see everything, edit the details (routed through till_update) ---------- */
+  var saleOpen = null, salePay = 'card';
+  function slipLabelFor(k){ return { card:'Auth no. on the iKhokha slip', eft:'EFT reference (optional)', link:'Pay link / iKhokha ref (optional)' }[k] || ''; }
+  function syncSalePay(){
+    [].forEach.call($('sale-pay').querySelectorAll('[data-spay]'), function(x){ x.setAttribute('aria-pressed', String(x.dataset.spay === salePay)); });
+    $('s-slipwrap').hidden = ['card', 'eft', 'link'].indexOf(salePay) < 0; $('s-sliplab').textContent = slipLabelFor(salePay);
+  }
+  function openSale(id){
+    var s = tSales.filter(function(x){ return x.id === id; })[0]; if(!s) return;
+    saleOpen = id; salePay = payKey(s.payment);
+    var direct = isDirect();
+    var facts = ['Captured ' + hm(s.sold_at)];
+    facts.push(s.channel === 'qr' ? 'Guest QR order' : s.channel === 'import' ? 'iPad till' : 'Till');
+    if(s.sold_by) facts.push('by ' + who(s.sold_by));
+    if(s.device) facts.push(s.device);
+    if(s.galindo_id) facts.push(s.galindo_id);
+    if(s.price_basis) facts.push(s.price_basis === 'members' ? "members' price" : 'retail price');
+    if(s.pickup) facts.push('pickup ' + s.pickup);
+    if(s.consent) facts.push('opted in');
+    var status = s.voided
+      ? '<span class="pill off">Voided' + (s.voided_by ? ' by ' + esc(who(s.voided_by)) : '') + '</span>' + (s.void_reason ? ' <span class="pill">' + esc(s.void_reason) + '</span>' : '')
+      : '<span class="pill ' + (s.paid ? 'yes' : 'off') + '">' + (s.paid ? 'Paid' : 'Not paid yet') + '</span>' +
+        (s.handed_over ? '<span class="pill yes">Handed over' + (s.handed_at ? ' ' + esc(hm(s.handed_at)) : '') + '</span>' : '<span class="pill off">To deliver</span>');
+    var items = (s.items || []).map(function(i){
+      return '<div class="ln"><span class="n">' + esc(i.qty + '× ' + String(i.name || '').replace('Galindo ', '')) + '</span><span class="s">' + (i.price != null ? esc(rand(i.qty * i.price)) : '') + '</span></div>';
+    }).join('');
+    $('sale-body').innerHTML =
+      '<p class="muted" style="margin:2px 0 10px;font-size:14px">' + esc(facts.join(' · ')) + '</p>' +
+      '<div style="margin-bottom:14px">' + status + '</div>' +
+      '<div class="card cart" style="margin-top:0"><div>' + items + '</div><div class="tot"><span>Total</span><span>' + esc(rand(s.total)) + '</span></div></div>' +
+      '<div class="s" style="margin:8px 0 18px">To change the bottles, void this sale and capture it again.</div>' +
+      '<div class="row"><div><label for="s-first">First name</label><input id="s-first" maxlength="60" value="' + esc(s.first_name) + '"></div>' +
+        '<div><label for="s-last">Surname</label><input id="s-last" maxlength="60" value="' + esc(s.last_name) + '"></div></div>' +
+      '<div class="row"><div><label for="s-mobile">Mobile</label><input id="s-mobile" type="tel" maxlength="30" value="' + esc(s.mobile) + '"></div>' +
+        '<div><label for="s-email">Email</label><input id="s-email" type="email" maxlength="120" value="' + esc(s.email) + '"></div></div>' +
+      '<label style="margin-top:14px">Payment</label>' +
+      '<div class="seg" id="sale-pay"><button type="button" data-spay="card">Card</button><button type="button" data-spay="cash">Cash</button>' +
+        '<button type="button" data-spay="eft">EFT to CB</button><button type="button" data-spay="link">Pay link</button><button type="button" data-spay="other">Other</button></div>' +
+      '<div id="s-slipwrap" style="margin-top:10px"><label id="s-sliplab" for="s-slip"></label><input id="s-slip" maxlength="40" value="' + esc(s.slip) + '"></div>' +
+      (direct ? '<label for="s-inv" style="margin-top:12px">CB invoice no. <span class="faint" style="text-transform:none;letter-spacing:0">(blank = on the month\'s invoice)</span></label><input id="s-inv" maxlength="40" value="' + esc(s.cb_invoice) + '">' : '') +
+      '<label for="s-note" style="margin-top:12px">Note</label><input id="s-note" maxlength="300" value="' + esc(s.note) + '">' +
+      '<div id="sale-msg" class="note" style="margin-top:10px"></div>' +
+      '<button class="gold bigbtn" type="button" id="sale-save" style="margin-top:14px">Save changes</button>' +
+      '<div style="display:flex;justify-content:center;gap:18px;margin-top:16px;flex-wrap:wrap">' +
+        (!s.voided && s.paid && !s.handed_over ? '<button class="link" type="button" data-saleact="hand">Mark handed over</button>' : '') +
+        (s.voided ? '<button class="link" type="button" data-saleact="unvoid">Undo void</button>' : '<button class="link danger" type="button" data-saleact="void">Void this sale</button>') +
+      '</div>';
+    syncSalePay();
+    $('sale-sheet').hidden = false; window.scrollTo(0, 0);
+  }
+  function closeSale(){ $('sale-sheet').hidden = true; saleOpen = null; }
+  $('sale-close').addEventListener('click', closeSale);
+  $('sale-sheet').addEventListener('click', function(e){
+    if(e.target === this){ closeSale(); return; }
+    var sp = e.target.closest('[data-spay]'); if(sp){ salePay = sp.dataset.spay; syncSalePay(); return; }
+    var sa = e.target.closest('[data-saleact]'), save = e.target.closest('#sale-save');
+    if((!sa && !save) || !saleOpen) return;
+    var p = { id:saleOpen };
+    if(save){
+      p.action = 'fix'; p.payment = salePay;
+      p.slip = ['card', 'eft', 'link'].indexOf(salePay) >= 0 ? $('s-slip').value.trim() : '';
+      p.note = $('s-note').value.trim(); p.first = $('s-first').value.trim(); p.last = $('s-last').value.trim();
+      p.mobile = $('s-mobile').value.trim(); p.email = $('s-email').value.trim();
+      if($('s-inv')) p.cb_invoice = $('s-inv').value.trim();
+    } else if(sa.dataset.saleact === 'void'){
+      var why = window.prompt('Void this sale? Say why:', ''); if(!why || !why.trim()) return; p.action = 'void'; p.reason = why.trim();
+    } else if(sa.dataset.saleact === 'unvoid'){
+      if(!confirm('Undo the void on this sale?')) return; p.action = 'unvoid';
+    } else if(sa.dataset.saleact === 'hand'){ p.action = 'hand'; p.done = true; }
+    var btn = save || sa; btn.disabled = true;
+    sb.rpc('till_update', { p:p }).then(function(r){
+      btn.disabled = false;
+      if(r.error || !r.data.ok){ var m = $('sale-msg'); if(m) m.textContent = 'Not saved: ' + (r.error ? r.error.message : r.data.reason) + (navigator.onLine ? '' : ' (no signal)'); return; }
+      closeSale(); loadBoard();
     });
   });
   function findPickup(code){

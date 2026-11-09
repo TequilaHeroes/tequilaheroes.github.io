@@ -311,11 +311,10 @@
 </footer>
 
 <script>
-  /* Sign-ups go to Supabase (submit_contact, publishable key; it can only call that function). If that fails or isn't
-     configured yet, Bradley's iMac (signups.csv); if that fails too, the guest gets a one-tap WhatsApp to the team. */
+  /* Sign-ups go to Supabase (submit_contact, publishable key; it can only call that function). If that fails,
+     the guest gets a one-tap WhatsApp to the team. */
   var SUPABASE_URL = "https://yfopoeuncfpfizghqczr.supabase.co";
   var SUPABASE_KEY = "sb_publishable_aCL5Ko6acTk_pBSJ-zXvzA_UNSAyOcl";   /* publishable key: can only call submit_contact */
-  var ENDPOINT = "https://bradleys-imac.tailb3d389.ts.net:10000/";
   var WA_NUMBER = "27798207121";   /* Edrich */
 
   var $ = function(id){ return document.getElementById(id); };
@@ -353,7 +352,7 @@
     if(d.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(d.email)){ note.textContent = "That email doesn't look right."; $('f-email').focus(); return; }
     if(!d.consent){ note.textContent = "Tick the box so we're allowed to keep in touch."; $('consent-row').classList.add('need'); return; }
     note.textContent = ""; btn.disabled = true; btn.textContent = "Sending...";
-    toSupabase(d).catch(function(){ return toImac(d); })
+    toSupabase(d)
       .then(function(j){ $('signup').hidden = true; $('done').classList.add('show'); showId(j || {}, d); })
       .catch(function(){
         note.textContent = "We couldn't save that just now. Send it to the team on WhatsApp instead, one tap:";
@@ -373,7 +372,6 @@
     var p = { source:'thanks' }; for(var k in d) if(k !== 'type') p[k] = d[k];
     return post(SUPABASE_URL + '/rest/v1/rpc/submit_contact', { 'Content-Type':'application/json', apikey:SUPABASE_KEY, Authorization:'Bearer ' + SUPABASE_KEY }, { p:p });
   }
-  function toImac(d){ return post(ENDPOINT, {'Content-Type':'application/json'}, d); }
 
   /* Galindo ID from the sign-up: kept on this phone (same key the members' page uses) so the photos are one tap away. */
   var ID_KEY = 'galindo_member_id';

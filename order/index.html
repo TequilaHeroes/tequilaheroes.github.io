@@ -271,6 +271,12 @@
         <div class="field"><label for="o-mobile">Your mobile <span class="opt">(the one we have for you)</span></label><input id="o-mobile" type="tel" inputmode="tel" autocomplete="tel" placeholder="072 000 0000"></div>
         <div class="field"><label for="o-note">Anything else? <span class="opt">(optional)</span></label><input id="o-note" maxlength="500" placeholder="e.g. it's a gift, needs to arrive before Friday"></div>
 
+        <div class="field"><label for="o-company">Company name <span class="opt">(only if you need a tax invoice)</span></label><input id="o-company" maxlength="120" autocomplete="organization" placeholder="As it should appear on the invoice"></div>
+        <div id="co-extra" hidden>
+          <div class="field"><label for="o-vat">Company VAT number <span class="opt">(if registered)</span></label><input id="o-vat" maxlength="30" autocomplete="off" placeholder="e.g. 4xxxxxxxxx"></div>
+          <div class="field"><label for="o-bill">Company billing address <span class="opt">(if different from delivery)</span></label><input id="o-bill" maxlength="300" autocomplete="off" placeholder="Address for the invoice"></div>
+        </div>
+
         <div class="editbar" id="editbar" hidden>Changing order <b id="edit-ref"></b> · <button class="linkbtn" type="button" id="edit-stop" style="padding:0">stop editing</button></div>
         <button class="cta" type="submit" id="o-go">Place my order</button>
         <div class="note" id="o-note-msg"></div>
@@ -404,6 +410,8 @@
   }
   chipGroup('ful', function(v){ ful = v; $('addr-wrap').hidden = v !== 'deliver'; if(v === 'deliver') $('o-street').focus(); });
   payNote();
+  // VAT + billing address only matter once they've named a company, so keep them tucked away until then
+  $('o-company').addEventListener('input', function(){ $('co-extra').hidden = !this.value.trim(); });
 
   var REASON = { 'mobile-mismatch':"That mobile doesn't match the one we have for you. Use the number you gave us, or message us.",
     'bad-mobile':'That mobile number looks wrong.', address:'Add your street address and suburb.', 'postal-code':'Add your 4-digit postal code.', empty:'Choose at least one bottle.',
@@ -419,7 +427,8 @@
     if(ful === 'deliver' && !/^\d{4}$/.test($('o-pc').value.trim())){ n.textContent = REASON['postal-code']; $('o-pc').focus(); return; }
     n.textContent = ''; $('o-go').disabled = true; $('o-go').textContent = editing ? 'Saving...' : 'Placing your order...';
     rpc('place_order', { p:{ gid:member.id, mobile:mob, items:qty, fulfilment:ful, ref:editing || undefined, street:$('o-street').value.trim(), suburb:$('o-suburb').value.trim(),
-      city:$('o-city').value.trim(), postal_code:$('o-pc').value.trim(), note:$('o-note').value.trim() } })
+      city:$('o-city').value.trim(), postal_code:$('o-pc').value.trim(), note:$('o-note').value.trim(),
+      company:$('o-company').value.trim(), vat_no:$('o-vat').value.trim(), bill_address:$('o-bill').value.trim() } })
       .then(function(r){
         if(!r || !r.ok){ n.textContent = REASON[r && r.reason] || "That didn't go through. Try again, or message us."; return; }
         var lines = member.prices.filter(function(p){ return qty[p.key] > 0; }).map(function(p){ return qty[p.key] + '× ' + p.name.replace('Galindo ', ''); });

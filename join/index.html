@@ -293,11 +293,10 @@
 <script>
   /* Invite sign-ups go to Supabase (submit_contact, source 'invite'; publishable key, it can only call that function).
      An invite sign-up does NOT mint a Galindo ID: the person is saved to Contacts for the team to approve, which is
-     when the ID is issued and members' prices are switched on. If Supabase fails, fall back to the iMac, then to a
+     when the ID is issued and members' prices are switched on. If Supabase fails, fall back to a
      one-tap WhatsApp to the team so nothing is lost. */
   var SUPABASE_URL = "https://yfopoeuncfpfizghqczr.supabase.co";
   var SUPABASE_KEY = "sb_publishable_aCL5Ko6acTk_pBSJ-zXvzA_UNSAyOcl";   /* publishable key: can only call submit_contact */
-  var ENDPOINT = "https://bradleys-imac.tailb3d389.ts.net:10000/";
   var WA_NUMBER = "27798207121";   /* Edrich */
 
   var $ = function(id){ return document.getElementById(id); };
@@ -339,7 +338,7 @@
     if(!d.email){ note.textContent = "Add your email so we can send your orders and receipts."; $('f-email').focus(); return; }
     if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(d.email)){ note.textContent = "That email doesn't look right."; $('f-email').focus(); return; }
     note.textContent = ""; btn.disabled = true; btn.textContent = "Signing you up...";
-    toSupabase(d).catch(function(){ return toImac(d); })
+    toSupabase(d)
       .then(function(){ $('signup').hidden = true; $('done').classList.add('show'); window.scrollTo({ top:0, behavior:'smooth' }); })
       .catch(function(){
         note.textContent = "We couldn't save that just now. Send it to the team on WhatsApp instead, one tap:";
@@ -363,7 +362,6 @@
       return res;
     });
   }
-  function toImac(d){ return post(ENDPOINT, {'Content-Type':'application/json'}, { type:'signup', source:'invite', first:d.first, last:d.last, mobile:d.mobile, email:d.email, favourite:d.favourite, interests:d.interests, heard:d.heard, note:d.note, consent:d.consent }); }
 
   $('again').addEventListener('click', function(){
     ['f-first','f-last','f-mobile','f-email','f-heard','f-note'].forEach(function(id){ $(id).value = ''; });
