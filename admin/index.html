@@ -1137,8 +1137,7 @@
     var cols = ['created_at','first_name','last_name','mobile','email','consent','favourite','heard_about','interests','sources','notes','galindo_id','tier','member_link'];
     var cell = function(v){ var t = Array.isArray(v) ? v.join('; ') : String(v == null ? '' : v); if(/^[=+\-@\t\r]/.test(t)) t = "'" + t; return '"' + t.replace(/"/g, '""') + '"'; };
     var csv = cols.join(',') + '\n' + filtered().map(function(c){ return cols.map(function(k){ return cell(k === 'member_link' ? (c.galindo_id ? memberLink(c) : '') : c[k]); }).join(','); }).join('\n');
-    var a = document.createElement('a'); a.href = URL.createObjectURL(new Blob(['' + csv], { type:'text/csv' }));
-    a.download = 'galindo-contacts-' + new Date().toISOString().slice(0, 10) + '.csv'; a.click();
+    downloadCsv('galindo-contacts-' + new Date().toISOString().slice(0, 10) + '.csv', csv);
   });
   /* ---------- Galindo IDs ---------- */
   var TIER = { reposado:'Reposado', anejo:'Añejo', extra:'Extra Añejo \'V\'' };
@@ -1576,11 +1575,24 @@
       if(k === 'delivery_hours'){ var ms = deliverMs(o); return csvCell(ms != null ? (ms / 3600000).toFixed(1) : ''); }
       return csvCell(o[k]);
     }).join(','); }).join('\n');
-    var a = document.createElement('a'); a.href = URL.createObjectURL(new Blob(['\ufeff' + csv], { type:'text/csv' }));
-    a.download = 'galindo-orders-' + new Date().toISOString().slice(0, 10) + '.csv'; a.click();
+    downloadCsv('galindo-orders-' + new Date().toISOString().slice(0, 10) + '.csv', csv);
   });
 
   function csvCell(v){ var t = Array.isArray(v) ? v.join('; ') : String(v == null ? '' : v); if(/^[=+\-@\t\r]/.test(t)) t = "'" + t; return '"' + t.replace(/"/g, '""') + '"'; }
+  // Hand a CSV to the user. iPhone/iPad Safari ignores a download link (the file just never saves), so there we open the
+  // share sheet instead - Save to Files, WhatsApp to yourself, AirDrop. Everywhere else it's a normal file download.
+  function downloadCsv(name, text){
+    var blob = new Blob(['﻿' + text], { type:'text/csv' });
+    var isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+    if(isIOS && navigator.canShare){
+      try{ var file = new File([blob], name, { type:'text/csv' });
+        if(navigator.canShare({ files:[file] })){ navigator.share({ files:[file], title:name }).catch(function(){}); return; }
+      }catch(e){}
+    }
+    var a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = name;
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(function(){ URL.revokeObjectURL(a.href); }, 2000);
+  }
 
   /* ---------- sales (till imports) ---------- */
   var sales = [], imports = [];
@@ -1776,8 +1788,7 @@
   $('x-csv').addEventListener('click', function(){
     var cols = ['ref','event','sold_at','channel','sold_by','device','pickup','galindo_id','price_basis','cb_invoice','slip','items','total','payment','paid','voided','void_reason','voided_by','handed_over','delivered_at','first_name','last_name','mobile','email','consent','note'];
     var csv = cols.join(',') + '\n' + eventSales().map(function(s){ return cols.map(function(k){ return csvCell(k === 'items' ? itemsText(s) : s[k]); }).join(','); }).join('\n');
-    var a = document.createElement('a'); a.href = URL.createObjectURL(new Blob(['\ufeff' + csv], { type:'text/csv' }));
-    a.download = 'galindo-sales-' + new Date().toISOString().slice(0, 10) + '.csv'; a.click();
+    downloadCsv('galindo-sales-' + new Date().toISOString().slice(0, 10) + '.csv', csv);
   });
 
   /* ---------- till: every team phone rings up sales into public.sales (till_sale); no signal = queued on the phone ---------- */
