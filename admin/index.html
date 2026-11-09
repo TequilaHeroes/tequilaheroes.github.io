@@ -896,6 +896,7 @@
     if(b.dataset.tab === 'traffic') loadTraffic();
     if(b.dataset.tab === 'activity') renderFeed();
     if(b.dataset.tab === 'payments') loadPayments();
+    if(b.dataset.tab === 'sales'){ syncOnlineOption(); salesDefault(); renderSales(); }   // always reflect every sale kind, incl online, on open
   });
 
   /* ---------- refresh: button, every minute while the page is open, and on coming back to it ---------- */
@@ -1684,7 +1685,7 @@
       if(onlineSales().length) names.push(ONLINE_EV);
       var cur = $('x-event').value;
       $('x-event').innerHTML = (names.length > 1 ? '<option value="">All events</option>' : '') + names.map(function(n){ return '<option>' + esc(n) + '</option>'; }).join('');
-      if(cur && names.indexOf(cur) >= 0) $('x-event').value = cur;
+      if(salesPicked && cur && names.indexOf(cur) >= 0) $('x-event').value = cur; else salesDefault();
       $('x-names').innerHTML = names.map(function(n){ return '<option value="' + esc(n) + '">'; }).join('');
       renderSales(); if(!$('t-activity').hidden) renderFeed();
     });
@@ -1692,6 +1693,10 @@
   // Paid online orders (Orders tab, paid through Creative Beverages) count here too, as sale-shaped rows under the
   // event "Online orders", so Takings / Sales / Bottles and "By product" are EVERYTHING: events, direct till sales, online.
   var ONLINE_EV = 'Online orders';
+  // Default the Sales tab to "All events" (every kind of sale: till, imported party, guest QR, online CB) until a team
+  // member actively filters to one event. salesDefault() reselects All events whenever that option is present.
+  var salesPicked = false;
+  function salesDefault(){ var sel = $('x-event'); if(sel && !salesPicked && [].some.call(sel.options, function(o){ return o.value === ''; })) sel.value = ''; }
   function onlineSales(){
     return orders.filter(function(o){ return o.status === 'paid' || o.status === 'done'; }).map(function(o){
       return { id:'order:' + o.id, online:true, ref:o.ref, event:ONLINE_EV, sold_at:o.paid_at || o.created_at, channel:'online',
@@ -1705,6 +1710,7 @@
     var sel = $('x-event'); if(!sel || !onlineSales().length) return;
     if(![].some.call(sel.options, function(o){ return o.value === ''; })) sel.insertAdjacentHTML('afterbegin', '<option value="">All events</option>');
     if(![].some.call(sel.options, function(o){ return o.value === ONLINE_EV; })) sel.insertAdjacentHTML('beforeend', '<option>' + ONLINE_EV + '</option>');
+    salesDefault();
   }
   function eventSales(){ var ev = $('x-event').value; return sales.concat(onlineSales()).filter(function(s){ return !ev || s.event === ev; }); }
   function renderSales(){
@@ -1749,7 +1755,7 @@
         '<div class="t">' + rand(s.total) + '</div></div>';
     }).join('') : '';
   }
-  $('x-event').addEventListener('change', renderSales);
+  $('x-event').addEventListener('change', function(){ salesPicked = $('x-event').value !== ''; renderSales(); });
   $('x-open').addEventListener('click', function(){
     $('x-form').hidden = false; $('x-open').hidden = true; $('x-note').textContent = ''; $('x-note').className = 'note';
     if(!$('x-name').value) $('x-name').value = $('x-event').value; $('x-name').focus();
