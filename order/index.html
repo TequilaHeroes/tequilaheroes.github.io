@@ -147,6 +147,8 @@
   .total{display:flex;justify-content:space-between;align-items:baseline;margin-top:20px;padding-top:14px;border-top:1px solid var(--line-2)}
   .total span{font-family:var(--sans);font-size:12px;letter-spacing:.16em;text-transform:uppercase;color:var(--faint);font-weight:600}
   .total b{font-family:var(--serif);font-size:30px;color:var(--gold-bright)}
+  .dfee{display:flex;justify-content:space-between;align-items:baseline;margin-top:14px;font-family:var(--sans);font-size:14px;color:var(--muted)}
+  .dfee + .total{margin-top:8px}
   .small{font-family:var(--sans);font-size:12.5px;color:var(--faint);line-height:1.5;margin-top:12px;text-align:center}
   .pay{display:inline-block;font-family:var(--sans);font-weight:700;font-size:15px;color:#201600;background:linear-gradient(180deg,var(--gold-bright),var(--gold));border:none;border-radius:12px;padding:13px 22px;text-decoration:none;cursor:pointer;text-align:center}
   .pay[disabled]{opacity:.6;cursor:default}
@@ -241,9 +243,10 @@
       <form id="order" novalidate>
         <div class="qlabel">Bottles</div>
         <div id="prods"></div>
+        <div class="dfee" id="dfee" hidden><span>Delivery</span><span id="dfee-amt"></span></div>
         <div class="total"><span>Total</span><b id="total">R0</b></div>
 
-        <div class="qlabel">Collect or deliver?</div>
+        <div class="qlabel" id="ful-label">Collect or deliver?</div>
         <div class="chips" id="ful">
           <button class="chip" type="button" data-v="collect" aria-pressed="true">I'll collect</button>
           <button class="chip" type="button" data-v="deliver" aria-pressed="false">Deliver to me</button>
@@ -252,11 +255,12 @@
           <div class="field"><label for="o-street">Street address</label><input id="o-street" maxlength="120" autocomplete="address-line1" placeholder="e.g. 12 Main Road, Unit 4"></div>
           <div class="two">
             <div class="field"><label for="o-suburb">Suburb</label><input id="o-suburb" maxlength="60" autocomplete="address-level3" placeholder="Woodstock"></div>
-            <div class="field"><label for="o-city">City</label><input id="o-city" maxlength="60" autocomplete="address-level2" value="Cape Town"></div>
+            <div class="field"><label for="o-city">City</label><input id="o-city" maxlength="60" autocomplete="address-level2" placeholder="Cape Town"></div>
           </div>
           <div class="field" style="max-width:50%"><label for="o-pc">Postal code</label><input id="o-pc" inputmode="numeric" maxlength="4" autocomplete="postal-code" placeholder="7925"></div>
         </div>
         <p class="small" id="collect-note" style="text-align:left;margin-top:10px">Collection in Cape Town. We'll confirm where and when on WhatsApp.</p>
+        <p class="small" id="deliver-note" style="text-align:left;margin-top:10px" hidden></p>
 
         <!-- CB's PayGate checkout offers card + Zapper (both live). Copy names both; card is the easy path for phone
              customers, Zapper's QR needs a second screen to scan. -->
@@ -265,7 +269,7 @@
           <ol class="steps">
             <li>Place your order here.</li>
             <li>Pay straight away on the next screen, through <b>Creative Beverages</b>, our licensed distributor: by <b>card</b>, or <b>Zapper</b> (scan the QR).</li>
-            <li>We confirm stock and sort your collection or delivery. <span style="opacity:.75">For delivery, we'll quote the courier cost and confirm it with you on WhatsApp before you're charged, billed separately from the bottles. Collection in Cape Town is free.</span></li>
+            <li id="step-ful">We confirm stock and sort your collection or delivery. <span style="opacity:.75">For delivery, we'll quote the courier cost and confirm it with you on WhatsApp before you're charged, billed separately from the bottles. Collection in Cape Town is free.</span></li>
           </ol>
         </div>
         <div class="field"><label for="o-mobile">Your mobile <span class="opt">(the one we have for you)</span></label><input id="o-mobile" type="tel" inputmode="tel" autocomplete="tel" placeholder="072 000 0000"></div>
@@ -324,6 +328,26 @@
 
   var $ = function(id){ return document.getElementById(id); };
   var member = null, qty = {}, ful = 'collect', editing = '', myOrders = [];
+  // Ordering terms come from the database (order_terms): from 19 Nov 2026 every order is delivered at a flat fee and
+  // collection is off. Until that's switched on server-side TERMS stays null and the page keeps the old collect-or-deliver form.
+  var TERMS = null;
+  function feeOn(){ return !!(TERMS && TERMS.delivery_fee > 0); }
+  function noCollect(){ return !!(TERMS && TERMS.collect === false); }
+  function applyTerms(){
+    if(!noCollect()) return;
+    ful = 'deliver';
+    $('ful').hidden = true; $('addr-wrap').hidden = false; $('collect-note').hidden = true;
+    $('ful-label').textContent = 'Deliver to';
+    var fee = feeOn() ? rand(TERMS.delivery_fee) : '';
+    $('deliver-note').hidden = false;
+    $('deliver-note').textContent = fee ? 'Delivered by Creative Beverages. Delivery is ' + fee + ' per order, already in your total.' : 'Delivered by Creative Beverages.';
+    $('step-ful').textContent = 'We confirm stock and Creative Beverages delivers to you.' + (fee ? ' Delivery is a flat ' + fee + ' per order, included in what you pay.' : '');
+  }
+  function loadTerms(){
+    return rpc('order_terms', {}).then(function(r){
+      if(r && typeof r.delivery_fee === 'number'){ TERMS = r; applyTerms(); if(member) renderTotal(); }
+    }).catch(function(){});
+  }
   var MOB = '', MOB_KEY = 'galindo_member_mob';   // the mobile the member proved ownership with; cached per member so a return visit can open a fresh pay link without re-asking
   function storeMob(v){ v = String(v || '').replace(/\D/g, ''); if(v.length < 9 || !member) return; MOB = v; try{ localStorage.setItem(MOB_KEY, JSON.stringify({ id:member.id, mob:v })); }catch(e){} }
   function knownMob(){ if(MOB) return MOB; try{ var o = JSON.parse(localStorage.getItem(MOB_KEY) || '{}'); if(o && member && o.id === member.id) return o.mob || ''; }catch(e){} return ''; }
@@ -391,14 +415,16 @@
   }
   function renderTotal(){
     var t = 0; member.prices.forEach(function(p){ t += (qty[p.key] || 0) * p.price; $('q-' + p.key).textContent = qty[p.key] || 0; });
-    $('total').textContent = rand(t);
+    var fee = feeOn() && ful === 'deliver' ? Number(TERMS.delivery_fee) : 0;
+    $('dfee').hidden = !fee; if(fee) $('dfee-amt').textContent = rand(fee);
+    $('total').textContent = rand(t > 0 ? t + fee : 0);
   }
   $('prods').addEventListener('click', function(e){
     var b = e.target.closest('button[data-k]'); if(!b) return;
     qty[b.dataset.k] = Math.max(0, Math.min(120, (qty[b.dataset.k] || 0) + parseInt(b.dataset.d, 10))); renderTotal();
   });
   function payNote(){
-    $('collect-note').hidden = ful !== 'collect';
+    $('collect-note').hidden = ful !== 'collect' || noCollect();
     $('pay-note').textContent = "We share your name, contact details and order with Creative Beverages so they can invoice you. 18+ only.";
   }
   function chipGroup(id, set){
@@ -408,7 +434,7 @@
       payNote();
     });
   }
-  chipGroup('ful', function(v){ ful = v; $('addr-wrap').hidden = v !== 'deliver'; if(v === 'deliver') $('o-street').focus(); });
+  chipGroup('ful', function(v){ ful = v; $('addr-wrap').hidden = v !== 'deliver'; if(v === 'deliver') $('o-street').focus(); if(member) renderTotal(); });
   payNote();
   // VAT + billing address only matter once they've named a company, so keep them tucked away until then
   $('o-company').addEventListener('input', function(){ $('co-extra').hidden = !this.value.trim(); });
@@ -417,7 +443,8 @@
     'bad-mobile':'That mobile number looks wrong.', address:'Add your street address and suburb.', 'postal-code':'Add your 4-digit postal code.', empty:'Choose at least one bottle.',
     'too-many':"That's a big order! Message us and we'll sort it out directly.", 'slow-down':'Too many tries just now. Give it a few minutes.',
     unknown:"We don't recognise your ID any more. Message us.", 'not-mates':"Members' prices aren't switched on for your ID yet. Message us.",
-    locked:"That order has already gone to Creative Beverages, so it can't be changed here. Message us.", 'no-order':"We can't find that order." };
+    locked:"That order has already gone to Creative Beverages, so it can't be changed here. Message us.", 'no-order':"We can't find that order.",
+    'no-collect':'Collection is no longer available: every order is delivered now. Refresh the page and add your delivery address.' };
   $('order').addEventListener('submit', function(e){
     e.preventDefault();
     var n = $('o-note-msg'), any = Object.keys(qty).some(function(k){ return qty[k] > 0; }), mob = $('o-mobile').value.trim();
@@ -433,7 +460,7 @@
         if(!r || !r.ok){ n.textContent = REASON[r && r.reason] || "That didn't go through. Try again, or message us."; return; }
         var lines = member.prices.filter(function(p){ return qty[p.key] > 0; }).map(function(p){ return qty[p.key] + '× ' + p.name.replace('Galindo ', ''); });
         $('d-ref').textContent = r.ref; $('d-title').textContent = r.edited ? 'Order changed.' : 'Order in. Gracias!';
-        $('d-sum').textContent = lines.join(', ') + ' · ' + rand(r.total) + ' · ' + (ful === 'deliver' ? 'delivery' : 'collection') + '.';
+        $('d-sum').textContent = lines.join(', ') + ' · ' + rand(r.total) + ' · ' + (ful === 'deliver' ? (Number(r.delivery_fee) > 0 ? 'incl. ' + rand(r.delivery_fee) + ' delivery' : 'delivery') : 'collection') + '.';
         $('d-pay').hidden = true; $('d-pay').innerHTML = '';
         storeMob(mob);   // remember it so "Pay now" can fetch a fresh link later without re-asking
         if(!r.edited) payNow(r.ref, mob, r.total);
@@ -472,7 +499,7 @@
   function openPay(ref){
     if(!member) return;
     var w = window.open('', '_blank');   // open the tab on the tap itself so the phone doesn't block it
-    if(w){ try{ w.document.write(payTabHtml('<div><p style="margin:0 0 12px">Opening your secure Creative&nbsp;Beverages checkout&#8230;</p><p style="margin:0;font-size:14px;opacity:.85">On the next screen, pay by <b style="color:#d8b45e">card</b>, or choose <b style="color:#d8b45e">Zapper</b> and scan the QR. On a phone, card is easiest.</p></div>')); w.document.close(); }catch(e){} }
+    if(w){ try{ w.document.write(payTabHtml('<div><p style="margin:0 0 12px">Opening your secure Creative&nbsp;Beverages checkout&#8230;</p><p style="margin:0;font-size:14px;opacity:.85">On the next screen, <b style="color:#d8b45e">card</b> is easiest on a phone. For <b style="color:#d8b45e">Zapper</b>, tap <b style="color:#d8b45e">Get code</b> to open the Zapper app. Scanning the QR is for paying from a second device.</p></div>')); w.document.close(); }catch(e){} }
     var mob = knownMob();
     if(!mob){ mob = (window.prompt('Confirm the mobile number on your order to open your secure payment:') || '').trim(); }
     if(!mob || mob.replace(/\D/g, '').length < 9){ if(w){ try{ w.close(); }catch(e){} } return; }
@@ -505,7 +532,7 @@
           acts += '<a target="_blank" rel="noopener noreferrer" href="https://wa.me/' + WA_NUMBER + '?text=' + encodeURIComponent('Hi! About my Galindo order ' + o.ref + ': ') + '">Need to change something? Message us</a>';
         }
         return '<div class="orow"><div class="top"><span class="r">' + esc(o.ref) + '</span><span class="t">' + rand(o.total) + '</span></div>' +
-          '<div class="i">' + esc(itemsLine(o)) + ' · ' + (o.fulfilment === 'deliver' ? 'delivery' : 'collect') + ' · ' + new Date(o.created_at).toLocaleDateString('en-ZA', { day:'numeric', month:'short' }) + '</div>' +
+          '<div class="i">' + esc(itemsLine(o)) + ' · ' + (o.fulfilment === 'deliver' ? (Number(o.delivery_fee) > 0 ? 'incl. ' + rand(o.delivery_fee) + ' delivery' : 'delivery') : 'collect') + ' · ' + new Date(o.created_at).toLocaleDateString('en-ZA', { day:'numeric', month:'short' }) + '</div>' +
           (o.cb_invoice ? '<div class="i">Creative Beverages invoice ' + esc(o.cb_invoice) + '</div>' : '') +
           '<span class="st ' + st[1] + '">' + esc(label) + '</span>' + (acts ? '<div class="acts">' + acts + '</div>' : '') + '</div>';
       }).join('');
@@ -519,9 +546,10 @@
       var o = myOrders.filter(function(x){ return x.ref === ed.dataset.edit; })[0]; if(!o) return;
       renderMember(location.href);
       Object.keys(qty).forEach(function(k){ qty[k] = 0; }); (o.items || []).forEach(function(i){ if(i.key in qty) qty[i.key] = i.qty; }); renderTotal();
-      var chip = document.querySelector('#ful [data-v="' + o.fulfilment + '"]'); if(chip) chip.click();
+      if(noCollect()){ ful = 'deliver'; renderTotal(); }
+      else { var chip = document.querySelector('#ful [data-v="' + o.fulfilment + '"]'); if(chip) chip.click(); }
       editing = o.ref; $('edit-ref').textContent = o.ref; $('editbar').hidden = false; $('o-go').textContent = 'Save changes';
-      $('o-note-msg').textContent = o.fulfilment === 'deliver' ? 'Pop your delivery address in again, then save.' : '';
+      $('o-note-msg').textContent = o.fulfilment === 'deliver' || noCollect() ? 'Pop your delivery address in again, then save.' : '';
       $('orderpanel').scrollIntoView({ behavior:'smooth', block:'start' });
     }
     if(ca){
@@ -546,6 +574,7 @@
   $('print-card').addEventListener('click', function(){ printArea(); window.print(); });
   $('not-me').addEventListener('click', function(){ store(''); MOB = ''; try{ localStorage.removeItem(MOB_KEY); }catch(e){} member = null; history.replaceState(null, '', location.pathname); $('gid-in').value = ''; showEnter(''); });
 
+  loadTerms();
   var start = new URLSearchParams(location.search).get('id') || stored();
   if(start) openCard(start); else showEnter('');
 </script>
