@@ -671,13 +671,22 @@
       '<span class="who">' + esc(actWho(a)) + '</span> <b>' + esc(actText(a)) + '</b> <span class="when">' + esc(ago(a.created_at)) + '</span></div>';
   }
   function storyLines(acts){ return acts.slice(0, 6).map(actLine).join(''); }
-  // the who-did-what strip under a contact's actions: logged activity, or a dim fallback for IDs issued before the log
+  // the activity log went live 6 Nov 2026 (SAST). Till sign-ups and the bulk "Give IDs to everyone"
+  // button don't write a per-contact activity row, so a recent ID with no activity is NOT "before
+  // tracking" - only an ID issued before the log existed truly is.
+  var ACTIVITY_LIVE = new Date('2026-11-06T00:00:00+02:00');
+  // the who-did-what strip under a contact's actions: logged activity, else who signed them up (whose
+  // invite/till link) and the date they got their card. invited_by is set for both web invites (?ref=)
+  // and till sign-ups (the admin running the till), so it always names whose link brought them in.
   function contactStory(c){
     var acts = actByContact[c.id] || [];
     if(acts.length) return storyLines(acts);
-    return c.galindo_id && c.id_issued_at
-      ? '<div class="did" style="color:var(--faint)">Galindo ID issued ' + esc(day(c.id_issued_at)) + ' <span style="color:var(--faint)">(before activity tracking)</span></div>'
-      : '';
+    if(!(c.galindo_id && c.id_issued_at)) return '';
+    var pre = new Date(c.id_issued_at) < ACTIVITY_LIVE, parts = [];
+    if(c.invited_by) parts.push('Invited by ' + c.invited_by);
+    parts.push('Galindo ID issued ' + day(c.id_issued_at));
+    return '<div class="did" style="color:var(--faint)">' + esc(parts.join(' · ')) +
+      (pre ? ' <span style="color:var(--faint)">(before activity tracking)</span>' : '') + '</div>';
   }
   function indexActivity(){
     actByContact = {}; actByOrder = {};
@@ -1143,7 +1152,7 @@
   /* ---------- Galindo IDs ---------- */
   var TIER = { reposado:'Reposado', anejo:'Añejo', extra:'Extra Añejo \'V\'' };
   var MSG_KEY = 'galindo_admin_id_msg';
-  var MSG_DEFAULT = "Hi {first}! Here's your own Galindo ID, your members' card. It unlocks our members' prices and you can order bottles to collect or have delivered:\n{link}\n\n" +
+  var MSG_DEFAULT = "Hi {first}! Here's your own Galindo ID, your members' card. It unlocks our members' prices and you can order bottles delivered to your door:\n{link}\n\n" +
     "It's personal to you, so please keep it to yourself. Watch the Galindo film here: https://tequilaheroes.com/#film\n\nSalud!\nThe Galindo team";
   function msgTemplate(){ try{ return localStorage.getItem(MSG_KEY) || MSG_DEFAULT; }catch(e){ return MSG_DEFAULT; } }
   function memberLink(c){ return 'https://tequilaheroes.com/order/?id=' + c.galindo_id; }
@@ -1386,7 +1395,9 @@
         '<div class="oc-head">' +
           '<div><div class="oc-ref">' + esc(o.ref) + '</div>' +
             '<div class="oc-name">' + esc([o.first_name, o.last_name].filter(Boolean).join(' ')) + '</div></div>' +
-          '<div style="text-align:right"><div class="oc-total">' + rand(o.total) + '</div><div class="oc-when">' + hm(o.created_at) + '</div>' +
+          '<div style="text-align:right"><div class="oc-total">' + rand(o.total) + '</div>' +
+            (Number(o.delivery_fee) > 0 ? '<div class="oc-when">incl. ' + rand(o.delivery_fee) + ' delivery</div>' : '') +
+            '<div class="oc-when">' + hm(o.created_at) + '</div>' +
             '<span class="pill ' + pay.cls + ' oc-pay">' + pay.label + '</span></div>' +
         '</div>' +
         (ocPills ? '<div class="oc-pills">' + ocPills + '</div>' : '') +
@@ -1568,7 +1579,7 @@
     sb.from('price_list').update(row).eq('key', key).then(function(r){ if(r.error){ alert('Not saved: ' + r.error.message); } loadOrders(); });
   });
   $('o-csv').addEventListener('click', function(){
-    var cols = ['ref','created_at','status','payment','shipping','cb_invoice','payment_ref','first_name','last_name','mobile','email','galindo_id','items','total','fulfilment','street','suburb','city','postal_code','note','sent_at','invoiced_at','paid_at','dispatched_at','done_at','track_url','delivery_hours'];
+    var cols = ['ref','created_at','status','payment','shipping','cb_invoice','payment_ref','first_name','last_name','mobile','email','galindo_id','items','total','delivery_fee','fulfilment','street','suburb','city','postal_code','note','sent_at','invoiced_at','paid_at','dispatched_at','done_at','track_url','delivery_hours'];
     var csv = cols.join(',') + '\n' + shownOrders().map(function(o){ return cols.map(function(k){
       if(k === 'items') return csvCell(orderItems(o));
       if(k === 'payment') return csvCell(paymentStatus(o).label);
@@ -2290,7 +2301,7 @@
       if(!d.ok){ alert({ 'bad-mobile':'That mobile number doesn\'t look right.', 'bad-email':'That email doesn\'t look right.', missing:'Add their first name and mobile.', 'not-team':'Your login isn\'t on the team.' }[d.reason] || 'Not done (' + d.reason + ').'); return; }
       var mn = waNumber({ mobile:d.mobile });
       tBuyer = { gid:d.galindo_id, first:d.first, last:d.last, tier:d.tier, mates:!!d.mates, fresh:true,
-        wa:mn ? 'https://wa.me/' + mn + '?text=' + encodeURIComponent('Hi ' + d.first + '! Here\'s your Galindo ID, your members\' card. It unlocks our members\' prices, and you can order bottles to collect or have delivered:\n' +
+        wa:mn ? 'https://wa.me/' + mn + '?text=' + encodeURIComponent('Hi ' + d.first + '! Here\'s your Galindo ID, your members\' card. It unlocks our members\' prices, and you can order bottles delivered to your door:\n' +
           memberLink({ galindo_id:d.galindo_id }) + '\n\nIt\'s personal to you, so please keep it to yourself. Salud!\nThe Galindo team') : '' };
       ['t-first', 't-last', 't-mobile', 't-email'].forEach(function(id){ $(id).value = ''; });
       if(d.merged) alert(d.first + ' was already in Contacts, so their existing record got the card.');
